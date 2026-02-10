@@ -139,7 +139,7 @@ export function createClient(config: AIPConfig): AIPClient {
           truncated: prompt.truncated,
           confidence: thinking.confidence,
         },
-        agentId: config.card.card_id, // Use card_id as agent proxy
+        agentId: config.agent_id ?? config.card.card_id,
         cardId: config.card.card_id,
         sessionId: window.getSessionId(),
         windowPosition: {
@@ -272,7 +272,7 @@ function buildSyntheticSignal(
   return {
     checkpoint: {
       checkpoint_id: `ic-synthetic-${Date.now()}`,
-      agent_id: config.card.card_id,
+      agent_id: config.agent_id ?? config.card.card_id,
       card_id: config.card.card_id,
       session_id: window.getSessionId(),
       timestamp: new Date().toISOString(),

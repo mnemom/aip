@@ -201,6 +201,9 @@ export interface AIPConfig {
   /** Alignment Card to evaluate against */
   card: AlignmentCard;
 
+  /** Agent ID for checkpoints. Defaults to card.card_id if not provided. */
+  agent_id?: string;
+
   /** Conscience values (optional; only BOUNDARY/FEAR types are injected into the conscience prompt) */
   conscience_values?: ConscienceValue[];
 
