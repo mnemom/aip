@@ -117,7 +117,7 @@ async def _call_analysis_llm(
         if text_block is None or not isinstance(text_block.get("text"), str):
             raise ValueError("Analysis LLM returned no text content")
 
-        return text_block["text"]
+        return str(text_block["text"])
 
 
 def _build_synthetic_signal(

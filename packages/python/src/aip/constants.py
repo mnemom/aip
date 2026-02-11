@@ -48,7 +48,7 @@ DRIFT_ALERT_ID_PREFIX = "ida-"
 REGISTRATION_ID_PREFIX = "reg-"
 
 # Default conscience values (constructed after schema import)
-def _default_conscience_values() -> list:
+def _default_conscience_values() -> list[object]:
     from aip.schemas.conscience import ConscienceValue
 
     return [

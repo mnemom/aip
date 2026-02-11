@@ -85,7 +85,7 @@ def _extract_text_content(response_body: str) -> Optional[str]:
                 and isinstance(block.get("text"), str)
                 and len(block["text"]) > 0
             ):
-                return block["text"]
+                return str(block["text"])
 
     # OpenAI-like: choices[0].message.content
     choices = parsed.get("choices")
@@ -98,7 +98,7 @@ def _extract_text_content(response_body: str) -> Optional[str]:
                 and isinstance(message.get("content"), str)
                 and len(message["content"]) > 0
             ):
-                return message["content"]
+                return str(message["content"])
 
     # Google-like: candidates[0].content.parts[0].text
     candidates = parsed.get("candidates")
@@ -115,7 +115,7 @@ def _extract_text_content(response_body: str) -> Optional[str]:
                         and isinstance(first_part.get("text"), str)
                         and len(first_part["text"]) > 0
                     ):
-                        return first_part["text"]
+                        return str(first_part["text"])
 
     return None
 
