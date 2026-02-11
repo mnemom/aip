@@ -6,7 +6,7 @@ Get from zero to real-time integrity checking in 5 minutes.
 
 ```bash
 # Python
-pip install agent-integrity-protocol
+pip install agent-integrity-proto
 
 # TypeScript
 npm install @mnemom/agent-integrity-protocol

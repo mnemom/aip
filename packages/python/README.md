@@ -1,11 +1,11 @@
-# agent-integrity-protocol
+# agent-integrity-proto
 
 Python SDK for the Agent Integrity Protocol — real-time thinking block analysis for AI agent alignment.
 
 ## Installation
 
 ```bash
-pip install agent-integrity-protocol
+pip install agent-integrity-proto
 ```
 
 ## Usage

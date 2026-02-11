@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "agent-integrity-protocol"
+name = "agent-integrity-proto"
 version = "0.1.1"
 description = "Agent Integrity Protocol — real-time thinking block analysis for AI agent alignment"
 readme = "README.md"

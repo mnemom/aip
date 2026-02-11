@@ -11,7 +11,7 @@ A minimal AIP example demonstrating:
 
 ```bash
 # Python
-pip install agent-integrity-protocol
+pip install agent-integrity-proto
 python main.py
 
 # TypeScript

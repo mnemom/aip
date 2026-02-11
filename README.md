@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/mnemom/aip/actions/workflows/ci.yml/badge.svg)](https://github.com/mnemom/aip/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/mnemom/aip/actions/workflows/codeql.yml/badge.svg)](https://github.com/mnemom/aip/actions/workflows/codeql.yml)
-[![PyPI](https://img.shields.io/pypi/v/agent-integrity-protocol.svg)](https://pypi.org/project/agent-integrity-protocol/)
+[![PyPI](https://img.shields.io/pypi/v/agent-integrity-proto.svg)](https://pypi.org/project/agent-integrity-proto/)
 [![npm](https://img.shields.io/npm/v/@mnemom/agent-integrity-protocol.svg)](https://www.npmjs.com/package/@mnemom/agent-integrity-protocol)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Spec](https://img.shields.io/badge/spec-v0.1.0-green.svg)](docs/SPEC.md)
@@ -17,7 +17,7 @@ AIP analyzes what an agent is *thinking* before it acts. It extracts thinking bl
 
 ```bash
 # Install
-pip install agent-integrity-protocol
+pip install agent-integrity-proto
 # or
 npm install @mnemom/agent-integrity-protocol
 ```
@@ -179,7 +179,7 @@ For the complete limitations disclosure, see [Section 14 of the Specification](d
 
 ```bash
 # Python
-pip install agent-integrity-protocol
+pip install agent-integrity-proto
 
 # TypeScript
 npm install @mnemom/agent-integrity-protocol
