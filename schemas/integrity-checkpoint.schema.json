@@ -1,0 +1,208 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "IntegrityCheckpoint",
+  "description": "The primary data structure produced by an AIP integrity check. Records the analysis verdict, concerns, reasoning, and metadata for a single thinking block evaluation.",
+  "type": "object",
+  "required": [
+    "checkpoint_id",
+    "agent_id",
+    "card_id",
+    "session_id",
+    "timestamp",
+    "thinking_block_hash",
+    "provider",
+    "model",
+    "verdict",
+    "concerns",
+    "reasoning_summary",
+    "conscience_context",
+    "window_position",
+    "analysis_metadata",
+    "linked_trace_id"
+  ],
+  "properties": {
+    "checkpoint_id": {
+      "type": "string",
+      "pattern": "^ic-",
+      "description": "Unique identifier (format: ic-{uuid})"
+    },
+    "agent_id": {
+      "type": "string",
+      "description": "Agent that produced the thinking block"
+    },
+    "card_id": {
+      "type": "string",
+      "description": "Alignment Card used for evaluation"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Session identifier"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When this checkpoint was created (ISO 8601)"
+    },
+    "thinking_block_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "SHA-256 hash of the thinking block content. Full text MUST NOT be stored."
+    },
+    "provider": {
+      "type": "string",
+      "description": "LLM provider that generated the thinking block"
+    },
+    "model": {
+      "type": "string",
+      "description": "Model that generated the thinking block"
+    },
+    "verdict": {
+      "type": "string",
+      "enum": ["clear", "review_needed", "boundary_violation"],
+      "description": "Overall integrity verdict. clear = aligned, review_needed = warning, boundary_violation = block."
+    },
+    "concerns": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/IntegrityConcern" },
+      "description": "List of concerns identified (empty for clear verdicts)"
+    },
+    "reasoning_summary": {
+      "type": "string",
+      "description": "Human-readable summary of the analysis reasoning"
+    },
+    "conscience_context": {
+      "$ref": "#/$defs/ConscienceContext",
+      "description": "Conscience evaluation context"
+    },
+    "window_position": {
+      "$ref": "#/$defs/WindowPosition",
+      "description": "Position in the session window"
+    },
+    "analysis_metadata": {
+      "$ref": "#/$defs/AnalysisMetadata",
+      "description": "Analysis process metadata"
+    },
+    "linked_trace_id": {
+      "type": ["string", "null"],
+      "description": "Linked AP-Trace ID (if AAP integration is active)"
+    }
+  },
+  "$defs": {
+    "IntegrityConcern": {
+      "type": "object",
+      "required": ["category", "severity", "description", "evidence"],
+      "properties": {
+        "category": {
+          "type": "string",
+          "enum": [
+            "prompt_injection",
+            "value_misalignment",
+            "autonomy_violation",
+            "reasoning_corruption",
+            "deceptive_reasoning",
+            "undeclared_intent"
+          ]
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "critical"]
+        },
+        "description": {
+          "type": "string"
+        },
+        "evidence": {
+          "type": "string",
+          "description": "Short quote from thinking block (max 200 chars recommended)"
+        },
+        "relevant_card_field": {
+          "type": ["string", "null"]
+        },
+        "relevant_conscience_value": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "ConscienceContext": {
+      "type": "object",
+      "required": [
+        "values_checked",
+        "conflicts",
+        "supports",
+        "considerations",
+        "consultation_depth"
+      ],
+      "properties": {
+        "values_checked": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "conflicts": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "supports": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "considerations": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "consultation_depth": {
+          "type": "string",
+          "enum": ["surface", "standard", "deep"]
+        }
+      }
+    },
+    "WindowPosition": {
+      "type": "object",
+      "required": ["index", "window_size"],
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "window_size": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "AnalysisMetadata": {
+      "type": "object",
+      "required": [
+        "analysis_model",
+        "analysis_duration_ms",
+        "thinking_tokens_original",
+        "thinking_tokens_analyzed",
+        "truncated",
+        "extraction_confidence"
+      ],
+      "properties": {
+        "analysis_model": {
+          "type": "string"
+        },
+        "analysis_duration_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "thinking_tokens_original": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "thinking_tokens_analyzed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "truncated": {
+          "type": "boolean"
+        },
+        "extraction_confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    }
+  }
+}

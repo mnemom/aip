@@ -3,6 +3,13 @@
 Re-exports all public functions and types from the analysis submodules.
 """
 
+from aip.analysis.agreement import validate_agreement
+from aip.analysis.card_summary import summarize_card
+from aip.analysis.drift import (
+    DriftState,
+    create_drift_state,
+    detect_integrity_drift,
+)
 from aip.analysis.engine import (
     CheckIntegrityInput,
     ThinkingInput,
@@ -17,13 +24,6 @@ from aip.analysis.prompt import (
     PromptInput,
     build_conscience_prompt,
 )
-from aip.analysis.drift import (
-    DriftState,
-    create_drift_state,
-    detect_integrity_drift,
-)
-from aip.analysis.agreement import validate_agreement
-from aip.analysis.card_summary import summarize_card
 
 __all__ = [
     # engine

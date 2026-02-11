@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import copy
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 
 from aip.constants import MIN_WINDOW_SIZE
 from aip.schemas.checkpoint import IntegrityCheckpoint
 from aip.schemas.config import WindowConfig
 from aip.schemas.signal import VerdictCounts, WindowSummary
-from aip.window.state import WindowState, WindowStats, create_window_state
+from aip.window.state import WindowState, create_window_state
 
 
 class WindowManager:

@@ -5,12 +5,11 @@ Port of packages/typescript/test/window/manager.test.ts
 
 from __future__ import annotations
 
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 
 from aip.schemas.config import WindowConfig
 from aip.window.manager import WindowManager
 from tests.conftest import make_checkpoint
-
 
 # ---------------------------------------------------------------------------
 # Helpers

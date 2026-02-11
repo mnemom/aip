@@ -16,7 +16,6 @@ from typing import Any
 from unittest.mock import MagicMock
 
 import httpx
-import pytest
 import respx
 
 from aip.schemas.config import (
@@ -32,9 +31,8 @@ from aip.schemas.config import (
 )
 from aip.schemas.drift_alert import IntegrityDriftAlert
 from aip.schemas.signal import IntegritySignal
-from aip.sdk.client import AIPClient, create_client
+from aip.sdk.client import create_client
 from aip.sdk.http import sign_payload, verify_signature
-
 
 # ---------------------------------------------------------------------------
 # Fixture data

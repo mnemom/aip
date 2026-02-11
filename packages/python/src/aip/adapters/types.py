@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal, Optional, Protocol
-
+from typing import Literal, Protocol
 
 ExtractionMethod = Literal["native_thinking", "reasoning_content", "response_analysis"]
 
@@ -27,6 +26,6 @@ class ProviderAdapter(Protocol):
     @property
     def provider(self) -> str: ...
 
-    def extract_thinking(self, response_body: str) -> Optional[ExtractedThinking]: ...
+    def extract_thinking(self, response_body: str) -> ExtractedThinking | None: ...
 
-    def extract_thinking_from_stream(self, sse_body: str) -> Optional[ExtractedThinking]: ...
+    def extract_thinking_from_stream(self, sse_body: str) -> ExtractedThinking | None: ...

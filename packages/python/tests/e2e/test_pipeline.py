@@ -21,13 +21,20 @@ from __future__ import annotations
 import json
 import re
 
-import pytest
-
 # Adapters
 from aip.adapters.anthropic import AnthropicAdapter
-from aip.adapters.openai import OpenAIAdapter
 from aip.adapters.google import GoogleAdapter
+from aip.adapters.openai import OpenAIAdapter
 from aip.adapters.registry import create_adapter_registry
+
+# Schemas
+from aip.adapters.types import ExtractedThinking
+
+# Agreement validation
+from aip.analysis.agreement import validate_agreement
+
+# Drift detection
+from aip.analysis.drift import create_drift_state, detect_integrity_drift
 
 # Analysis engine
 from aip.analysis.engine import (
@@ -42,18 +49,6 @@ from aip.analysis.engine import (
 
 # Conscience prompt builder
 from aip.analysis.prompt import PromptInput, build_conscience_prompt
-
-# Drift detection
-from aip.analysis.drift import create_drift_state, detect_integrity_drift
-
-# Agreement validation
-from aip.analysis.agreement import validate_agreement
-
-# Window manager
-from aip.window.manager import WindowManager
-
-# Schemas
-from aip.adapters.types import ExtractedThinking
 from aip.schemas.checkpoint import IntegrityCheckpoint, WindowPosition
 from aip.schemas.config import (
     AlignmentCard,
@@ -64,6 +59,8 @@ from aip.schemas.config import (
 )
 from aip.schemas.conscience import ConscienceValue
 
+# Window manager
+from aip.window.manager import WindowManager
 
 # ---------------------------------------------------------------------------
 # Fixture data (mirrors packages/typescript/test/fixtures/)

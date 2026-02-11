@@ -13,9 +13,6 @@ import json
 import re
 from datetime import datetime, timezone
 from typing import Any
-from uuid import uuid4
-
-import pytest
 
 from aip.analysis.drift import create_drift_state, detect_integrity_drift
 from aip.analysis.engine import (
@@ -38,12 +35,11 @@ from aip.schemas.config import (
     AlignmentCardValue,
     AutonomyEnvelope,
     EscalationTrigger,
+    WindowConfig,
 )
 from aip.schemas.conscience import ConscienceContext, ConscienceValue
 from aip.schemas.signal import IntegritySignal, VerdictCounts, WindowSummary
 from aip.window.manager import WindowManager
-from aip.schemas.config import WindowConfig
-
 
 # ---------------------------------------------------------------------------
 # Fixture data

@@ -10,7 +10,7 @@ first-class thinking blocks.
 from __future__ import annotations
 
 import json
-from typing import Any, Optional
+from typing import Any
 
 from aip.adapters.types import ExtractedThinking
 from aip.constants import CONFIDENCE_EXPLICIT
@@ -28,7 +28,7 @@ class GoogleAdapter:
     def provider(self) -> str:
         return "google"
 
-    def extract_thinking(self, response_body: str) -> Optional[ExtractedThinking]:
+    def extract_thinking(self, response_body: str) -> ExtractedThinking | None:
         """Extract thinking content from a non-streaming Google Gemini response body.
 
         Navigates to ``candidates[0].content.parts`` and filters for parts
@@ -89,7 +89,7 @@ class GoogleAdapter:
             truncated=False,
         )
 
-    def extract_thinking_from_stream(self, sse_body: str) -> Optional[ExtractedThinking]:
+    def extract_thinking_from_stream(self, sse_body: str) -> ExtractedThinking | None:
         """Extract thinking content from a Google Gemini SSE streaming response.
 
         Processes Server-Sent Events, parsing each ``data: `` line as JSON

@@ -45,6 +45,13 @@
   ],
   "author": "Mnemon",
   "license": "Apache-2.0",
+  "homepage": "https://github.com/mnemom/aip#readme",
+  "bugs": {
+    "url": "https://github.com/mnemom/aip/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/mnemom/aip.git",

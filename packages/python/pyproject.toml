@@ -6,10 +6,41 @@ build-backend = "hatchling.build"
 name = "agent-integrity-protocol"
 version = "0.1.0"
 description = "Agent Integrity Protocol — real-time thinking block analysis for AI agent alignment"
+readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.10"
-authors = [{ name = "Mnemon" }]
+authors = [{ name = "Mnemon", email = "dev@mnemom.ai" }]
+keywords = [
+    "ai",
+    "agent",
+    "integrity",
+    "alignment",
+    "thinking",
+    "conscience",
+    "safety",
+    "llm",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Security",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
 dependencies = ["httpx>=0.27"]
+
+[project.urls]
+Homepage = "https://github.com/mnemom/aip"
+Documentation = "https://github.com/mnemom/aip/blob/main/docs/SPEC.md"
+Repository = "https://github.com/mnemom/aip"
+Issues = "https://github.com/mnemom/aip/issues"
+Changelog = "https://github.com/mnemom/aip/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [
@@ -24,12 +55,24 @@ dev = [
 [tool.hatch.build.targets.wheel]
 packages = ["src/aip"]
 
+[tool.hatch.build.targets.sdist]
+include = ["/src", "/tests"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
 
 [tool.mypy]
 strict = true
+python_version = "3.10"
 
 [tool.ruff]
 target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "A", "SIM"]
+ignore = ["E501", "A002", "B011", "B904", "SIM102"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["B007"]

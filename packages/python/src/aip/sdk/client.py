@@ -37,10 +37,9 @@ from aip.schemas.checkpoint import (
 )
 from aip.schemas.config import AIPConfig
 from aip.schemas.conscience import ConscienceContext
-from aip.schemas.signal import IntegritySignal, WindowSummary
+from aip.schemas.signal import IntegritySignal
 from aip.window.manager import WindowManager
 from aip.window.state import WindowState
-
 
 # ---------------------------------------------------------------------------
 # Internal helpers

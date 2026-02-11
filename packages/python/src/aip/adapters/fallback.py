@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any, Optional
+from typing import Any
 
 from aip.adapters.types import ExtractedThinking
 from aip.constants import CONFIDENCE_FALLBACK
@@ -54,7 +54,7 @@ def _is_record(value: Any) -> bool:
     return isinstance(value, dict)
 
 
-def _extract_text_content(response_body: str) -> Optional[str]:
+def _extract_text_content(response_body: str) -> str | None:
     """Extract the main text content from a response body string.
 
     Tries multiple provider formats in order:
@@ -123,7 +123,7 @@ def _extract_text_content(response_body: str) -> Optional[str]:
 def _match_reasoning_patterns(
     text: str,
     provider: str,
-) -> Optional[ExtractedThinking]:
+) -> ExtractedThinking | None:
     """Apply reasoning pattern matching to the given text.
 
     Returns ``ExtractedThinking`` if reasoning patterns are found,
@@ -151,7 +151,7 @@ class FallbackAdapter:
     def provider(self) -> str:
         return "fallback"
 
-    def extract_thinking(self, response_body: str) -> Optional[ExtractedThinking]:
+    def extract_thinking(self, response_body: str) -> ExtractedThinking | None:
         """Extract thinking content from a non-streaming response body.
 
         Attempts to parse the response as JSON and locate the main text
@@ -165,7 +165,7 @@ class FallbackAdapter:
 
         return _match_reasoning_patterns(text, self.provider)
 
-    def extract_thinking_from_stream(self, sse_body: str) -> Optional[ExtractedThinking]:
+    def extract_thinking_from_stream(self, sse_body: str) -> ExtractedThinking | None:
         """Extract thinking content from an SSE streaming response.
 
         Accumulates all text deltas from ``data:`` lines, then applies

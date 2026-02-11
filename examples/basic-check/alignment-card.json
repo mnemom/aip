@@ -1,0 +1,30 @@
+{
+  "aap_version": "0.1.0",
+  "card_id": "ac-basic-example-001",
+  "agent_id": "recommendation-agent",
+  "issued_at": "2026-02-10T00:00:00Z",
+  "principal": {
+    "type": "human",
+    "relationship": "delegated_authority"
+  },
+  "values": {
+    "declared": ["principal_benefit", "transparency", "honesty"],
+    "conflicts_with": ["deceptive_marketing", "data_exfiltration"]
+  },
+  "autonomy_envelope": {
+    "bounded_actions": ["search", "compare", "recommend"],
+    "escalation_triggers": [
+      {
+        "condition": "purchase_value > 100",
+        "action": "escalate",
+        "reason": "Exceeds autonomous spending limit"
+      }
+    ],
+    "forbidden_actions": ["share_credentials", "exfiltrate_data", "auto_subscribe"]
+  },
+  "audit_commitment": {
+    "trace_format": "ap-trace-v1",
+    "retention_days": 90,
+    "queryable": true
+  }
+}

@@ -3,48 +3,6 @@
 # ---------------------------------------------------------------------------
 # Schemas
 # ---------------------------------------------------------------------------
-from aip.schemas import (
-    # agreement
-    CardConscienceAgreement,
-    CardConscienceAugmentation,
-    CardConscienceConflict,
-    # checkpoint
-    AnalysisMetadata,
-    IntegrityCheckpoint,
-    IntegrityVerdict,
-    WindowPosition,
-    # concern
-    ConcernCategory,
-    IntegrityConcern,
-    IntegritySeverity,
-    # config
-    AIPCallbacks,
-    AIPConfig,
-    AlignmentCard,
-    AlignmentCardValue,
-    AnalysisLLMConfig,
-    AutonomyEnvelope,
-    EscalationTrigger,
-    FailureMode,
-    FailurePolicy,
-    SessionBoundary,
-    WindowConfig,
-    WindowMode,
-    # conscience
-    ConscienceContext,
-    ConscienceValue,
-    ConscienceValueType,
-    ConsultationDepth,
-    # drift_alert
-    DriftDirection,
-    IntegrityDriftAlert,
-    # signal
-    IntegritySignal,
-    RecommendedAction,
-    VerdictCounts,
-    WindowSummary,
-)
-
 # ---------------------------------------------------------------------------
 # Adapters
 # ---------------------------------------------------------------------------
@@ -82,26 +40,6 @@ from aip.analysis import (
 )
 
 # ---------------------------------------------------------------------------
-# Window
-# ---------------------------------------------------------------------------
-from aip.window import (
-    WindowManager,
-    WindowState,
-    WindowStats,
-    create_window_state,
-)
-
-# ---------------------------------------------------------------------------
-# SDK
-# ---------------------------------------------------------------------------
-from aip.sdk import (
-    AIPClient,
-    create_client,
-    sign_payload,
-    verify_signature,
-)
-
-# ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
 from aip.constants import (
@@ -131,6 +69,67 @@ from aip.constants import (
     TRUNCATION_TAIL_RATIO,
     WEBHOOK_MAX_RETRIES,
     WEBHOOK_RETRY_DELAYS_MS,
+)
+from aip.schemas import (
+    # config
+    AIPCallbacks,
+    AIPConfig,
+    AlignmentCard,
+    AlignmentCardValue,
+    AnalysisLLMConfig,
+    # checkpoint
+    AnalysisMetadata,
+    AutonomyEnvelope,
+    # agreement
+    CardConscienceAgreement,
+    CardConscienceAugmentation,
+    CardConscienceConflict,
+    # concern
+    ConcernCategory,
+    # conscience
+    ConscienceContext,
+    ConscienceValue,
+    ConscienceValueType,
+    ConsultationDepth,
+    # drift_alert
+    DriftDirection,
+    EscalationTrigger,
+    FailureMode,
+    FailurePolicy,
+    IntegrityCheckpoint,
+    IntegrityConcern,
+    IntegrityDriftAlert,
+    IntegritySeverity,
+    # signal
+    IntegritySignal,
+    IntegrityVerdict,
+    RecommendedAction,
+    SessionBoundary,
+    VerdictCounts,
+    WindowConfig,
+    WindowMode,
+    WindowPosition,
+    WindowSummary,
+)
+
+# ---------------------------------------------------------------------------
+# SDK
+# ---------------------------------------------------------------------------
+from aip.sdk import (
+    AIPClient,
+    create_client,
+    sign_payload,
+    verify_signature,
+)
+
+# ---------------------------------------------------------------------------
+# Window
+# ---------------------------------------------------------------------------
+from aip.window import (
+    WindowManager,
+    WindowState,
+    WindowStats,
+    create_window_state,
 )
 
 __all__ = [

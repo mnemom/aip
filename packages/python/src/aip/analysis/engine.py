@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import math
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
@@ -25,11 +24,9 @@ from aip.schemas.checkpoint import (
     WindowPosition,
 )
 from aip.schemas.concern import (
-    ConcernCategory,
     IntegrityConcern,
-    IntegritySeverity,
 )
-from aip.schemas.conscience import ConscienceContext, ConsultationDepth
+from aip.schemas.conscience import ConscienceContext
 from aip.schemas.signal import (
     IntegritySignal,
     RecommendedAction,

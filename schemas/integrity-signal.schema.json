@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "IntegritySignal",
+  "description": "The complete payload delivered to the host system after an integrity check, containing the checkpoint, proceed recommendation, and window summary.",
+  "type": "object",
+  "required": ["checkpoint", "proceed", "recommended_action", "window_summary"],
+  "properties": {
+    "checkpoint": {
+      "$ref": "integrity-checkpoint.schema.json",
+      "description": "The integrity checkpoint"
+    },
+    "proceed": {
+      "type": "boolean",
+      "description": "Whether the agent should proceed. true for clear/review_needed, false for boundary_violation."
+    },
+    "recommended_action": {
+      "type": "string",
+      "enum": ["continue", "log_and_continue", "pause_for_review", "deny_and_escalate"],
+      "description": "Recommended action for the host system"
+    },
+    "window_summary": {
+      "$ref": "#/$defs/WindowSummary",
+      "description": "Current session window summary"
+    }
+  },
+  "$defs": {
+    "WindowSummary": {
+      "type": "object",
+      "required": ["size", "max_size", "verdicts", "integrity_ratio", "drift_alert_active"],
+      "properties": {
+        "size": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Current window size"
+        },
+        "max_size": {
+          "type": "integer",
+          "minimum": 3,
+          "description": "Maximum window size"
+        },
+        "verdicts": {
+          "type": "object",
+          "required": ["clear", "review_needed", "boundary_violation"],
+          "properties": {
+            "clear": { "type": "integer", "minimum": 0 },
+            "review_needed": { "type": "integer", "minimum": 0 },
+            "boundary_violation": { "type": "integer", "minimum": 0 }
+          },
+          "description": "Verdict counts in current window"
+        },
+        "integrity_ratio": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "clear_count / total in window"
+        },
+        "drift_alert_active": {
+          "type": "boolean",
+          "description": "Whether a drift alert is currently active"
+        }
+      }
+    }
+  }
+}

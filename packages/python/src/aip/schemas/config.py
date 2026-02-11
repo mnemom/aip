@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable, Literal
+from typing import Any, Literal
 
 from aip.schemas.conscience import ConscienceValue
 from aip.schemas.drift_alert import IntegrityDriftAlert

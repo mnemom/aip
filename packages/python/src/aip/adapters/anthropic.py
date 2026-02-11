@@ -8,7 +8,7 @@ thinking blocks as first-class content elements.
 from __future__ import annotations
 
 import json
-from typing import Any, Optional
+from typing import Any
 
 from aip.adapters.types import ExtractedThinking
 from aip.constants import CONFIDENCE_NATIVE
@@ -26,7 +26,7 @@ class AnthropicAdapter:
     def provider(self) -> str:
         return "anthropic"
 
-    def extract_thinking(self, response_body: str) -> Optional[ExtractedThinking]:
+    def extract_thinking(self, response_body: str) -> ExtractedThinking | None:
         """Extract thinking content from a non-streaming Anthropic response body.
 
         Looks for content blocks where ``type == "thinking"`` and concatenates
@@ -68,7 +68,7 @@ class AnthropicAdapter:
             truncated=False,
         )
 
-    def extract_thinking_from_stream(self, sse_body: str) -> Optional[ExtractedThinking]:
+    def extract_thinking_from_stream(self, sse_body: str) -> ExtractedThinking | None:
         """Extract thinking content from an Anthropic SSE streaming response.
 
         Processes Server-Sent Events to accumulate thinking deltas from

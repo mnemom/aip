@@ -5,17 +5,12 @@ Ported from test/adapters/registry.test.ts.
 
 from __future__ import annotations
 
-from typing import Optional
-
-import pytest
-
 from aip.adapters.anthropic import AnthropicAdapter
 from aip.adapters.fallback import FallbackAdapter
 from aip.adapters.google import GoogleAdapter
 from aip.adapters.openai import OpenAIAdapter
-from aip.adapters.registry import AdapterRegistry, create_adapter_registry
+from aip.adapters.registry import create_adapter_registry
 from aip.adapters.types import ExtractedThinking
-
 
 # ---------------------------------------------------------------------------
 # get()
@@ -104,10 +99,10 @@ class TestRegister:
             def provider(self) -> str:
                 return "custom"
 
-            def extract_thinking(self, response_body: str) -> Optional[ExtractedThinking]:
+            def extract_thinking(self, response_body: str) -> ExtractedThinking | None:
                 return None
 
-            def extract_thinking_from_stream(self, sse_body: str) -> Optional[ExtractedThinking]:
+            def extract_thinking_from_stream(self, sse_body: str) -> ExtractedThinking | None:
                 return None
 
         custom_adapter = CustomAdapter()
@@ -143,10 +138,10 @@ class TestProviders:
             def provider(self) -> str:
                 return "my-provider"
 
-            def extract_thinking(self, response_body: str) -> Optional[ExtractedThinking]:
+            def extract_thinking(self, response_body: str) -> ExtractedThinking | None:
                 return None
 
-            def extract_thinking_from_stream(self, sse_body: str) -> Optional[ExtractedThinking]:
+            def extract_thinking_from_stream(self, sse_body: str) -> ExtractedThinking | None:
                 return None
 
         registry.register(MyProviderAdapter())

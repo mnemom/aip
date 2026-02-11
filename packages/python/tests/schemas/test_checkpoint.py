@@ -7,8 +7,6 @@ from __future__ import annotations
 
 import re
 
-import pytest
-
 from aip.schemas.checkpoint import (
     AnalysisMetadata,
     IntegrityCheckpoint,
@@ -17,9 +15,7 @@ from aip.schemas.checkpoint import (
 from aip.schemas.concern import IntegrityConcern
 from aip.schemas.conscience import ConscienceContext
 from aip.schemas.signal import IntegritySignal, VerdictCounts, WindowSummary
-
 from tests.conftest import make_checkpoint
-
 
 # ---------------------------------------------------------------------------
 # IntegrityCheckpoint structure

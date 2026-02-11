@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
-from aip.adapters.types import ProviderAdapter
 from aip.adapters.anthropic import AnthropicAdapter
-from aip.adapters.openai import OpenAIAdapter
-from aip.adapters.google import GoogleAdapter
 from aip.adapters.fallback import FallbackAdapter
+from aip.adapters.google import GoogleAdapter
+from aip.adapters.openai import OpenAIAdapter
+from aip.adapters.types import ProviderAdapter
 
 
 class AdapterRegistry:

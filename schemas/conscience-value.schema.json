@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ConscienceValue",
+  "description": "A typed value declaration from the daimonion system. Conscience values augment the Alignment Card's evaluative power, increasing detection sensitivity for specific concerns.",
+  "type": "object",
+  "required": ["type", "content"],
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": ["BOUNDARY", "FEAR", "COMMITMENT", "BELIEF", "HOPE"],
+      "description": "Value type. BOUNDARY = hard limit (blocks action). FEAR = concern (warns). COMMITMENT = positive aspiration. BELIEF = held truth. HOPE = desired outcome. Only BOUNDARY and FEAR are injected into the conscience prompt."
+    },
+    "content": {
+      "type": "string",
+      "description": "Human-readable value content"
+    },
+    "id": {
+      "type": ["string", "null"],
+      "description": "Optional identifier"
+    }
+  }
+}

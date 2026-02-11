@@ -22,7 +22,7 @@ from aip.schemas.config import (
     WindowConfig,
 )
 from aip.schemas.conscience import ConscienceValue
-from aip.sdk.client import AIPClient, create_client
+from aip.sdk.client import create_client
 from tests.conftest import (
     ANTHROPIC_JSON_NO_THINKING,
     ANTHROPIC_JSON_WITH_THINKING,
@@ -31,7 +31,6 @@ from tests.conftest import (
     VERDICT_CLEAR,
     VERDICT_REVIEW_NEEDED,
 )
-
 
 # ---------------------------------------------------------------------------
 # Test helpers

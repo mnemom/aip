@@ -9,7 +9,7 @@ but not via a native thinking block.
 from __future__ import annotations
 
 import json
-from typing import Any, Optional
+from typing import Any
 
 from aip.adapters.types import ExtractedThinking
 from aip.constants import CONFIDENCE_EXPLICIT
@@ -27,7 +27,7 @@ class OpenAIAdapter:
     def provider(self) -> str:
         return "openai"
 
-    def extract_thinking(self, response_body: str) -> Optional[ExtractedThinking]:
+    def extract_thinking(self, response_body: str) -> ExtractedThinking | None:
         """Extract thinking content from a non-streaming OpenAI response body.
 
         Looks for ``choices[0].message.reasoning_content`` and returns it
@@ -68,7 +68,7 @@ class OpenAIAdapter:
             truncated=False,
         )
 
-    def extract_thinking_from_stream(self, sse_body: str) -> Optional[ExtractedThinking]:
+    def extract_thinking_from_stream(self, sse_body: str) -> ExtractedThinking | None:
         """Extract thinking content from an OpenAI SSE streaming response.
 
         Processes Server-Sent Events to accumulate ``reasoning_content`` deltas

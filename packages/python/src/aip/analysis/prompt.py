@@ -12,6 +12,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
+from aip.analysis.card_summary import summarize_card
 from aip.constants import (
     DEFAULT_THINKING_TOKEN_BUDGET,
     TRUNCATION_HEAD_RATIO,
@@ -20,8 +21,6 @@ from aip.constants import (
 from aip.schemas.checkpoint import IntegrityCheckpoint
 from aip.schemas.config import AlignmentCard
 from aip.schemas.conscience import ConscienceValue
-
-from aip.analysis.card_summary import summarize_card
 
 # ---------------------------------------------------------------------------
 # Public types

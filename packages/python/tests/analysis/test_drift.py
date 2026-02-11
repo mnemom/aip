@@ -11,7 +11,6 @@ from aip.analysis.drift import create_drift_state, detect_integrity_drift
 from aip.schemas.concern import ConcernCategory, IntegrityConcern
 from tests.conftest import make_checkpoint
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

@@ -8,16 +8,11 @@ Port of packages/typescript/test/analysis/prompt.test.ts
 
 from __future__ import annotations
 
-from aip.analysis.prompt import PromptInput, build_conscience_prompt
-from aip.schemas.checkpoint import (
-    AnalysisMetadata,
-    IntegrityCheckpoint,
-    WindowPosition,
-)
-from aip.schemas.conscience import ConscienceContext, ConscienceValue
-from tests.conftest import FULL_CARD, make_checkpoint
-
 import re
+
+from aip.analysis.prompt import PromptInput, build_conscience_prompt
+from aip.schemas.conscience import ConscienceValue
+from tests.conftest import FULL_CARD, make_checkpoint
 
 # ---------------------------------------------------------------------------
 # Helpers

@@ -20,9 +20,7 @@ from aip.constants import (
     DRIFT_SEVERITY_MEDIUM_THRESHOLD,
 )
 from aip.schemas.checkpoint import IntegrityCheckpoint
-from aip.schemas.concern import ConcernCategory
 from aip.schemas.drift_alert import DriftDirection, IntegrityDriftAlert
-
 
 # ---------------------------------------------------------------------------
 # Drift state

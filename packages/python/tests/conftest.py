@@ -12,23 +12,19 @@ import pytest
 from aip.schemas.checkpoint import (
     AnalysisMetadata,
     IntegrityCheckpoint,
-    IntegrityVerdict,
     WindowPosition,
 )
-from aip.schemas.concern import IntegrityConcern, ConcernCategory
+from aip.schemas.concern import ConcernCategory, IntegrityConcern
 from aip.schemas.config import (
-    AIPCallbacks,
     AIPConfig,
     AlignmentCard,
     AlignmentCardValue,
     AnalysisLLMConfig,
     AutonomyEnvelope,
     EscalationTrigger,
-    FailurePolicy,
     WindowConfig,
 )
-from aip.schemas.conscience import ConscienceContext, ConscienceValue
-
+from aip.schemas.conscience import ConscienceContext
 
 # ---------------------------------------------------------------------------
 # AlignmentCard fixtures
