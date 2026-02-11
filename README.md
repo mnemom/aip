@@ -268,21 +268,23 @@ import {
 
 ## Status
 
-**Current Version**: 0.1.0 (Draft)
+**Current Version**: 0.1.1 (Draft)
 
 | Component | Status |
 |-----------|--------|
-| Specification | Complete |
-| TypeScript SDK | Complete (272 tests) |
-| Python SDK | Complete (267 tests) |
-| Provider Adapters | Anthropic, OpenAI, Google, Fallback |
-| Session Windowing | Complete |
-| Drift Detection | Complete |
-| Gateway Integration | Verified (Cloudflare Workers) |
+| Specification | ✅ Complete |
+| TypeScript SDK | ✅ Complete (272 tests) |
+| Python SDK | ✅ Complete (267 tests) |
+| Provider Adapters | ✅ Anthropic, OpenAI, Google, Fallback |
+| Session Windowing | ✅ Complete |
+| Drift Detection | ✅ Complete |
+| Gateway Integration | ✅ Verified (Cloudflare Workers) |
 
 ## Contributing
 
-We welcome contributions. Key areas where we need help:
+We welcome contributions. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+Key areas where we need help:
 
 - Provider adapter implementations for additional LLMs
 - Integration examples with agent frameworks
@@ -295,4 +297,4 @@ Apache 2.0. See [LICENSE](LICENSE) for details.
 
 ---
 
-*Agent Integrity Protocol — Real-time integrity for autonomous agents.*
+*Agent Integrity Protocol is part of the [Mnemom.ai](https://github.com/mnemom) trust infrastructure for autonomous agents, alongside [AAP](https://github.com/mnemom/aap) (Agent Alignment Protocol).*

@@ -3,7 +3,7 @@
 **Version:** 0.1.0
 **Status:** Draft
 **Date:** 2026-02-09
-**Authors:** Mnemom
+**Authors:** Mnemom.ai
 **Sister Protocol:** AAP v0.1.5
 
 ---
@@ -1400,14 +1400,14 @@ AIP defines the following HTTP headers for webhook delivery:
 - **[RFC 8174]** Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words", BCP 14, RFC 8174, May 2017.
 - **[RFC 8259]** Bray, T., Ed., "The JavaScript Object Notation (JSON) Data Interchange Format", RFC 8259, December 2017.
 - **[RFC 3339]** Klyne, G. and C. Newman, "Date and Time on the Internet: Timestamps", RFC 3339, July 2002.
-- **[AAP SPEC]** Mnemom, "Agent Alignment Protocol Specification", v0.1.5, 2026.
+- **[AAP SPEC]** Mnemom.ai, "Agent Alignment Protocol Specification", v0.1.5, 2026.
 
 ### 16.2 Informative References
 
 - **[Anthropic Extended Thinking]** Anthropic, "Extended thinking with Claude", 2025.
-- **[Braid V2 Specification]** Mnemom, "Braid V2 Specification — Alignment Across Difference", 2026.
-- **[Daimonion Architecture]** Mnemom, "Daimonion: Conscience-as-a-Service Architecture", 2026.
-- **[Smoltbot Architecture]** Mnemom, "Smoltbot AAP Architecture v2", 2026.
+- **[Braid V2 Specification]** Mnemom.ai, "Braid V2 Specification — Alignment Across Difference", 2026.
+- **[Daimonion Architecture]** Mnemom.ai, "Daimonion: Conscience-as-a-Service Architecture", 2026.
+- **[Smoltbot Architecture]** Mnemom.ai, "Smoltbot AAP Architecture v2", 2026.
 
 ---
 

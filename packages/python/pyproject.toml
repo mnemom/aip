@@ -9,7 +9,7 @@ description = "Agent Integrity Protocol — real-time thinking block analysis fo
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.10"
-authors = [{ name = "Mnemon", email = "dev@mnemom.ai" }]
+authors = [{ name = "Mnemom.ai", email = "dev@mnemom.ai" }]
 keywords = [
     "ai",
     "agent",
