@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-02-11
+
+### Added
+- Root README.md with badges, quick start, architecture diagram, API reference
+- Apache 2.0 LICENSE
+- CONTRIBUTING.md (monorepo dev setup, SDK parity requirement)
+- docs/SECURITY.md (threat model, meta-injection, fail-open/closed, HMAC)
+- docs/QUICKSTART.md (7-step guide, Python + TypeScript)
+- docs/LIMITS.md (5 fundamental limitations, misconceptions, appropriate use cases)
+- docs/images/aip-architecture.svg (3-layer architecture diagram)
+- Examples: basic-check, gateway-integration, adversarial detection scenarios
+- JSON Schemas: integrity-checkpoint, integrity-signal, conscience-value
+- Per-package READMEs (packages/typescript, packages/python)
+- PEP 561 py.typed marker for typed Python package
+- publish.yml workflow (version validation + test gate + PyPI + npm)
+- codeql.yml workflow (weekly security scan, Python + JS/TS)
+
+### Changed
+- CI: Python version matrix (3.10, 3.11, 3.12), ruff lint step, codecov upload
+- pyproject.toml: classifiers, project URLs, keywords, readme, ruff rules, mypy target
+- package.json: publishConfig, homepage, bugs fields
+- Python imports reordered by ruff (78 auto-fixes)
+
 ## [0.1.0] - 2026-02-10
 
 Initial release.
