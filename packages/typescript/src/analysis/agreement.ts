@@ -9,6 +9,16 @@ import type { AlignmentCard } from "../schemas/config.js";
 import type { ConscienceValue } from "../schemas/conscience.js";
 import type { CardConscienceAgreement } from "../schemas/agreement.js";
 
+/** Escape special regex characters in a string */
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Test if text contains the term as a whole word (not as a substring of another word) */
+function containsWholeWord(text: string, term: string): boolean {
+  return new RegExp(`\\b${escapeRegex(term)}\\b`).test(text);
+}
+
 /**
  * Validate that conscience values are compatible with the alignment card.
  * Called at AIP initialization — throws if conflicts are found.
@@ -37,8 +47,10 @@ export function validateAgreement(
     // Check for conflicts: BOUNDARY contradicts bounded_actions
     if (value.type === "BOUNDARY" && card.autonomy_envelope.bounded_actions) {
       for (const action of card.autonomy_envelope.bounded_actions) {
-        if (contentLower.includes(action.toLowerCase().replace(/_/g, " ")) ||
-            contentLower.includes(action.toLowerCase())) {
+        // Use word-boundary matching to avoid false positives
+        // (e.g., "execute" in BOUNDARY text should not match action "exec")
+        if (containsWholeWord(contentLower, action.toLowerCase().replace(/_/g, " ")) ||
+            containsWholeWord(contentLower, action.toLowerCase())) {
           // Check if the BOUNDARY says "never" or "no" + the action
           // This is a potential conflict — card allows it, conscience forbids it
           if (contentLower.includes("never") || contentLower.includes("no ") || contentLower.includes("don't") || contentLower.includes("do not")) {
@@ -55,8 +67,8 @@ export function validateAgreement(
     // Check for augmentations: value reinforces forbidden_actions
     if (card.autonomy_envelope.forbidden_actions) {
       for (const action of card.autonomy_envelope.forbidden_actions) {
-        if (contentLower.includes(action.toLowerCase().replace(/_/g, " ")) ||
-            contentLower.includes(action.toLowerCase())) {
+        if (containsWholeWord(contentLower, action.toLowerCase().replace(/_/g, " ")) ||
+            containsWholeWord(contentLower, action.toLowerCase())) {
           augmentations.push({
             conscience_value: value,
             augments: "autonomy_envelope.forbidden_actions",
@@ -69,8 +81,8 @@ export function validateAgreement(
     // Check for augmentations: value reinforces escalation_triggers
     if (card.autonomy_envelope.escalation_triggers) {
       for (const trigger of card.autonomy_envelope.escalation_triggers) {
-        if (contentLower.includes(trigger.condition.toLowerCase().replace(/_/g, " ")) ||
-            contentLower.includes(trigger.condition.toLowerCase())) {
+        if (containsWholeWord(contentLower, trigger.condition.toLowerCase().replace(/_/g, " ")) ||
+            containsWholeWord(contentLower, trigger.condition.toLowerCase())) {
           augmentations.push({
             conscience_value: value,
             augments: "autonomy_envelope.escalation_triggers",
