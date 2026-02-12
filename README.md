@@ -154,10 +154,12 @@ Thinking blocks differ by provider. AIP abstracts extraction:
 
 | Provider | Source | Confidence |
 |----------|--------|------------|
-| Anthropic | `thinking` content blocks | 1.0 |
-| OpenAI | `reasoning_content` field | 0.9 |
-| Google | Gemini thinking blocks | 0.9 |
+| Anthropic | `thinking` content blocks (+ SSE stream fallback) | 1.0 |
+| OpenAI | `reasoning_content` field (+ SSE stream fallback) | 0.9 |
+| Google | Gemini thinking blocks (+ SSE stream fallback) | 0.9 |
 | Fallback | Regex-based extraction | 0.3 |
+
+All adapters attempt SSE stream extraction as a fallback when standard JSON parsing fails (v0.1.3+). This allows analysis of streamed responses captured by gateway proxies.
 
 ## What AIP Does Not Do
 
@@ -268,7 +270,7 @@ import {
 
 ## Status
 
-**Current Version**: 0.1.1 (Draft)
+**Current Version**: 0.1.3
 
 | Component | Status |
 |-----------|--------|

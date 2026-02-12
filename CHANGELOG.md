@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-02-12
+
+### Fixed
+- `client.check()` now tries SSE stream extraction as fallback when standard JSON parsing fails
+- Word-boundary agreement matching prevents false positives (e.g., `"execute"` no longer matches `"exec"`)
+
+### Changed
+- All provider adapters (Anthropic, OpenAI, Google) attempt SSE stream extraction as fallback
+- Python package bumped to 0.1.3 for coordinated release
+
+## [0.1.2] - 2026-02-11
+
+### Changed
+- Improved npm package metadata
+
 ## [0.1.1] - 2026-02-11
 
 ### Added
