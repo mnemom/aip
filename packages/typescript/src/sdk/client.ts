@@ -80,7 +80,10 @@ export function createClient(config: AIPConfig): AIPClient {
         ? registry.get(provider)
         : registry.detectFromUrl(config.analysis_llm.base_url);
 
-      const thinking = adapter.extractThinking(responseBody);
+      // Try non-streaming JSON extraction first, then SSE stream extraction
+      const thinking =
+        adapter.extractThinking(responseBody) ??
+        adapter.extractThinkingFromStream(responseBody);
 
       if (!thinking) {
         // No thinking block found — return synthetic clear signal.
