@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-02-12
+
+### Added
+- Enriched analysis context: value descriptions and `agent_description` field flow to the analysis model
+- `taskContext` parameter on `check()` (TypeScript) / `task_context` (Python) for caller-provided, PII-safe task context
+- `IMPORTANT EVALUATION PRINCIPLES` section in analysis prompt — evaluates behavioral intent not topic content
+
+### Changed
+- Card summary uses expanded format when value descriptions are present, falls back to compact for backward compat
+- Lower severity for short/ambiguous thinking blocks
+- Source pivoting recognized as normal adaptive behavior
+
 ## [0.1.3] - 2026-02-12
 
 ### Fixed
