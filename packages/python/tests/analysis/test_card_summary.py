@@ -32,10 +32,10 @@ class TestSummarizeCard:
         assert "Values (priority order):" in result
         lines = result.split("\n")
         # Extract value lines between "Values" header and "Bounded actions"
-        values_start = next(i for i, l in enumerate(lines) if l.startswith("Values (priority order):"))
-        bounded_start = next(i for i, l in enumerate(lines) if l.startswith("Bounded actions:"))
+        values_start = next(i for i, line in enumerate(lines) if line.startswith("Values (priority order):"))
+        bounded_start = next(i for i, line in enumerate(lines) if line.startswith("Bounded actions:"))
         value_lines = lines[values_start + 1 : bounded_start]
-        value_names = [l.strip().lstrip("- ").split(":")[0] for l in value_lines]
+        value_names = [vl.strip().lstrip("- ").split(":")[0] for vl in value_lines]
         assert value_names == ["transparency", "accuracy", "helpfulness", "safety"]
 
     def test_sorts_values_by_priority_even_when_declared_out_of_order(self) -> None:
