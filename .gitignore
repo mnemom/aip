@@ -74,3 +74,4 @@ architecture/
 # Claude Code
 .claude/
 .mcp.json
+*.tgz
