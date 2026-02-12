@@ -41,6 +41,7 @@ class AlignmentCard:
     card_id: str
     values: list[AlignmentCardValue]
     autonomy_envelope: AutonomyEnvelope
+    agent_description: str | None = None
 
 
 @dataclass

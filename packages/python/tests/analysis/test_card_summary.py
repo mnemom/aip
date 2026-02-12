@@ -28,7 +28,15 @@ class TestSummarizeCard:
     def test_lists_values_in_priority_order_ascending(self) -> None:
         result = summarize_card(FULL_CARD)
         # FULL_CARD has transparency(1), accuracy(2), helpfulness(3), safety(4)
-        assert "Values (priority order): transparency, accuracy, helpfulness, safety" in result
+        # Values have descriptions so expanded format is used
+        assert "Values (priority order):" in result
+        lines = result.split("\n")
+        # Extract value lines between "Values" header and "Bounded actions"
+        values_start = next(i for i, l in enumerate(lines) if l.startswith("Values (priority order):"))
+        bounded_start = next(i for i, l in enumerate(lines) if l.startswith("Bounded actions:"))
+        value_lines = lines[values_start + 1 : bounded_start]
+        value_names = [l.strip().lstrip("- ").split(":")[0] for l in value_lines]
+        assert value_names == ["transparency", "accuracy", "helpfulness", "safety"]
 
     def test_sorts_values_by_priority_even_when_declared_out_of_order(self) -> None:
         card = AlignmentCard(
@@ -92,7 +100,54 @@ class TestSummarizeCard:
         lines = result.split("\n")
         assert lines[0] == "ALIGNMENT CARD SUMMARY (card_id: ac-test-full)"
         assert lines[1].startswith("Values (priority order):")
-        assert lines[2].startswith("Bounded actions:")
-        assert lines[3].startswith("Forbidden actions:")
-        assert lines[4] == "Escalation triggers:"
-        assert lines[5].startswith("  -")
+        # FULL_CARD has descriptions, so expanded value lines follow
+        assert lines[2].startswith("  - transparency:")
+        assert lines[3].startswith("  - accuracy:")
+        assert lines[4].startswith("  - helpfulness:")
+        assert lines[5].startswith("  - safety:")
+        assert lines[6].startswith("Bounded actions:")
+        assert lines[7].startswith("Forbidden actions:")
+        assert lines[8] == "Escalation triggers:"
+        assert lines[9].startswith("  -")
+
+    def test_includes_agent_description(self) -> None:
+        card = AlignmentCard(
+            card_id="ac-agent-desc",
+            values=[AlignmentCardValue(name="accuracy", priority=1)],
+            autonomy_envelope=AutonomyEnvelope(),
+            agent_description="Independent AI correspondent",
+        )
+        result = summarize_card(card)
+        assert "Agent: Independent AI correspondent" in result
+
+    def test_omits_agent_line_when_no_description(self) -> None:
+        result = summarize_card(MINIMAL_CARD)
+        assert "Agent:" not in result
+
+    def test_expanded_format_with_value_descriptions(self) -> None:
+        card = AlignmentCard(
+            card_id="ac-expanded",
+            values=[
+                AlignmentCardValue(name="accuracy", priority=1, description="Provide verified information"),
+                AlignmentCardValue(name="safety", priority=2),
+                AlignmentCardValue(name="helpfulness", priority=3, description="Be genuinely helpful"),
+            ],
+            autonomy_envelope=AutonomyEnvelope(),
+        )
+        result = summarize_card(card)
+        assert "  - accuracy: Provide verified information" in result
+        assert "  - safety" in result
+        assert "  - helpfulness: Be genuinely helpful" in result
+
+    def test_compact_format_without_descriptions(self) -> None:
+        card = AlignmentCard(
+            card_id="ac-compact",
+            values=[
+                AlignmentCardValue(name="honesty", priority=1),
+                AlignmentCardValue(name="clarity", priority=2),
+                AlignmentCardValue(name="safety", priority=3),
+            ],
+            autonomy_envelope=AutonomyEnvelope(),
+        )
+        result = summarize_card(card)
+        assert "Values (priority order): honesty, clarity, safety" in result

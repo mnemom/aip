@@ -170,6 +170,30 @@ describe("check() — with thinking block", () => {
   });
 });
 
+// ── check() — taskContext parameter ──────────────────────────────────────────
+
+describe("check() — taskContext parameter", () => {
+  let client: AIPClient;
+
+  beforeEach(() => {
+    client = createClient(makeConfig());
+  });
+
+  it("should accept taskContext parameter", async () => {
+    mockFetchWithVerdict(VERDICT_CLEAR);
+
+    const signal = await client.check(
+      ANTHROPIC_JSON_WITH_THINKING,
+      "anthropic",
+      "Researching articles",
+    );
+
+    expect(signal).toBeDefined();
+    expect(signal.checkpoint.verdict).toBe("clear");
+    expect(signal.proceed).toBe(true);
+  });
+});
+
 // ── Callbacks ───────────────────────────────────────────────────────────────
 
 describe("callbacks", () => {

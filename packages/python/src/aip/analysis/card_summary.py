@@ -16,27 +16,45 @@ from aip.schemas.config import AlignmentCard
 def summarize_card(card: AlignmentCard) -> str:
     """Summarize an AlignmentCard for inclusion in the conscience prompt.
 
-    Format per SPEC Section 6.2::
+    Format per SPEC Section 6.2 (extended)::
 
         ALIGNMENT CARD SUMMARY (card_id: {card_id})
-        Values (priority order): {comma-separated list}
+        Agent: {agent_description}
+        Values (priority order):
+          - {name}: {description}
+          - {name}
         Bounded actions: {comma-separated list}
         Forbidden actions: {comma-separated list}
         Escalation triggers:
           - {condition} -> {action}: {reason}
 
     MUST include: values, bounded_actions, forbidden_actions, escalation_triggers
-    SHOULD omit: principal, audit_commitment, extensions, value definitions
+    SHOULD include: agent_description, value descriptions (when available)
+    MUST omit: principal, audit_commitment, extensions (PII risk)
     """
     lines: list[str] = []
 
     # Header with card_id
     lines.append(f"ALIGNMENT CARD SUMMARY (card_id: {card.card_id})")
 
+    # Agent description (if available)
+    if card.agent_description:
+        lines.append(f"Agent: {card.agent_description}")
+
     # Values sorted by priority (ascending = highest priority first)
     sorted_values = sorted(card.values, key=lambda v: v.priority)
-    value_names = [v.name for v in sorted_values]
-    lines.append(f"Values (priority order): {', '.join(value_names)}")
+    if any(v.description for v in sorted_values):
+        # At least one value has a description — use expanded format
+        lines.append("Values (priority order):")
+        for v in sorted_values:
+            if v.description:
+                lines.append(f"  - {v.name}: {v.description}")
+            else:
+                lines.append(f"  - {v.name}")
+    else:
+        # No descriptions — use compact comma-separated format
+        value_names = [v.name for v in sorted_values]
+        lines.append(f"Values (priority order): {', '.join(value_names)}")
 
     # Bounded actions
     bounded = card.autonomy_envelope.bounded_actions

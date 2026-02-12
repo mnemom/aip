@@ -75,6 +75,9 @@ export interface AlignmentCard {
   /** Autonomy envelope defining permitted and forbidden actions */
   autonomy_envelope: AutonomyEnvelope;
 
+  /** Optional description of the agent's role/purpose for integrity analysis context */
+  agent_description?: string;
+
   /** Allow additional fields from the full AAP AlignmentCard */
   [key: string]: unknown;
 }

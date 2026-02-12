@@ -28,7 +28,7 @@ import {
 /** Public AIP client interface */
 export interface AIPClient {
   /** Perform an integrity check on a provider response body */
-  check(responseBody: string, provider?: string): Promise<IntegritySignal>;
+  check(responseBody: string, provider?: string, taskContext?: string): Promise<IntegritySignal>;
   /** Get current window state */
   getWindowState(): WindowState;
   /** Reset the session window */
@@ -72,6 +72,7 @@ export function createClient(config: AIPConfig): AIPClient {
     async check(
       responseBody: string,
       provider?: string,
+      taskContext?: string,
     ): Promise<IntegritySignal> {
       if (destroyed) throw new Error("AIP client has been destroyed");
 
@@ -97,6 +98,7 @@ export function createClient(config: AIPConfig): AIPClient {
         conscienceValues,
         windowContext: window.getState().checkpoints,
         thinkingBlock: thinking.content,
+        taskContext,
       });
 
       // 3. Call analysis LLM

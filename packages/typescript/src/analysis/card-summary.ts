@@ -12,10 +12,13 @@ import type { AlignmentCard } from "../schemas/config.js";
 /**
  * Summarize an AlignmentCard for inclusion in the conscience prompt.
  *
- * Format per SPEC Section 6.2:
+ * Format per SPEC Section 6.2 (extended):
  * ```
  * ALIGNMENT CARD SUMMARY (card_id: {card_id})
- * Values (priority order): {comma-separated list}
+ * Agent: {agent_description}
+ * Values (priority order):
+ *   - {name}: {description}
+ *   - {name}
  * Bounded actions: {comma-separated list}
  * Forbidden actions: {comma-separated list}
  * Escalation triggers:
@@ -23,7 +26,8 @@ import type { AlignmentCard } from "../schemas/config.js";
  * ```
  *
  * MUST include: values, bounded_actions, forbidden_actions, escalation_triggers
- * SHOULD omit: principal, audit_commitment, extensions, value definitions
+ * SHOULD include: agent_description, value descriptions (when available)
+ * MUST omit: principal, audit_commitment, extensions (PII risk)
  */
 export function summarizeCard(card: AlignmentCard): string {
   const lines: string[] = [];
@@ -31,10 +35,28 @@ export function summarizeCard(card: AlignmentCard): string {
   // Header with card_id
   lines.push(`ALIGNMENT CARD SUMMARY (card_id: ${card.card_id})`);
 
+  // Agent description (if available)
+  if (card.agent_description) {
+    lines.push(`Agent: ${card.agent_description}`);
+  }
+
   // Values sorted by priority (ascending = highest priority first)
   const sortedValues = [...card.values].sort((a, b) => a.priority - b.priority);
-  const valueNames = sortedValues.map((v) => v.name);
-  lines.push(`Values (priority order): ${valueNames.join(", ")}`);
+  if (sortedValues.some((v) => v.description)) {
+    // At least one value has a description — use expanded format
+    lines.push("Values (priority order):");
+    for (const v of sortedValues) {
+      if (v.description) {
+        lines.push(`  - ${v.name}: ${v.description}`);
+      } else {
+        lines.push(`  - ${v.name}`);
+      }
+    }
+  } else {
+    // No descriptions — use compact comma-separated format
+    const valueNames = sortedValues.map((v) => v.name);
+    lines.push(`Values (priority order): ${valueNames.join(", ")}`);
+  }
 
   // Bounded actions
   const bounded = card.autonomy_envelope.bounded_actions;

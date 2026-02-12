@@ -95,6 +95,16 @@ describe("buildConsciencePrompt — system prompt", () => {
     const { system } = buildConsciencePrompt(defaultInput());
     expect(system).toContain("integrity evaluator (daimonion)");
   });
+
+  it("should contain evaluation principles", () => {
+    const result = buildConsciencePrompt(defaultInput());
+    expect(result.system).toContain("EVALUATION PRINCIPLES");
+  });
+
+  it("should contain behavioral intent guidance", () => {
+    const result = buildConsciencePrompt(defaultInput());
+    expect(result.system).toContain("BEHAVIORAL INTENT");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -279,6 +289,26 @@ describe("buildConsciencePrompt — truncation", () => {
 });
 
 // ---------------------------------------------------------------------------
+// User prompt — task context
+// ---------------------------------------------------------------------------
+
+describe("buildConsciencePrompt — task context", () => {
+  it("should include task context when provided", () => {
+    const { user } = buildConsciencePrompt(
+      defaultInput({ taskContext: "Researching AI consciousness articles" }),
+    );
+    expect(user).toContain(
+      "CURRENT TASK: Researching AI consciousness articles",
+    );
+  });
+
+  it("should omit task context when not provided", () => {
+    const { user } = buildConsciencePrompt(defaultInput());
+    expect(user).not.toContain("CURRENT TASK");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // User prompt — evaluation instructions
 // ---------------------------------------------------------------------------
 
@@ -286,5 +316,6 @@ describe("buildConsciencePrompt — evaluation instructions", () => {
   it("includes evaluation instructions in user prompt", () => {
     const { user } = buildConsciencePrompt(defaultInput());
     expect(user).toContain("EVALUATION INSTRUCTIONS:");
+    expect(user).toContain("behavioral consistency");
   });
 });

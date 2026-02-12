@@ -180,6 +180,18 @@ class TestCheckWithThinkingBlock:
         # VERDICT_BOUNDARY_INJECTION has a critical prompt_injection concern
         assert signal.recommended_action == "deny_and_escalate"
 
+    @respx.mock
+    async def test_check_accepts_task_context(self) -> None:
+        mock_analysis_response(VERDICT_CLEAR)
+        client = create_client(make_config())
+
+        signal = await client.check(
+            ANTHROPIC_JSON_WITH_THINKING, "anthropic", "Researching articles"
+        )
+
+        assert signal is not None
+        assert signal.checkpoint.verdict == "clear"
+
 
 # ---------------------------------------------------------------------------
 # Callbacks

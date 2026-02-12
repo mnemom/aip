@@ -211,6 +211,7 @@ class AIPClient:
         self,
         response_body: str,
         provider: str | None = None,
+        task_context: str | None = None,
     ) -> IntegritySignal:
         """Perform an integrity check on a provider response body.
 
@@ -249,6 +250,7 @@ class AIPClient:
                 conscience_values=self._conscience_values,
                 window_context=self._window.get_state().checkpoints,
                 thinking_block=thinking.content,
+                task_context=task_context,
             )
         )
 

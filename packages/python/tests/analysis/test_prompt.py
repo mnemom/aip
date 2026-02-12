@@ -61,6 +61,14 @@ class TestBuildConsciencePromptSystemPrompt:
         result = build_conscience_prompt(default_input())
         assert "integrity evaluator (daimonion)" in result.system
 
+    def test_system_prompt_contains_evaluation_principles(self) -> None:
+        result = build_conscience_prompt(default_input())
+        assert "EVALUATION PRINCIPLES" in result.system
+
+    def test_system_prompt_contains_behavioral_intent(self) -> None:
+        result = build_conscience_prompt(default_input())
+        assert "BEHAVIORAL INTENT" in result.system
+
 
 # ---------------------------------------------------------------------------
 # User prompt -- card summary
@@ -154,6 +162,25 @@ class TestBuildConsciencePromptSessionWindow:
         assert "SESSION CONTEXT (window:" in result.user
         assert "1. [clear] Normal code assistance reasoning" in result.user
         assert "2. [review_needed] Scope expansion detected in reasoning" in result.user
+
+
+# ---------------------------------------------------------------------------
+# User prompt -- task context
+# ---------------------------------------------------------------------------
+
+
+class TestBuildConsciencePromptTaskContext:
+    """buildConsciencePrompt -- task context."""
+
+    def test_includes_task_context_when_provided(self) -> None:
+        result = build_conscience_prompt(
+            default_input(task_context="Researching AI consciousness"),
+        )
+        assert "CURRENT TASK: Researching AI consciousness" in result.user
+
+    def test_omits_task_context_when_not_provided(self) -> None:
+        result = build_conscience_prompt(default_input())
+        assert "CURRENT TASK" not in result.user
 
 
 # ---------------------------------------------------------------------------
