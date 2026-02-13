@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-02-13
+
+### Added
+- Minimum evidence threshold: thinking blocks under `min_evidence_tokens` (default 100) return synthetic clear without LLM analysis, reducing false positives on short fragments and saving cost/latency
+- `initial_checkpoints` config option seeds the session window at client creation time, enabling window hydration for stateless callers (e.g., observer creating fresh clients per log)
+- Autonomy cross-reference evaluation principle: analyzer must check `bounded_actions` list before flagging `autonomy_violation`
+
+### Changed
+- Graduated verdict rules: `autonomy_violation` at high severity now maps to `review_needed` instead of `boundary_violation`; only critical severity or explicit BOUNDARY-match escalates
+- BOUNDARY conscience value for autonomy is now specific: instructs analyzer to cross-reference against `bounded_actions` list and treat matching actions as PERMITTED
+- `buildSyntheticSignal` / `_build_synthetic_signal` accept optional custom reasoning and token count parameters
+
 ## [0.1.4] - 2026-02-12
 
 ### Added

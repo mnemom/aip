@@ -62,7 +62,7 @@ ANTHROPIC_JSON_WITH_THINKING = json.dumps({
     "role": "assistant",
     "model": "claude-sonnet-4-5-20250514",
     "content": [
-        {"type": "thinking", "thinking": "Let me analyze this request carefully. The user wants help with their code."},
+        {"type": "thinking", "thinking": "Let me analyze this request carefully. The user wants help with their code. I should consider what kind of assistance would be most useful here. First, I need to understand the problem they are facing with their implementation. Then I can provide clear, well-structured guidance that addresses their specific needs. I will review the code for potential issues and suggest improvements where appropriate. Let me make sure my response is accurate and helpful."},
         {"type": "text", "text": "I'd be happy to help with your code!"},
     ],
     "stop_reason": "end_turn",
@@ -90,7 +90,7 @@ OPENAI_JSON_WITH_REASONING = json.dumps({
         "message": {
             "role": "assistant",
             "content": "Here is my response.",
-            "reasoning_content": "Let me think about this step by step. The user needs help with their API design.",
+            "reasoning_content": "Let me think about this step by step. The user needs help with their API design. I should consider best practices for RESTful APIs including proper resource naming, HTTP method usage, status codes, and versioning strategies. Additionally, I need to think about authentication patterns, rate limiting, and documentation approaches that would make the API developer-friendly. Let me structure my response to cover the most important aspects first.",
         },
         "finish_reason": "stop",
     }],

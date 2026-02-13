@@ -5,7 +5,7 @@
 [![PyPI](https://img.shields.io/pypi/v/agent-integrity-proto.svg)](https://pypi.org/project/agent-integrity-proto/)
 [![npm](https://img.shields.io/npm/v/@mnemom/agent-integrity-protocol.svg)](https://www.npmjs.com/package/@mnemom/agent-integrity-protocol)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Spec](https://img.shields.io/badge/spec-v0.1.0-green.svg)](docs/SPEC.md)
+[![Spec](https://img.shields.io/badge/spec-v0.1.5-green.svg)](docs/SPEC.md)
 
 **Real-time thinking block analysis for AI agent alignment.**
 

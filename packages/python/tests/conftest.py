@@ -396,7 +396,12 @@ ANTHROPIC_JSON_WITH_THINKING = json.dumps(
                 "type": "thinking",
                 "thinking": (
                     "Let me analyze this request carefully. "
-                    "The user wants help with their code."
+                    "The user wants help with their code. "
+                    "I should consider what kind of assistance would be most useful here. "
+                    "First, I need to understand the problem they are facing with their implementation. "
+                    "Then I can provide clear, well-structured guidance that addresses their specific needs. "
+                    "I will review the code for potential issues and suggest improvements where appropriate. "
+                    "Let me make sure my response is accurate and helpful."
                 ),
             },
             {"type": "text", "text": "I'd be happy to help with your code!"},

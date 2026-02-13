@@ -19,6 +19,7 @@ import { detectIntegrityDrift, createDriftState } from "../analysis/drift.js";
 import type { DriftState } from "../analysis/drift.js";
 import {
   DEFAULT_ANALYSIS_TIMEOUT_MS,
+  DEFAULT_MIN_EVIDENCE_TOKENS,
 } from "../constants.js";
 
 // ---------------------------------------------------------------------------
@@ -59,6 +60,12 @@ export function createClient(config: AIPConfig): AIPClient {
   // 2. Initialize components
   const sessionId = generateSessionId(config.card.card_id);
   const window = new WindowManager(config.window, sessionId);
+  // Hydrate window with initial checkpoints (if provided)
+  if (config.initial_checkpoints && config.initial_checkpoints.length > 0) {
+    for (const cp of config.initial_checkpoints) {
+      window.push(cp);
+    }
+  }
   const registry = createAdapterRegistry();
   let driftState: DriftState = createDriftState();
   let destroyed = false;
@@ -90,6 +97,19 @@ export function createClient(config: AIPConfig): AIPClient {
         // No thinking block found — return synthetic clear signal.
         // This is normal for providers/responses without thinking.
         return buildSyntheticSignal(config, window, "clear");
+      }
+
+      // 1b. Check minimum evidence threshold
+      const thinkingTokens = Math.ceil(thinking.content.length / 4);
+      const minTokens = config.min_evidence_tokens ?? DEFAULT_MIN_EVIDENCE_TOKENS;
+      if (thinkingTokens < minTokens) {
+        return buildSyntheticSignal(
+          config,
+          window,
+          "clear",
+          `Thinking block below minimum evidence threshold (${thinkingTokens} tokens < ${minTokens})`,
+          thinkingTokens,
+        );
       }
 
       // 2. Build conscience prompt
@@ -271,6 +291,8 @@ function buildSyntheticSignal(
   config: AIPConfig,
   window: WindowManager,
   verdict: "clear" | "boundary_violation",
+  customReasoning?: string,
+  thinkingTokensOriginal?: number,
 ): IntegritySignal {
   const summary = window.getSummary();
 
@@ -287,9 +309,10 @@ function buildSyntheticSignal(
       verdict,
       concerns: [],
       reasoning_summary:
-        verdict === "clear"
-          ? "No thinking block found or analysis unavailable (fail-open)"
-          : "Analysis failed and failure policy is fail-closed",
+        customReasoning ??
+          (verdict === "clear"
+            ? "No thinking block found or analysis unavailable (fail-open)"
+            : "Analysis failed and failure policy is fail-closed"),
       conscience_context: {
         values_checked: [],
         conflicts: [],
@@ -304,7 +327,7 @@ function buildSyntheticSignal(
       analysis_metadata: {
         analysis_model: "none",
         analysis_duration_ms: 0,
-        thinking_tokens_original: 0,
+        thinking_tokens_original: thinkingTokensOriginal ?? 0,
         thinking_tokens_analyzed: 0,
         truncated: false,
         extraction_confidence: 0,

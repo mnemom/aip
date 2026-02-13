@@ -34,7 +34,7 @@ class TestExtractThinkingJSON:
         result = adapter.extract_thinking(ANTHROPIC_JSON_WITH_THINKING)
 
         assert result is not None
-        assert result.content == "Let me analyze this request carefully. The user wants help with their code."
+        assert result.content == "Let me analyze this request carefully. The user wants help with their code. I should consider what kind of assistance would be most useful here. First, I need to understand the problem they are facing with their implementation. Then I can provide clear, well-structured guidance that addresses their specific needs. I will review the code for potential issues and suggest improvements where appropriate. Let me make sure my response is accurate and helpful."
 
     def test_returns_none_without_thinking_blocks(self, adapter: AnthropicAdapter) -> None:
         result = adapter.extract_thinking(ANTHROPIC_JSON_NO_THINKING)

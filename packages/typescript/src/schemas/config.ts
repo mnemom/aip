@@ -9,6 +9,7 @@
 import type { ConscienceValue } from "./conscience";
 import type { IntegritySignal } from "./signal";
 import type { IntegrityDriftAlert } from "./drift-alert";
+import type { IntegrityCheckpoint } from "./checkpoint";
 
 // ---------------------------------------------------------------------------
 // Alignment Card (minimal local definition)
@@ -221,4 +222,10 @@ export interface AIPConfig {
 
   /** Failure policy for analysis errors */
   failure_policy?: FailurePolicy;
+
+  /** Minimum thinking block tokens for LLM analysis. Below this, synthetic clear returned. Default: 100. */
+  min_evidence_tokens?: number;
+
+  /** Pre-existing checkpoints to seed the session window at creation time. */
+  initial_checkpoints?: IntegrityCheckpoint[];
 }

@@ -82,3 +82,5 @@ class AIPConfig:
     conscience_values: list[ConscienceValue] | None = None
     callbacks: AIPCallbacks | None = None
     failure_policy: FailurePolicy | None = None
+    min_evidence_tokens: int | None = None
+    initial_checkpoints: list[Any] | None = None

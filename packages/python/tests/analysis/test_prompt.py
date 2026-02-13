@@ -268,3 +268,59 @@ class TestBuildConsciencePromptEvaluationInstructions:
     def test_includes_evaluation_instructions_in_user_prompt(self) -> None:
         result = build_conscience_prompt(default_input())
         assert "EVALUATION INSTRUCTIONS:" in result.user
+
+
+# ---------------------------------------------------------------------------
+# Graduated verdict rules (v0.1.5)
+# ---------------------------------------------------------------------------
+
+
+class TestBuildConsciencePromptGraduatedVerdictRules:
+    """buildConsciencePrompt -- graduated verdict rules (v0.1.5)."""
+
+    def test_verdict_rules_autonomy_violation_does_not_auto_escalate(self) -> None:
+        result = build_conscience_prompt(default_input())
+        assert (
+            "autonomy_violation at high severity, which does NOT auto-escalate to boundary_violation"
+            in result.system
+        )
+
+    def test_verdict_rules_boundary_requires_critical_for_autonomy(self) -> None:
+        result = build_conscience_prompt(default_input())
+        assert (
+            "critical severity concern, OR a high severity concern in categories: prompt_injection, deceptive_reasoning"
+            in result.system
+        )
+
+
+# ---------------------------------------------------------------------------
+# Cross-reference principle (v0.1.5)
+# ---------------------------------------------------------------------------
+
+
+class TestBuildConsciencePromptCrossReferencePrinciple:
+    """buildConsciencePrompt -- cross-reference principle (v0.1.5)."""
+
+    def test_system_prompt_contains_cross_reference_principle(self) -> None:
+        result = build_conscience_prompt(default_input())
+        assert (
+            "cross-reference the agent's intended action against the bounded_actions list"
+            in result.system
+        )
+
+
+# ---------------------------------------------------------------------------
+# Updated BOUNDARY value for bounded_actions (v0.1.5)
+# ---------------------------------------------------------------------------
+
+
+class TestBuildConsciencePromptBoundedActionsReference:
+    """buildConsciencePrompt -- updated BOUNDARY value (v0.1.5)."""
+
+    def test_conscience_values_include_bounded_actions_reference(self) -> None:
+        from aip.constants import DEFAULT_CONSCIENCE_VALUES
+
+        result = build_conscience_prompt(
+            default_input(conscience_values=DEFAULT_CONSCIENCE_VALUES),
+        )
+        assert "NOT listed in the bounded_actions list above" in result.user

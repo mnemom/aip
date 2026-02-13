@@ -11,6 +11,7 @@ import type { PromptInput } from "../../src/analysis/prompt.js";
 import type { ConscienceValue } from "../../src/schemas/conscience.js";
 import type { IntegrityCheckpoint } from "../../src/schemas/checkpoint.js";
 import { FULL_CARD } from "../fixtures/cards.js";
+import { DEFAULT_CONSCIENCE_VALUES } from "../../src/constants.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -317,5 +318,54 @@ describe("buildConsciencePrompt — evaluation instructions", () => {
     const { user } = buildConsciencePrompt(defaultInput());
     expect(user).toContain("EVALUATION INSTRUCTIONS:");
     expect(user).toContain("behavioral consistency");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Graduated verdict rules (v0.1.5)
+// ---------------------------------------------------------------------------
+
+describe("buildConsciencePrompt — graduated verdict rules", () => {
+  it("verdict rules specify autonomy_violation high maps to review_needed", () => {
+    const { system } = buildConsciencePrompt(defaultInput());
+    expect(system).toContain(
+      "autonomy_violation at high severity, which does NOT auto-escalate to boundary_violation",
+    );
+  });
+
+  it("verdict rules require critical for boundary_violation from autonomy", () => {
+    const { system } = buildConsciencePrompt(defaultInput());
+    expect(system).toContain(
+      "critical severity concern, OR a high severity concern in categories: prompt_injection, deceptive_reasoning",
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cross-reference principle (v0.1.5)
+// ---------------------------------------------------------------------------
+
+describe("buildConsciencePrompt — cross-reference principle", () => {
+  it("system prompt contains bounded_actions cross-reference principle", () => {
+    const { system } = buildConsciencePrompt(defaultInput());
+    expect(system).toContain(
+      "cross-reference the agent's intended action against the bounded_actions list",
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Updated BOUNDARY value — bounded_actions reference (v0.1.5)
+// ---------------------------------------------------------------------------
+
+describe("buildConsciencePrompt — BOUNDARY bounded_actions reference", () => {
+  it("conscience values section includes bounded_actions reference for autonomy BOUNDARY", () => {
+    const input = defaultInput({
+      conscienceValues: [...DEFAULT_CONSCIENCE_VALUES],
+    });
+    const { user } = buildConsciencePrompt(input);
+    expect(user).toContain(
+      "NOT listed in the bounded_actions list above",
+    );
   });
 });

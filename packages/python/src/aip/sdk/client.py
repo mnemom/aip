@@ -11,6 +11,7 @@ Port of packages/typescript/src/sdk/client.ts
 from __future__ import annotations
 
 import inspect
+import math
 import time
 from datetime import datetime, timezone
 from typing import Any
@@ -28,7 +29,7 @@ from aip.analysis.engine import (
     hash_thinking_block,
 )
 from aip.analysis.prompt import PromptInput, build_conscience_prompt
-from aip.constants import DEFAULT_ANALYSIS_TIMEOUT_MS
+from aip.constants import DEFAULT_ANALYSIS_TIMEOUT_MS, DEFAULT_MIN_EVIDENCE_TOKENS
 from aip.schemas.checkpoint import (
     AnalysisMetadata,
     IntegrityCheckpoint,
@@ -123,11 +124,13 @@ def _build_synthetic_signal(
     config: AIPConfig,
     window: WindowManager,
     verdict: IntegrityVerdict,
+    custom_reasoning: str | None = None,
+    thinking_tokens_original: int = 0,
 ) -> IntegritySignal:
     """Build a synthetic signal for cases where no analysis was performed."""
     summary = window.get_summary()
 
-    reasoning = (
+    reasoning = custom_reasoning or (
         "No thinking block found or analysis unavailable (fail-open)"
         if verdict == "clear"
         else "Analysis failed and failure policy is fail-closed"
@@ -159,7 +162,7 @@ def _build_synthetic_signal(
         analysis_metadata=AnalysisMetadata(
             analysis_model="none",
             analysis_duration_ms=0,
-            thinking_tokens_original=0,
+            thinking_tokens_original=thinking_tokens_original,
             thinking_tokens_analyzed=0,
             truncated=False,
             extraction_confidence=0,
@@ -242,6 +245,18 @@ class AIPClient:
             # No thinking block found -- return synthetic clear signal.
             # This is normal for providers/responses without thinking.
             return _build_synthetic_signal(self._config, self._window, "clear")
+
+        # 1b. Check minimum evidence threshold
+        thinking_tokens = math.ceil(len(thinking.content) / 4)
+        min_tokens = self._config.min_evidence_tokens or DEFAULT_MIN_EVIDENCE_TOKENS
+        if thinking_tokens < min_tokens:
+            return _build_synthetic_signal(
+                self._config,
+                self._window,
+                "clear",
+                custom_reasoning=f"Thinking block below minimum evidence threshold ({thinking_tokens} tokens < {min_tokens})",
+                thinking_tokens_original=thinking_tokens,
+            )
 
         # 2. Build conscience prompt
         prompt = build_conscience_prompt(
@@ -376,6 +391,12 @@ def create_client(config: AIPConfig) -> AIPClient:
     # 2. Initialize components
     session_id = _generate_session_id(config.card.card_id)
     window = WindowManager(config.window, session_id)
+
+    # Hydrate window with initial checkpoints (if provided)
+    if config.initial_checkpoints:
+        for cp in config.initial_checkpoints:
+            window.push(cp)
+
     registry = create_adapter_registry()
     drift_state = create_drift_state()
 

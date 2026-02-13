@@ -683,10 +683,9 @@ describe("E2E Pipeline", () => {
 
       // Verify that individual distinctive words from the thinking content
       // do not appear in the checkpoint (extra paranoia check)
-      // The thinking content is: "Let me analyze this request carefully. The user wants help with their code."
       // Only check multi-word phrases to avoid false positives from single common words
       expect(serialized).not.toContain("analyze this request carefully");
-      expect(serialized).not.toContain("user wants help with their code");
+      expect(serialized).not.toContain("evaluate alternative design patterns");
     });
   });
 

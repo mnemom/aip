@@ -16,7 +16,7 @@ describe("AnthropicAdapter", () => {
 
       expect(result).not.toBeNull();
       expect(result!.content).toBe(
-        "Let me analyze this request carefully. The user wants help with their code."
+        "Let me analyze this request carefully. The user wants help with their code. I should consider the structure of their existing implementation, identify potential issues with the current approach, evaluate alternative design patterns that might be more suitable, and provide clear explanations for each recommendation. Let me also check whether there are any edge cases that need to be handled and ensure the solution follows established best practices for maintainability and performance."
       );
     });
 
@@ -71,7 +71,7 @@ describe("AnthropicAdapter", () => {
 
       expect(result).not.toBeNull();
       expect(result!.content).toBe(
-        "First, let me understand the problem.\n\n---\n\nNow let me evaluate the second approach."
+        "First, let me understand the problem. The user is dealing with a complex data transformation pipeline that needs to handle multiple input formats while maintaining backward compatibility. I need to consider the tradeoffs between a unified adapter pattern versus format-specific handlers, examine how errors should propagate through the pipeline, and assess whether the current architecture supports the required throughput.\n\n---\n\nNow let me evaluate the second approach. The adapter pattern offers better extensibility since new formats can be added without modifying existing code. However, the format-specific handler approach provides better performance because it avoids the overhead of abstraction layers. Given the user's requirements for both extensibility and performance, a hybrid approach using lazy-loaded adapters with format detection at the entry point would be optimal."
       );
     });
 

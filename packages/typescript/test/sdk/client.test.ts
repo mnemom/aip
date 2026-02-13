@@ -331,3 +331,128 @@ describe("lifecycle", () => {
     ).rejects.toThrow("AIP client has been destroyed");
   });
 });
+
+// ── Minimum Evidence Threshold ──────────────────────────────────────────────
+
+const SHORT_THINKING_RESPONSE = JSON.stringify({
+  id: "msg_short",
+  type: "message",
+  role: "assistant",
+  model: "claude-sonnet-4-5-20250514",
+  content: [
+    { type: "thinking", thinking: "Okay, let me help." },
+    { type: "text", text: "Here is your answer." },
+  ],
+  stop_reason: "end_turn",
+  usage: { input_tokens: 50, output_tokens: 20 },
+});
+
+describe("check() — minimum evidence threshold", () => {
+  it("returns synthetic clear for thinking block below minimum evidence threshold", async () => {
+    const client = createClient(makeConfig());
+
+    const signal = await client.check(SHORT_THINKING_RESPONSE);
+
+    expect(signal.checkpoint.verdict).toBe("clear");
+    expect(signal.checkpoint.reasoning_summary).toContain(
+      "minimum evidence threshold",
+    );
+  });
+
+  it("includes correct token count in synthetic clear metadata", async () => {
+    const client = createClient(makeConfig());
+
+    const signal = await client.check(SHORT_THINKING_RESPONSE);
+
+    // "Okay, let me help." is 18 chars => ceil(18/4) = 5 tokens
+    expect(signal.checkpoint.analysis_metadata.thinking_tokens_original).toBeGreaterThan(0);
+    expect(signal.checkpoint.analysis_metadata.thinking_tokens_analyzed).toBe(0);
+  });
+
+  it("respects custom min_evidence_tokens config", async () => {
+    // A 50-char thinking block => ceil(50/4) = 13 tokens
+    const MEDIUM_THINKING_RESPONSE = JSON.stringify({
+      id: "msg_medium",
+      type: "message",
+      role: "assistant",
+      model: "claude-sonnet-4-5-20250514",
+      content: [
+        { type: "thinking", thinking: "Let me think about this problem step by step now." },
+        { type: "text", text: "Here is your answer." },
+      ],
+      stop_reason: "end_turn",
+      usage: { input_tokens: 50, output_tokens: 20 },
+    });
+
+    // With min_evidence_tokens: 10, a 13-token block should pass through
+    // (i.e., it should call the analysis LLM, not return synthetic)
+    mockFetchWithVerdict(VERDICT_CLEAR);
+    const clientLow = createClient(makeConfig({ min_evidence_tokens: 10 }));
+    const signalLow = await clientLow.check(MEDIUM_THINKING_RESPONSE);
+    // If it went through analysis, reasoning_summary comes from the mock verdict
+    expect(signalLow.checkpoint.reasoning_summary).not.toContain(
+      "minimum evidence threshold",
+    );
+
+    // With min_evidence_tokens: 500, the same block should be synthetic clear
+    const clientHigh = createClient(makeConfig({ min_evidence_tokens: 500 }));
+    const signalHigh = await clientHigh.check(MEDIUM_THINKING_RESPONSE);
+    expect(signalHigh.checkpoint.verdict).toBe("clear");
+    expect(signalHigh.checkpoint.reasoning_summary).toContain(
+      "minimum evidence threshold",
+    );
+  });
+});
+
+// ── Initial Checkpoints / Window Hydration ──────────────────────────────────
+
+describe("initial_checkpoints — window hydration", () => {
+  it("initial_checkpoints are loaded into window at creation time", () => {
+    const mockCheckpoint1 = {
+      checkpoint_id: "ic-test-1",
+      agent_id: "test-agent",
+      card_id: "ac-test-full",
+      session_id: "sess-test",
+      timestamp: new Date().toISOString(),
+      thinking_block_hash: "abc123",
+      provider: "anthropic",
+      model: "claude-sonnet-4-5-20250514",
+      verdict: "clear" as const,
+      concerns: [],
+      reasoning_summary: "All clear",
+      conscience_context: {
+        values_checked: [],
+        conflicts: [],
+        supports: [],
+        considerations: [],
+        consultation_depth: "surface" as const,
+      },
+      window_position: { index: 0, window_size: 1 },
+      analysis_metadata: {
+        analysis_model: "claude-3-5-haiku-20241022",
+        analysis_duration_ms: 100,
+        thinking_tokens_original: 200,
+        thinking_tokens_analyzed: 200,
+        truncated: false,
+        extraction_confidence: 1.0,
+      },
+      linked_trace_id: null,
+    };
+
+    const mockCheckpoint2 = {
+      ...mockCheckpoint1,
+      checkpoint_id: "ic-test-2",
+      window_position: { index: 1, window_size: 2 },
+    };
+
+    const client = createClient(
+      makeConfig({ initial_checkpoints: [mockCheckpoint1, mockCheckpoint2] }),
+    );
+
+    const state = client.getWindowState();
+    expect(state.size).toBe(2);
+    expect(state.checkpoints.length).toBe(2);
+    expect(state.checkpoints[0]!.checkpoint_id).toBe("ic-test-1");
+    expect(state.checkpoints[1]!.checkpoint_id).toBe("ic-test-2");
+  });
+});

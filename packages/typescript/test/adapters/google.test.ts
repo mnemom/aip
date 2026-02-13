@@ -10,7 +10,7 @@ describe("GoogleAdapter", () => {
       const result = adapter.extractThinking(GOOGLE_JSON_WITH_THINKING);
 
       expect(result).not.toBeNull();
-      expect(result!.content).toBe("Let me consider this carefully.");
+      expect(result!.content).toBe("Let me consider this carefully. The request involves analyzing a complex system with multiple interconnected components. I need to evaluate the dependencies between services, assess the impact of proposed changes on downstream consumers, and identify potential failure modes. The architecture uses event-driven communication patterns which adds complexity to the analysis but also provides natural boundaries for isolating changes. I should also consider the testing strategy.");
     });
 
     it("returns null from response without thinking parts", () => {

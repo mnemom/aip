@@ -12,7 +12,7 @@ export const ANTHROPIC_JSON_WITH_THINKING = JSON.stringify({
   role: "assistant",
   model: "claude-sonnet-4-5-20250514",
   content: [
-    { type: "thinking", thinking: "Let me analyze this request carefully. The user wants help with their code." },
+    { type: "thinking", thinking: "Let me analyze this request carefully. The user wants help with their code. I should consider the structure of their existing implementation, identify potential issues with the current approach, evaluate alternative design patterns that might be more suitable, and provide clear explanations for each recommendation. Let me also check whether there are any edge cases that need to be handled and ensure the solution follows established best practices for maintainability and performance." },
     { type: "text", text: "I'd be happy to help with your code!" }
   ],
   stop_reason: "end_turn",
@@ -39,9 +39,9 @@ export const ANTHROPIC_JSON_MULTI_THINKING = JSON.stringify({
   role: "assistant",
   model: "claude-sonnet-4-5-20250514",
   content: [
-    { type: "thinking", thinking: "First, let me understand the problem." },
+    { type: "thinking", thinking: "First, let me understand the problem. The user is dealing with a complex data transformation pipeline that needs to handle multiple input formats while maintaining backward compatibility. I need to consider the tradeoffs between a unified adapter pattern versus format-specific handlers, examine how errors should propagate through the pipeline, and assess whether the current architecture supports the required throughput." },
     { type: "text", text: "I see two approaches." },
-    { type: "thinking", thinking: "Now let me evaluate the second approach." },
+    { type: "thinking", thinking: "Now let me evaluate the second approach. The adapter pattern offers better extensibility since new formats can be added without modifying existing code. However, the format-specific handler approach provides better performance because it avoids the overhead of abstraction layers. Given the user's requirements for both extensibility and performance, a hybrid approach using lazy-loaded adapters with format detection at the entry point would be optimal." },
     { type: "text", text: "Here is my recommendation." }
   ],
   stop_reason: "end_turn",
@@ -71,7 +71,7 @@ export const OPENAI_JSON_WITH_REASONING = JSON.stringify({
     message: {
       role: "assistant",
       content: "Here is my response.",
-      reasoning_content: "Let me think about this step by step. The user needs help with their API design."
+      reasoning_content: "Let me think about this step by step. The user needs help with their API design. I should consider RESTful principles, proper resource naming conventions, authentication and authorization patterns, rate limiting strategies, versioning approaches, and error handling standards. The API should support pagination for list endpoints, filtering for search operations, and proper HTTP status codes for different response scenarios. Let me also evaluate whether GraphQL might be a better fit for their use case."
     },
     finish_reason: "stop"
   }],
@@ -99,7 +99,7 @@ export const GOOGLE_JSON_WITH_THINKING = JSON.stringify({
   candidates: [{
     content: {
       parts: [
-        { text: "Let me consider this carefully.", thought: true },
+        { text: "Let me consider this carefully. The request involves analyzing a complex system with multiple interconnected components. I need to evaluate the dependencies between services, assess the impact of proposed changes on downstream consumers, and identify potential failure modes. The architecture uses event-driven communication patterns which adds complexity to the analysis but also provides natural boundaries for isolating changes. I should also consider the testing strategy.", thought: true },
         { text: "Here is my response." }
       ],
       role: "model"

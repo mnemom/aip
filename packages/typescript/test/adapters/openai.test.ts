@@ -11,7 +11,7 @@ describe("OpenAIAdapter", () => {
 
       expect(result).not.toBeNull();
       expect(result!.content).toBe(
-        "Let me think about this step by step. The user needs help with their API design."
+        "Let me think about this step by step. The user needs help with their API design. I should consider RESTful principles, proper resource naming conventions, authentication and authorization patterns, rate limiting strategies, versioning approaches, and error handling standards. The API should support pagination for list endpoints, filtering for search operations, and proper HTTP status codes for different response scenarios. Let me also evaluate whether GraphQL might be a better fit for their use case."
       );
       expect(result!.model).toBe("o1-preview");
       expect(result!.truncated).toBe(false);
