@@ -273,9 +273,17 @@ function validateConscienceContext(value: unknown): ConscienceContext {
  */
 export function checkIntegrity(input: CheckIntegrityInput): IntegrityCheckpoint {
   // 1. Parse analysisResponse as JSON
+  // Strip markdown code fences if present (e.g. ```json ... ```)
+  // Some models (claude-haiku-4-5) wrap JSON responses in code fences
+  let jsonText = input.analysisResponse;
+  const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+  if (jsonMatch) {
+    jsonText = jsonMatch[0];
+  }
+
   let parsed: Record<string, unknown>;
   try {
-    parsed = JSON.parse(input.analysisResponse) as Record<string, unknown>;
+    parsed = JSON.parse(jsonText) as Record<string, unknown>;
   } catch {
     throw new Error(
       `Failed to parse analysis response as JSON: ${input.analysisResponse.slice(0, 100)}`,
