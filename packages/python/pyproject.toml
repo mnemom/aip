@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "agent-integrity-proto"
-version = "0.1.5"
+version = "0.1.6"
 description = "Agent Integrity Protocol — real-time thinking block analysis for AI agent alignment"
 readme = "README.md"
 license = "Apache-2.0"
