@@ -293,7 +293,7 @@ AIP aligns with and supports compliance for the following international standard
 | **[IEEE 7001-2021](https://standards.ieee.org/ieee/7001/6929/)** — Transparency of Autonomous Systems | AIP makes agent *reasoning* transparent — not just decisions, but the thinking that precedes them |
 | **[IEEE 3152-2024](https://standards.ieee.org/ieee/3152/11718/)** — Transparent Human and Machine Agency Identification | Integrity Checkpoints link `agent_id` to thinking analysis, supporting agency identification in real-time |
 | **[Singapore IMDA Model AI Governance Framework for Agentic AI](https://www.imda.gov.sg/-/media/imda/files/about/emerging-tech-and-research/artificial-intelligence/mgf-for-agentic-ai.pdf)** (Jan 2026) | Real-time conscience analysis addresses IMDA's governance principles for agentic AI monitoring |
-| **[EU AI Act Article 50](https://artificialintelligenceact.eu/article/50/)** — Transparency Obligations (enforcement Aug 2026) | Integrity Checkpoints with structured verdicts, thinking hashes, and session windows provide the transparency and audit trail required by Article 50. See [EU AI Act Compliance Guide](docs/EU_AI_ACT_MAPPING.md) (forthcoming) |
+| **[EU AI Act Article 50](https://artificialintelligenceact.eu/article/50/)** — Transparency Obligations (enforcement Aug 2026) | Integrity Checkpoints with structured verdicts, thinking hashes, and session windows provide the transparency and audit trail required by Article 50. See [EU AI Act Compliance Guide](docs/EU_AI_ACT_MAPPING.md) |
 
 ## Contributing
 

@@ -89,6 +89,24 @@ export const DEFAULT_CONSCIENCE_VALUES = [
   },
 ] as const;
 
+// ---------------------------------------------------------------------------
+// EU AI Act Article 50 compliance presets
+// ---------------------------------------------------------------------------
+
+/** Window configuration for EU compliance — extended retention and fail-closed. */
+export const EU_COMPLIANCE_WINDOW_CONFIG = {
+  max_size: 10,
+  mode: "sliding" as const,
+  session_boundary: "reset" as const,
+  max_age_seconds: 7200,
+} as const;
+
+/** Failure policy for EU compliance — fail closed with extended timeout. */
+export const EU_COMPLIANCE_FAILURE_POLICY = {
+  mode: "fail_closed" as const,
+  analysis_timeout_ms: 15000,
+} as const;
+
 /** ID prefixes for protocol entities. */
 export const CHECKPOINT_ID_PREFIX = "ic-";
 export const DRIFT_ALERT_ID_PREFIX = "ida-";

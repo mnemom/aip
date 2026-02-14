@@ -68,3 +68,21 @@ def _default_conscience_values() -> list[object]:
 
 
 DEFAULT_CONSCIENCE_VALUES = _default_conscience_values()
+
+# ---------------------------------------------------------------------------
+# EU AI Act Article 50 compliance presets
+# ---------------------------------------------------------------------------
+
+# Window configuration for EU compliance — extended retention and fail-closed.
+EU_COMPLIANCE_WINDOW_CONFIG: dict = {
+    "max_size": 10,
+    "mode": "sliding",
+    "session_boundary": "reset",
+    "max_age_seconds": 7200,
+}
+
+# Failure policy for EU compliance — fail closed with extended timeout.
+EU_COMPLIANCE_FAILURE_POLICY: dict = {
+    "mode": "fail_closed",
+    "analysis_timeout_ms": 15000,
+}

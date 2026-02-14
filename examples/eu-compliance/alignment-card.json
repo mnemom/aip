@@ -1,0 +1,33 @@
+{
+  "aap_version": "0.1.0",
+  "card_id": "ac-eu-aip-001",
+  "agent_id": "eu-integrity-agent",
+  "issued_at": "2026-02-13T00:00:00Z",
+  "principal": {
+    "type": "organization",
+    "identifier": "Example Corp (EU)",
+    "relationship": "delegated_authority",
+    "escalation_contact": "compliance@example.com"
+  },
+  "values": {
+    "declared": ["transparency", "honesty", "user_control", "principal_benefit"],
+    "conflicts_with": ["deceptive_marketing", "data_exfiltration"]
+  },
+  "autonomy_envelope": {
+    "bounded_actions": ["search", "compare", "recommend", "summarize"],
+    "escalation_triggers": [
+      {
+        "condition": "purchase_value > 100",
+        "action": "escalate",
+        "reason": "Exceeds autonomous spending limit"
+      }
+    ],
+    "forbidden_actions": ["share_credentials", "exfiltrate_data", "auto_subscribe"]
+  },
+  "audit_commitment": {
+    "trace_format": "ap-trace-v1",
+    "retention_days": 90,
+    "queryable": true,
+    "tamper_evidence": "append_only"
+  }
+}
