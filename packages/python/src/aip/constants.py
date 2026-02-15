@@ -74,7 +74,7 @@ DEFAULT_CONSCIENCE_VALUES = _default_conscience_values()
 # ---------------------------------------------------------------------------
 
 # Window configuration for EU compliance — extended retention and fail-closed.
-EU_COMPLIANCE_WINDOW_CONFIG: dict = {
+EU_COMPLIANCE_WINDOW_CONFIG: dict[str, object] = {
     "max_size": 10,
     "mode": "sliding",
     "session_boundary": "reset",
@@ -82,7 +82,7 @@ EU_COMPLIANCE_WINDOW_CONFIG: dict = {
 }
 
 # Failure policy for EU compliance — fail closed with extended timeout.
-EU_COMPLIANCE_FAILURE_POLICY: dict = {
+EU_COMPLIANCE_FAILURE_POLICY: dict[str, object] = {
     "mode": "fail_closed",
     "analysis_timeout_ms": 15000,
 }
