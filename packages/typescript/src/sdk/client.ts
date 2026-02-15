@@ -244,6 +244,10 @@ async function callAnalysisLLM(
 
   try {
     // Use Anthropic Messages API format by default
+    const systemPayload = llmConfig.enable_prompt_caching
+      ? [{ type: 'text' as const, text: system, cache_control: { type: 'ephemeral' as const } }]
+      : system;
+
     const response = await fetch(`${llmConfig.base_url}/v1/messages`, {
       method: "POST",
       headers: {
@@ -254,7 +258,7 @@ async function callAnalysisLLM(
       body: JSON.stringify({
         model: llmConfig.model,
         max_tokens: llmConfig.max_tokens,
-        system,
+        system: systemPayload,
         messages: [{ role: "user", content: user }],
       }),
       signal: controller.signal,

@@ -80,6 +80,14 @@ async def _call_analysis_llm(
     """
     timeout_seconds = timeout_ms / 1000.0
 
+    # When prompt caching is enabled, send system as a content block array
+    # with cache_control so Anthropic can cache the system prompt.
+    system_payload: str | list[dict[str, Any]] = system
+    if getattr(llm_config, "enable_prompt_caching", False):
+        system_payload = [
+            {"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}
+        ]
+
     async with httpx.AsyncClient(timeout=timeout_seconds) as client:
         response = await client.post(
             f"{llm_config.base_url}/v1/messages",
@@ -91,7 +99,7 @@ async def _call_analysis_llm(
             json={
                 "model": llm_config.model,
                 "max_tokens": llm_config.max_tokens,
-                "system": system,
+                "system": system_payload,
                 "messages": [{"role": "user", "content": user}],
             },
         )

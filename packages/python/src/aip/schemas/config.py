@@ -64,6 +64,7 @@ class AnalysisLLMConfig:
     base_url: str
     api_key: str
     max_tokens: int = 1024
+    enable_prompt_caching: bool = False
 
 
 @dataclass

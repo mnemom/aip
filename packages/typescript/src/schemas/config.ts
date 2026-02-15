@@ -169,6 +169,9 @@ export interface AnalysisLLMConfig {
 
   /** Maximum tokens for the analysis response */
   max_tokens: number;
+
+  /** Enable Anthropic prompt caching on system prompt. Default: false. */
+  enable_prompt_caching?: boolean;
 }
 
 // ---------------------------------------------------------------------------
