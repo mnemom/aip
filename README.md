@@ -5,7 +5,7 @@
 [![PyPI](https://img.shields.io/pypi/v/agent-integrity-proto.svg)](https://pypi.org/project/agent-integrity-proto/)
 [![npm](https://img.shields.io/npm/v/@mnemom/agent-integrity-protocol.svg)](https://www.npmjs.com/package/@mnemom/agent-integrity-protocol)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Spec](https://img.shields.io/badge/spec-v0.1.5-green.svg)](docs/SPEC.md)
+[![Spec](https://img.shields.io/badge/spec-v0.1.5-green.svg)](https://docs.mnemom.ai/protocols/aip/specification)
 
 **Real-time thinking block analysis for AI agent alignment.**
 
@@ -175,7 +175,7 @@ This matters. Read it.
 
 5. **Thinking blocks are model-dependent.** Not all models expose thinking. Models that don't expose thinking blocks cannot be analyzed by AIP.
 
-For the complete limitations disclosure, see [Section 14 of the Specification](docs/SPEC.md#14-limitations).
+For the complete limitations disclosure, see [Section 14 of the Specification](https://docs.mnemom.ai/protocols/aip/specification#14-limitations).
 
 ## Installation
 
@@ -254,10 +254,10 @@ import {
 
 | Document | Description |
 |----------|-------------|
-| [**SPEC.md**](docs/SPEC.md) | Full protocol specification (IETF-style, 2,214 lines) |
-| [**QUICKSTART.md**](docs/QUICKSTART.md) | Zero to integrity checking in 5 minutes |
-| [**LIMITS.md**](docs/LIMITS.md) | What AIP guarantees and doesn't |
-| [**SECURITY.md**](docs/SECURITY.md) | Threat model and security considerations |
+| [**Specification**](https://docs.mnemom.ai/protocols/aip/specification) | Full protocol specification (IETF-style, 2,214 lines) |
+| [**Quick Start**](https://docs.mnemom.ai/protocols/aip/quickstart) | Zero to integrity checking in 5 minutes |
+| [**Limitations**](https://docs.mnemom.ai/protocols/aip/limitations) | What AIP guarantees and doesn't |
+| [**Security**](https://docs.mnemom.ai/protocols/aip/security) | Threat model and security considerations |
 | [**CHANGELOG.md**](CHANGELOG.md) | Release history |
 
 ## Examples
@@ -293,7 +293,7 @@ AIP aligns with and supports compliance for the following international standard
 | **[IEEE 7001-2021](https://standards.ieee.org/ieee/7001/6929/)** — Transparency of Autonomous Systems | AIP makes agent *reasoning* transparent — not just decisions, but the thinking that precedes them |
 | **[IEEE 3152-2024](https://standards.ieee.org/ieee/3152/11718/)** — Transparent Human and Machine Agency Identification | Integrity Checkpoints link `agent_id` to thinking analysis, supporting agency identification in real-time |
 | **[Singapore IMDA Model AI Governance Framework for Agentic AI](https://www.imda.gov.sg/-/media/imda/files/about/emerging-tech-and-research/artificial-intelligence/mgf-for-agentic-ai.pdf)** (Jan 2026) | Real-time conscience analysis addresses IMDA's governance principles for agentic AI monitoring |
-| **[EU AI Act Article 50](https://artificialintelligenceact.eu/article/50/)** — Transparency Obligations (enforcement Aug 2026) | Integrity Checkpoints with structured verdicts, thinking hashes, and session windows provide the transparency and audit trail required by Article 50. See [EU AI Act Compliance Guide](docs/EU_AI_ACT_MAPPING.md) |
+| **[EU AI Act Article 50](https://artificialintelligenceact.eu/article/50/)** — Transparency Obligations (enforcement Aug 2026) | Integrity Checkpoints with structured verdicts, thinking hashes, and session windows provide the transparency and audit trail required by Article 50. See [EU AI Act Compliance Guide](https://docs.mnemom.ai/guides/eu-compliance) |
 
 ## Contributing
 
