@@ -51,3 +51,11 @@ export type {
   CardConscienceAugmentation,
   CardConscienceAgreement,
 } from "./agreement";
+
+// Certificate / attestation types
+export type {
+  IntegrityCertificate,
+  MerkleProof,
+  ChainHash,
+  CertificateVerificationResult,
+} from "./certificate";

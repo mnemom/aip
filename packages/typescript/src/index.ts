@@ -108,7 +108,18 @@ export type {
   CardConscienceConflict,
   CardConscienceAugmentation,
   CardConscienceAgreement,
+  // Certificate / attestation
+  IntegrityCertificate,
+  MerkleProof,
+  ChainHash,
+  CertificateVerificationResult,
 } from "./schemas/index.js";
+
+// ---------------------------------------------------------------------------
+// Verification — offline certificate verification
+// ---------------------------------------------------------------------------
+
+export { verifyCertificate } from "./verification/index.js";
 
 // ---------------------------------------------------------------------------
 // Constants

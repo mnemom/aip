@@ -1,7 +1,7 @@
 {
-  "name": "@mnemom/agent-integrity-protocol",
-  "version": "0.1.7",
-  "description": "Agent Integrity Protocol — real-time thinking block analysis for AI agent alignment",
+  "name": "@mnemom/aip-verifier",
+  "version": "0.1.0",
+  "description": "Offline verification of AIP integrity certificates — Ed25519 signatures, chain hashes, and Merkle proofs",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -38,10 +38,11 @@
     "ai",
     "agent",
     "integrity",
-    "alignment",
-    "thinking",
-    "conscience",
-    "safety"
+    "verification",
+    "certificate",
+    "ed25519",
+    "merkle",
+    "offline"
   ],
   "author": "Mnemom.ai",
   "license": "Apache-2.0",
@@ -55,24 +56,16 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/mnemom/aip.git",
-    "directory": "packages/typescript"
+    "directory": "packages/verifier"
   },
-  "peerDependencies": {
-    "@mnemom/agent-alignment-protocol": ">=0.1.0"
-  },
-  "peerDependenciesMeta": {
-    "@mnemom/agent-alignment-protocol": {
-      "optional": true
-    }
+  "dependencies": {
+    "@noble/ed25519": "^2.2.0",
+    "@noble/hashes": "^1.7.0"
   },
   "devDependencies": {
     "@types/node": "^25.2.2",
     "tsup": "^8.0.0",
     "typescript": "^5.4.0",
     "vitest": "^1.6.0"
-  },
-  "dependencies": {
-    "@noble/ed25519": "^3.0.0",
-    "@noble/hashes": "^2.0.1"
   }
 }
