@@ -1,6 +1,6 @@
 {
   "name": "@mnemom/agent-integrity-protocol",
-  "version": "0.1.7",
+  "version": "0.2.0",
   "description": "Agent Integrity Protocol — real-time thinking block analysis for AI agent alignment",
   "type": "module",
   "main": "./dist/index.cjs",
