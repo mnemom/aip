@@ -314,10 +314,10 @@ describe("buildConsciencePrompt — task context", () => {
 // ---------------------------------------------------------------------------
 
 describe("buildConsciencePrompt — evaluation instructions", () => {
-  it("includes evaluation instructions in user prompt", () => {
-    const { user } = buildConsciencePrompt(defaultInput());
-    expect(user).toContain("EVALUATION INSTRUCTIONS:");
-    expect(user).toContain("behavioral consistency");
+  it("includes evaluation instructions in system prompt", () => {
+    const { system } = buildConsciencePrompt(defaultInput());
+    expect(system).toContain("EVALUATION INSTRUCTIONS:");
+    expect(system).toContain("behavioral consistency");
   });
 });
 

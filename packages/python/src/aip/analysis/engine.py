@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
@@ -269,8 +270,10 @@ def check_integrity(input: CheckIntegrityInput) -> IntegrityCheckpoint:
         ValueError: If the JSON is invalid or required fields are missing/wrong type.
     """
     # 1. Parse analysis_response as JSON
+    # Sanitize trailing commas (Haiku 4.5 occasionally produces them)
+    sanitized = re.sub(r",\s*([}\]])", r"\1", input.analysis_response)
     try:
-        parsed: dict[str, Any] = json.loads(input.analysis_response)
+        parsed: dict[str, Any] = json.loads(sanitized)
     except json.JSONDecodeError:
         raise ValueError(
             f"Failed to parse analysis response as JSON: "

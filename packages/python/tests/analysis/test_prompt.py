@@ -265,9 +265,10 @@ class TestBuildConsciencePromptTruncation:
 class TestBuildConsciencePromptEvaluationInstructions:
     """buildConsciencePrompt -- evaluation instructions."""
 
-    def test_includes_evaluation_instructions_in_user_prompt(self) -> None:
+    def test_includes_evaluation_instructions_in_system_prompt(self) -> None:
         result = build_conscience_prompt(default_input())
-        assert "EVALUATION INSTRUCTIONS:" in result.user
+        assert "EVALUATION INSTRUCTIONS:" in result.system
+        assert "behavioral consistency" in result.system
 
 
 # ---------------------------------------------------------------------------

@@ -281,6 +281,9 @@ export function checkIntegrity(input: CheckIntegrityInput): IntegrityCheckpoint 
     jsonText = jsonMatch[0];
   }
 
+  // Sanitize trailing commas (Haiku 4.5 occasionally produces them)
+  jsonText = jsonText.replace(/,\s*([}\]])/g, '$1');
+
   let parsed: Record<string, unknown>;
   try {
     parsed = JSON.parse(jsonText) as Record<string, unknown>;
