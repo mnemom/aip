@@ -5,7 +5,7 @@
 [![PyPI](https://img.shields.io/pypi/v/agent-integrity-proto.svg)](https://pypi.org/project/agent-integrity-proto/)
 [![npm](https://img.shields.io/npm/v/@mnemom/agent-integrity-protocol.svg)](https://www.npmjs.com/package/@mnemom/agent-integrity-protocol)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![Spec](https://img.shields.io/badge/spec-v0.1.5-green.svg)](https://docs.mnemom.ai/protocols/aip/specification)
+[![Spec](https://img.shields.io/badge/spec-v0.2.1-green.svg)](https://docs.mnemom.ai/protocols/aip/specification)
 
 **Real-time thinking block analysis for AI agent alignment.**
 
@@ -270,7 +270,7 @@ import {
 
 ## Status
 
-**Current Version**: 0.1.4
+**Current Version**: 0.2.1
 
 | Component | Status |
 |-----------|--------|
