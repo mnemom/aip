@@ -141,15 +141,15 @@ def detect_integrity_drift(
     for concern in checkpoint.concerns:
         new_state.streak_categories.append(concern.category)
 
-    # Re-alert interval: after the initial alert, re-alert every REALERT_INTERVAL additional checks
-    REALERT_INTERVAL = 5
+    # Re-alert interval: after the initial alert, re-alert every N additional checks
+    realert_interval = 5
 
     # Check if threshold crossed and either no alert fired yet, or re-alert interval reached
     should_alert = (
         new_state.sustained_nonclear >= effective_threshold
         and (
             not new_state.alert_fired
-            or (new_state.sustained_nonclear - effective_threshold) % REALERT_INTERVAL == 0
+            or (new_state.sustained_nonclear - effective_threshold) % realert_interval == 0
         )
     )
 
