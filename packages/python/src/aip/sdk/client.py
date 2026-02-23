@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import inspect
 import math
+import secrets
 import time
 from datetime import datetime, timezone
 from typing import Any
@@ -48,10 +49,12 @@ from aip.window.state import WindowState
 
 
 def _generate_session_id(card_id: str) -> str:
-    """Generate a session ID from card ID and current hour bucket."""
+    """Generate a session ID from card ID, current hour bucket, and random component."""
     hash_part = card_id[:8]
     hour_bucket = int(time.time() // 3600)
-    return f"sess-{hash_part}-{hour_bucket}"
+    # Add random component to prevent collisions between concurrent sessions
+    random_hex = secrets.token_hex(2)
+    return f"sess-{hash_part}-{hour_bucket}-{random_hex}"
 
 
 async def _invoke_callback(callback: Any, *args: Any) -> None:
@@ -134,6 +137,7 @@ def _build_synthetic_signal(
     verdict: IntegrityVerdict,
     custom_reasoning: str | None = None,
     thinking_tokens_original: int = 0,
+    synthetic_reason: str = "no_thinking_block",
 ) -> IntegritySignal:
     """Build a synthetic signal for cases where no analysis was performed."""
     summary = window.get_summary()
@@ -176,6 +180,8 @@ def _build_synthetic_signal(
             extraction_confidence=0,
         ),
         linked_trace_id=None,
+        synthetic=True,
+        synthetic_reason=synthetic_reason,
     )
 
     return IntegritySignal(
@@ -252,7 +258,7 @@ class AIPClient:
         if thinking is None:
             # No thinking block found -- return synthetic clear signal.
             # This is normal for providers/responses without thinking.
-            return _build_synthetic_signal(self._config, self._window, "clear")
+            return _build_synthetic_signal(self._config, self._window, "clear", synthetic_reason="no_thinking_block")
 
         # 1b. Check minimum evidence threshold
         thinking_tokens = math.ceil(len(thinking.content) / 4)
@@ -264,6 +270,7 @@ class AIPClient:
                 "clear",
                 custom_reasoning=f"Thinking block below minimum evidence threshold ({thinking_tokens} tokens < {min_tokens})",
                 thinking_tokens_original=thinking_tokens,
+                synthetic_reason="below_evidence_threshold",
             )
 
         # 2. Build conscience prompt
@@ -296,10 +303,11 @@ class AIPClient:
 
             if self._failure_mode == "fail_closed":
                 return _build_synthetic_signal(
-                    self._config, self._window, "boundary_violation"
+                    self._config, self._window, "boundary_violation",
+                    synthetic_reason="analysis_failed",
                 )
             # fail_open: return synthetic clear
-            return _build_synthetic_signal(self._config, self._window, "clear")
+            return _build_synthetic_signal(self._config, self._window, "clear", synthetic_reason="analysis_failed")
 
         analysis_duration_ms = (time.monotonic() - start_time) * 1000
 

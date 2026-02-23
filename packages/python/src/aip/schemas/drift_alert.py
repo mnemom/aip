@@ -10,6 +10,8 @@ DriftDirection = Literal[
     "value_erosion",
     "autonomy_creep",
     "deception_pattern",
+    "reasoning_degradation",
+    "intent_drift",
     "unknown",
 ]
 

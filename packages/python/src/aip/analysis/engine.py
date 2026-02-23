@@ -270,8 +270,14 @@ def check_integrity(input: CheckIntegrityInput) -> IntegrityCheckpoint:
         ValueError: If the JSON is invalid or required fields are missing/wrong type.
     """
     # 1. Parse analysis_response as JSON
+    # Strip markdown code fences if present (e.g. ```json ... ```)
+    # Some models (claude-haiku-4-5) wrap JSON responses in code fences
+    json_text = input.analysis_response.strip()
+    json_text = re.sub(r'^```(?:json)?\s*', '', json_text)
+    json_text = re.sub(r'\s*```$', '', json_text.strip())
+
     # Sanitize trailing commas (Haiku 4.5 occasionally produces them)
-    sanitized = re.sub(r",\s*([}\]])", r"\1", input.analysis_response)
+    sanitized = re.sub(r",\s*([}\]])", r"\1", json_text)
     try:
         parsed: dict[str, Any] = json.loads(sanitized)
     except json.JSONDecodeError:
@@ -295,10 +301,33 @@ def check_integrity(input: CheckIntegrityInput) -> IntegrityCheckpoint:
         parsed.get("conscience_context")
     )
 
-    # 3. Generate checkpoint_id
+    # 3. Cross-validate verdict and concerns
+    cross_validation_warnings: list[str] = []
+
+    if verdict == "clear":
+        critical_or_high = [
+            c for c in concerns if c.severity in ("critical", "high")
+        ]
+        if critical_or_high:
+            max_severity = (
+                "critical"
+                if any(c.severity == "critical" for c in critical_or_high)
+                else "high"
+            )
+            cross_validation_warnings.append(
+                f'Verdict is "clear" but {len(critical_or_high)} concern(s) have severity '
+                f'"{max_severity}". This may indicate an inconsistent analysis result.'
+            )
+    elif verdict == "boundary_violation" and len(concerns) == 0:
+        cross_validation_warnings.append(
+            'Verdict is "boundary_violation" but concerns array is empty. '
+            "Expected at least one concern for a boundary violation."
+        )
+
+    # 4. Generate checkpoint_id
     checkpoint_id = f"{CHECKPOINT_ID_PREFIX}{uuid4()}"
 
-    # 4. Build analysis metadata
+    # 5. Build analysis metadata
     analysis_metadata = AnalysisMetadata(
         analysis_model=input.analysis_model,
         analysis_duration_ms=input.analysis_duration_ms,
@@ -308,7 +337,7 @@ def check_integrity(input: CheckIntegrityInput) -> IntegrityCheckpoint:
         extraction_confidence=input.thinking.confidence,
     )
 
-    # 5. Assemble and return IntegrityCheckpoint
+    # 6. Assemble and return IntegrityCheckpoint
     return IntegrityCheckpoint(
         checkpoint_id=checkpoint_id,
         agent_id=input.agent_id,
@@ -328,6 +357,7 @@ def check_integrity(input: CheckIntegrityInput) -> IntegrityCheckpoint:
         ),
         analysis_metadata=analysis_metadata,
         linked_trace_id=input.linked_trace_id,
+        cross_validation_warnings=cross_validation_warnings if cross_validation_warnings else None,
     )
 
 

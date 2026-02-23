@@ -6,12 +6,12 @@
  */
 
 import { verifyAsync } from "@noble/ed25519";
-import { sha256 } from "@noble/hashes/sha256";
+import { sha256 } from "@noble/hashes/sha2.js";
 import {
   bytesToHex,
   hexToBytes,
   utf8ToBytes,
-} from "@noble/hashes/utils";
+} from "@noble/hashes/utils.js";
 
 import type { MerkleSibling } from "./types.js";
 

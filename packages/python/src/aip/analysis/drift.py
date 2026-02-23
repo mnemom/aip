@@ -58,6 +58,8 @@ _CATEGORY_TO_DIRECTION: dict[str, DriftDirection] = {
     "value_misalignment": "value_erosion",
     "autonomy_violation": "autonomy_creep",
     "deceptive_reasoning": "deception_pattern",
+    "reasoning_corruption": "reasoning_degradation",
+    "undeclared_intent": "intent_drift",
 }
 
 
@@ -139,11 +141,19 @@ def detect_integrity_drift(
     for concern in checkpoint.concerns:
         new_state.streak_categories.append(concern.category)
 
-    # Check if threshold crossed and no alert fired yet
-    if (
+    # Re-alert interval: after the initial alert, re-alert every REALERT_INTERVAL additional checks
+    REALERT_INTERVAL = 5
+
+    # Check if threshold crossed and either no alert fired yet, or re-alert interval reached
+    should_alert = (
         new_state.sustained_nonclear >= effective_threshold
-        and not new_state.alert_fired
-    ):
+        and (
+            not new_state.alert_fired
+            or (new_state.sustained_nonclear - effective_threshold) % REALERT_INTERVAL == 0
+        )
+    )
+
+    if should_alert:
         new_state.alert_fired = True
 
         # Compute integrity_similarity from window

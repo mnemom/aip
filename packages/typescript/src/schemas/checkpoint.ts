@@ -118,4 +118,22 @@ export interface IntegrityCheckpoint {
    * Set after the corresponding APTrace is created by the Observer.
    */
   linked_trace_id: string | null;
+
+  /**
+   * Whether this checkpoint was synthetically generated (not from analysis LLM).
+   * True when no thinking block was found, analysis failed, or evidence was below threshold.
+   */
+  synthetic?: boolean;
+
+  /**
+   * Reason the checkpoint was synthetically generated.
+   * Only present when `synthetic` is true.
+   */
+  synthetic_reason?: "no_thinking_block" | "analysis_failed" | "below_evidence_threshold";
+
+  /**
+   * Cross-validation warnings about inconsistencies between verdict and concerns.
+   * Present when the analysis LLM returned a verdict that doesn't match concern severities.
+   */
+  cross_validation_warnings?: string[];
 }

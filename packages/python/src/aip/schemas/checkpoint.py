@@ -46,3 +46,6 @@ class IntegrityCheckpoint:
     window_position: WindowPosition
     analysis_metadata: AnalysisMetadata
     linked_trace_id: str | None = None
+    synthetic: bool | None = None
+    synthetic_reason: str | None = None
+    cross_validation_warnings: list[str] | None = None

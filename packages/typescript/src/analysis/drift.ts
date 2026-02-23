@@ -94,8 +94,16 @@ export function detectIntegrityDrift(
     newState.streakCategories.push(concern.category);
   }
 
-  // Check if threshold crossed and no alert fired yet
-  if (newState.sustainedNonclear >= effectiveThreshold && !newState.alertFired) {
+  // Re-alert interval: after the initial alert, re-alert every REALERT_INTERVAL additional checks
+  const REALERT_INTERVAL = 5;
+
+  // Check if threshold crossed and either no alert fired yet, or re-alert interval reached
+  const shouldAlert =
+    newState.sustainedNonclear >= effectiveThreshold &&
+    (!newState.alertFired ||
+      (newState.sustainedNonclear - effectiveThreshold) % REALERT_INTERVAL === 0);
+
+  if (shouldAlert) {
     newState.alertFired = true;
 
     // Compute integrity_similarity from window
@@ -163,6 +171,8 @@ function inferDriftDirection(categories: ConcernCategory[]): DriftDirection {
       value_misalignment: "value_erosion",
       autonomy_violation: "autonomy_creep",
       deceptive_reasoning: "deception_pattern",
+      reasoning_corruption: "reasoning_degradation",
+      undeclared_intent: "intent_drift",
     };
     return CATEGORY_TO_DIRECTION[maxCategory] ?? "unknown";
   }

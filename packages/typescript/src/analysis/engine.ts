@@ -260,6 +260,33 @@ function validateConscienceContext(value: unknown): ConscienceContext {
 }
 
 // ---------------------------------------------------------------------------
+// JSON extraction helper
+// ---------------------------------------------------------------------------
+
+/**
+ * Extract the first complete JSON object from a string using brace-depth counting.
+ *
+ * This avoids the greedy regex `/{[\s\S]*}/` which could match from the first `{`
+ * to the last `}` in text containing multiple JSON objects or trailing content.
+ */
+function extractFirstJsonObject(text: string): string | null {
+  let depth = 0;
+  let start = -1;
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === '{') {
+      if (depth === 0) start = i;
+      depth++;
+    } else if (text[i] === '}') {
+      depth--;
+      if (depth === 0 && start !== -1) {
+        return text.slice(start, i + 1);
+      }
+    }
+  }
+  return null;
+}
+
+// ---------------------------------------------------------------------------
 // Core functions
 // ---------------------------------------------------------------------------
 
@@ -276,9 +303,9 @@ export function checkIntegrity(input: CheckIntegrityInput): IntegrityCheckpoint 
   // Strip markdown code fences if present (e.g. ```json ... ```)
   // Some models (claude-haiku-4-5) wrap JSON responses in code fences
   let jsonText = input.analysisResponse;
-  const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
-  if (jsonMatch) {
-    jsonText = jsonMatch[0];
+  const extracted = extractFirstJsonObject(jsonText);
+  if (extracted) {
+    jsonText = extracted;
   }
 
   // Sanitize trailing commas (Haiku 4.5 occasionally produces them)
@@ -309,10 +336,33 @@ export function checkIntegrity(input: CheckIntegrityInput): IntegrityCheckpoint 
     parsed.conscience_context,
   );
 
-  // 3. Generate checkpoint_id
+  // 3. Cross-validate verdict and concerns
+  const crossValidationWarnings: string[] = [];
+
+  if (verdict === "clear") {
+    const criticalOrHigh = concerns.filter(
+      (c) => c.severity === "critical" || c.severity === "high",
+    );
+    if (criticalOrHigh.length > 0) {
+      const maxSeverity = criticalOrHigh.some((c) => c.severity === "critical")
+        ? "critical"
+        : "high";
+      crossValidationWarnings.push(
+        `Verdict is "clear" but ${criticalOrHigh.length} concern(s) have severity "${maxSeverity}". ` +
+          `This may indicate an inconsistent analysis result.`,
+      );
+    }
+  } else if (verdict === "boundary_violation" && concerns.length === 0) {
+    crossValidationWarnings.push(
+      `Verdict is "boundary_violation" but concerns array is empty. ` +
+        `Expected at least one concern for a boundary violation.`,
+    );
+  }
+
+  // 4. Generate checkpoint_id
   const checkpointId = `${CHECKPOINT_ID_PREFIX}${randomUUID()}`;
 
-  // 4. Build analysis metadata
+  // 5. Build analysis metadata
   const analysisMetadata: AnalysisMetadata = {
     analysis_model: input.analysisModel,
     analysis_duration_ms: input.analysisDurationMs,
@@ -322,7 +372,7 @@ export function checkIntegrity(input: CheckIntegrityInput): IntegrityCheckpoint 
     extraction_confidence: input.thinking.confidence,
   };
 
-  // 5. Assemble and return IntegrityCheckpoint
+  // 6. Assemble and return IntegrityCheckpoint
   return {
     checkpoint_id: checkpointId,
     agent_id: input.agentId,
@@ -342,6 +392,9 @@ export function checkIntegrity(input: CheckIntegrityInput): IntegrityCheckpoint 
     },
     analysis_metadata: analysisMetadata,
     linked_trace_id: input.linkedTraceId ?? null,
+    ...(crossValidationWarnings.length > 0
+      ? { cross_validation_warnings: crossValidationWarnings }
+      : {}),
   };
 }
 

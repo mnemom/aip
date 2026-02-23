@@ -96,7 +96,7 @@ export function createClient(config: AIPConfig): AIPClient {
       if (!thinking) {
         // No thinking block found — return synthetic clear signal.
         // This is normal for providers/responses without thinking.
-        return buildSyntheticSignal(config, window, "clear");
+        return buildSyntheticSignal(config, window, "clear", undefined, undefined, "no_thinking_block");
       }
 
       // 1b. Check minimum evidence threshold
@@ -109,6 +109,7 @@ export function createClient(config: AIPConfig): AIPClient {
           "clear",
           `Thinking block below minimum evidence threshold (${thinkingTokens} tokens < ${minTokens})`,
           thinkingTokens,
+          "below_evidence_threshold",
         );
       }
 
@@ -141,10 +142,10 @@ export function createClient(config: AIPConfig): AIPClient {
         }
 
         if (failureMode === "fail_closed") {
-          return buildSyntheticSignal(config, window, "boundary_violation");
+          return buildSyntheticSignal(config, window, "boundary_violation", undefined, undefined, "analysis_failed");
         }
         // fail_open: return synthetic clear
-        return buildSyntheticSignal(config, window, "clear");
+        return buildSyntheticSignal(config, window, "clear", undefined, undefined, "analysis_failed");
       }
 
       const analysisDurationMs = Date.now() - startTime;
@@ -226,7 +227,13 @@ export function createClient(config: AIPConfig): AIPClient {
 function generateSessionId(cardId: string): string {
   const hash = cardId.slice(0, 8);
   const hourBucket = Math.floor(Date.now() / 3600000);
-  return `sess-${hash}-${hourBucket}`;
+  // Add random component to prevent collisions between concurrent sessions
+  const randomBytes = new Uint8Array(2);
+  crypto.getRandomValues(randomBytes);
+  const randomHex = Array.from(randomBytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  return `sess-${hash}-${hourBucket}-${randomHex}`;
 }
 
 /**
@@ -297,6 +304,7 @@ function buildSyntheticSignal(
   verdict: "clear" | "boundary_violation",
   customReasoning?: string,
   thinkingTokensOriginal?: number,
+  syntheticReason?: "no_thinking_block" | "analysis_failed" | "below_evidence_threshold",
 ): IntegritySignal {
   const summary = window.getSummary();
 
@@ -337,6 +345,8 @@ function buildSyntheticSignal(
         extraction_confidence: 0,
       },
       linked_trace_id: null,
+      synthetic: true,
+      synthetic_reason: syntheticReason ?? "no_thinking_block",
     },
     proceed: verdict === "clear",
     recommended_action:
