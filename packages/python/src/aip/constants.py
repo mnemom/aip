@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 # Protocol versions
-AIP_VERSION = "0.1.0"
+AIP_VERSION = "0.4.0"
 ALGORITHM_VERSION = "1.0.0"
 
 # Drift detection

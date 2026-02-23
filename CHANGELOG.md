@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-02-22
+
+### Changed
+- Coordinated Mnemom 0.4.0 release. Unified version across all Mnemom SDK packages. Includes all changes from 0.2.0 and 0.2.1.
+
 ## [0.1.5] - 2026-02-13
 
 ### Added
