@@ -75,9 +75,9 @@ export interface MerkleProof {
   inclusion_proof: MerkleSibling[];
 }
 
-/** Zero-knowledge verdict derivation proof (RISC Zero STARK). */
+/** Zero-knowledge verdict derivation proof (SP1 STARK). */
 export interface VerdictDerivationProof {
-  method: "RISC-Zero-STARK";
+  method: "SP1-STARK" | "RISC-Zero-STARK";
   image_id: string;
   receipt: string;
   journal: string;
@@ -153,6 +153,6 @@ export interface VerifierOptions {
   /** Expected Merkle root (hex). If provided, Merkle proof is verified against it. */
   merkleRoot?: string;
 
-  /** Expected RISC Zero image ID (hex). If provided, verdict derivation proof is checked against it. */
+  /** Expected SP1 image ID (hex). If provided, verdict derivation proof is checked against it. */
   verdictDerivationImageId?: string;
 }

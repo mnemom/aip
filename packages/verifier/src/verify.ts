@@ -157,7 +157,7 @@ function checkMerkle(
  *
  * Checks that the journal fields in the proof match the certificate's claims
  * and input commitments. Does NOT verify the STARK receipt itself — that
- * requires the RISC Zero verifier (server-side or future WASM).
+ * requires the SP1 verifier (server-side or future WASM).
  *
  * If `expectedImageId` is provided, also verifies the proof was generated
  * by the expected guest program.
@@ -172,7 +172,7 @@ function checkVerdictDerivation(
   }
 
   // Validate proof method
-  if (proof.method !== "RISC-Zero-STARK") {
+  if (!["SP1-STARK", "RISC-Zero-STARK"].includes(proof.method)) {
     return {
       valid: false,
       details: `Unknown verdict derivation method: ${proof.method}`,
