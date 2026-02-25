@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-02-25
+
+### Changed
+- Migrate ZK proof method from RISC Zero to SP1: verifier now accepts both `SP1-STARK` and `RISC-Zero-STARK` for backwards compatibility
+
 ## [0.4.0] - 2026-02-22
 
 ### Changed
