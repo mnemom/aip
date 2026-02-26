@@ -70,3 +70,31 @@ jobs:
           file: packages/python/coverage.xml
           flags: python
           token: ${{ secrets.CODECOV_TOKEN }}
+
+  dispatch-deploy:
+    name: Trigger Deploy
+    needs: [typescript, python]
+    if: >-
+      always() &&
+      github.event_name == 'push' &&
+      !contains(needs.*.result, 'failure')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ secrets.DEPLOY_APP_ID }}
+          private-key: ${{ secrets.DEPLOY_APP_PRIVATE_KEY }}
+          owner: mnemom
+
+      - uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          repository: mnemom/deploy
+          event-type: deploy
+          client-payload: >-
+            {
+              "repo": "${{ github.event.repository.name }}",
+              "sha": "${{ github.sha }}",
+              "environment": "${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}"
+            }
