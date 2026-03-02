@@ -3,18 +3,30 @@ name: Publish
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      dispatch-id:
+        description: "Correlation ID from deploy orchestrator"
+        required: false
+        type: string
+      npm-directory:
+        description: "Directory containing package.json to publish"
+        required: false
+        type: string
+        default: "packages/typescript"
 
 jobs:
+  # ── Release-triggered publishing (existing) ──
+
   validate:
+    if: github.event_name == 'release'
     name: Validate versions
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Extract tag version
         id: tag
         run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
-
       - name: Check Python version
         working-directory: packages/python
         run: |
@@ -23,115 +35,120 @@ jobs:
           with open('pyproject.toml', 'rb') as f:
               print(tomllib.load(f)['project']['version'])
           ")
-          echo "pyproject.toml version: $PYPI_VERSION"
-          echo "Tag version: ${{ steps.tag.outputs.version }}"
-          if [ "$PYPI_VERSION" != "${{ steps.tag.outputs.version }}" ]; then
-            echo "::error::Version mismatch: pyproject.toml ($PYPI_VERSION) != tag (${{ steps.tag.outputs.version }})"
+          if [ "$PYPI_VERSION" \!= "${{ steps.tag.outputs.version }}" ]; then
+            echo "ERROR: pyproject.toml version ($PYPI_VERSION) \!= tag (${{ steps.tag.outputs.version }})"
             exit 1
           fi
-
       - name: Check npm version
         run: |
           NPM_VERSION=$(node -p "require('./packages/typescript/package.json').version")
-          echo "package.json version: $NPM_VERSION"
-          echo "Tag version: ${{ steps.tag.outputs.version }}"
-          if [ "$NPM_VERSION" != "${{ steps.tag.outputs.version }}" ]; then
-            echo "::error::Version mismatch: package.json ($NPM_VERSION) != tag (${{ steps.tag.outputs.version }})"
+          if [ "$NPM_VERSION" \!= "${{ steps.tag.outputs.version }}" ]; then
+            echo "ERROR: package.json version ($NPM_VERSION) \!= tag (${{ steps.tag.outputs.version }})"
             exit 1
           fi
 
   test:
+    if: github.event_name == 'release'
     name: Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "20"
-
-      - name: Install Python dependencies
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: TypeScript checks
+        working-directory: packages/typescript
+        run: |
+          npm ci || npm install
+          npm run typecheck
+          npm run build
+          npm test
+      - name: Python checks
         working-directory: packages/python
         run: |
-          python -m pip install --upgrade pip
           pip install -e ".[dev]"
-
-      - name: Python typecheck
-        working-directory: packages/python
-        run: mypy src/
-
-      - name: Python tests
-        working-directory: packages/python
-        run: pytest
-
-      - name: Install TypeScript dependencies
-        working-directory: packages/typescript
-        run: npm ci
-
-      - name: TypeScript typecheck
-        working-directory: packages/typescript
-        run: npm run typecheck
-
-      - name: TypeScript tests
-        working-directory: packages/typescript
-        run: npm test
+          mypy src/
+          pytest
 
   publish-pypi:
     name: Publish to PyPI
-    runs-on: ubuntu-latest
     needs: [validate, test]
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
     permissions:
       id-token: write
       contents: read
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
-      - name: Install build tools
-        run: pip install build
-
-      - name: Build package
+      - name: Build
         working-directory: packages/python
-        run: python -m build
-
-      - name: Publish to PyPI
+        run: |
+          pip install build
+          python -m build
+      - name: Publish
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: packages/python/dist/
 
   publish-npm:
     name: Publish to npm
-    runs-on: ubuntu-latest
     needs: [validate, test]
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: packages/typescript
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "20"
           registry-url: "https://registry.npmjs.org"
-
-      - name: Install dependencies
-        run: npm ci || npm install
-
-      - name: Build
-        run: npm run build
-
-      - name: Publish to npm
+      - run: npm ci || npm install
+      - run: npm run build
+      - run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  # ── Orchestrator dispatch publishing ──
+
+  dispatch-publish:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+      - name: Install and build
+        working-directory: ${{ inputs.npm-directory }}
+        run: |
+          npm ci || npm install
+          npm run build --if-present
+      - name: Check if already published
+        id: check
+        working-directory: ${{ inputs.npm-directory }}
+        run: |
+          PKG_NAME=$(node -p "require('./package.json').name")
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          PUBLISHED=$(npm view "${PKG_NAME}@${PKG_VERSION}" version 2>/dev/null || echo "")
+          if [ "$PUBLISHED" = "$PKG_VERSION" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "$PKG_NAME@$PKG_VERSION already published — skipping"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "Will publish $PKG_NAME@$PKG_VERSION"
+          fi
+      - name: Publish
+        if: steps.check.outputs.skip \!= 'true'
+        working-directory: ${{ inputs.npm-directory }}
         run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
