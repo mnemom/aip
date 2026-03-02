@@ -147,7 +147,7 @@ jobs:
             echo "Will publish $PKG_NAME@$PKG_VERSION"
           fi
       - name: Publish
-        if: steps.check.outputs.skip \!= 'true'
+        if: steps.check.outputs.skip != 'true'
         working-directory: ${{ inputs.npm-directory }}
         run: npm publish --access public
         env:
