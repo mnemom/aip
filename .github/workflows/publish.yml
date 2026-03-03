@@ -152,3 +152,14 @@ jobs:
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@17ae1740179002c89186b61233e0f892c3118b11 # v0
+        with:
+          format: cyclonedx-json
+          output-file: sbom.cdx.json
+      - name: Upload SBOM
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: sbom
+          path: sbom.cdx.json
