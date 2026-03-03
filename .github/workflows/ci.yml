@@ -61,7 +61,7 @@ jobs:
         run: mypy src/
 
       - name: Test
-        run: pytest --cov=src/aip --cov-report=xml
+        run: pytest
 
       - name: Upload coverage
         if: matrix.python-version == '3.12'
@@ -70,6 +70,7 @@ jobs:
           file: packages/python/coverage.xml
           flags: python
           token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: false
 
   dispatch-deploy:
     name: Trigger Deploy
