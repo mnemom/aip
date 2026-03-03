@@ -9,6 +9,8 @@ on:
     - cron: "0 0 * * 0"  # Weekly on Sundays
   workflow_dispatch:
 
+
+permissions: {}
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
@@ -25,18 +27,18 @@ jobs:
         language: [python, javascript-typescript]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4
+        uses: github/codeql-action/init@c793b717bc78562f491db7b0e93a3a178b099162 # v4
         with:
           languages: ${{ matrix.language }}
           queries: security-extended
 
       - name: Autobuild
-        uses: github/codeql-action/autobuild@v4
+        uses: github/codeql-action/autobuild@c793b717bc78562f491db7b0e93a3a178b099162 # v4
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v4
+        uses: github/codeql-action/analyze@c793b717bc78562f491db7b0e93a3a178b099162 # v4
         with:
           category: "/language:${{ matrix.language }}"
