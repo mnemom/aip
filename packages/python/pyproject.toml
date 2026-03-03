@@ -61,6 +61,14 @@ include = ["/src", "/tests"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+addopts = "--cov --cov-report=xml --cov-report=term"
+
+[tool.coverage.run]
+source = ["src/aip"]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
 
 [tool.mypy]
 strict = true
