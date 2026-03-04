@@ -129,8 +129,10 @@ jobs:
   dispatch-publish:
     permissions:
       contents: read
+      id-token: write
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    environment: production
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -159,9 +161,7 @@ jobs:
       - name: Publish
         if: steps.check.outputs.skip != 'true'
         working-directory: ${{ inputs.npm-directory }}
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public --provenance
 
       - name: Generate SBOM
         uses: anchore/sbom-action@17ae1740179002c89186b61233e0f892c3118b11 # v0
