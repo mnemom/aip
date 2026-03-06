@@ -231,4 +231,10 @@ export interface AIPConfig {
 
   /** Pre-existing checkpoints to seed the session window at creation time. */
   initial_checkpoints?: IntegrityCheckpoint[];
+
+  /** Enable output block analysis alongside thinking block analysis. Default: false. */
+  analyze_output?: boolean;
+
+  /** Maximum tokens from the output block to include in analysis. Default: 2048. */
+  output_token_budget?: number;
 }

@@ -112,6 +112,7 @@ describe("checkIntegrity", () => {
       thinking_tokens_analyzed: 100,
       truncated: false,
       extraction_confidence: 1.0,
+      analysis_scope: "thinking_only",
     });
   });
 

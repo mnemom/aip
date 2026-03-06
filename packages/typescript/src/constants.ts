@@ -1,5 +1,5 @@
 /** Protocol version identifiers. */
-export const AIP_VERSION = "0.4.0";
+export const AIP_VERSION = "0.5.0";
 export const ALGORITHM_VERSION = "1.0.0";
 
 /** Drift detection thresholds (Section 9.1). */
@@ -9,6 +9,9 @@ export const DRIFT_SEVERITY_MEDIUM_THRESHOLD = 0.4;
 
 /** Thinking block processing (Section 6.5). */
 export const DEFAULT_THINKING_TOKEN_BUDGET = 4096;
+
+/** Output block processing (Section 6.9). */
+export const DEFAULT_OUTPUT_TOKEN_BUDGET = 2048;
 export const TRUNCATION_HEAD_RATIO = 0.75;
 export const TRUNCATION_TAIL_RATIO = 0.25;
 export const MAX_EVIDENCE_LENGTH = 200;

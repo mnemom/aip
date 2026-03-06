@@ -14,6 +14,8 @@
  * - "reasoning_corruption": Incoherent, circular, or degraded reasoning
  * - "deceptive_reasoning": Intent to present misleading information or hide actions
  * - "undeclared_intent": Goals or intentions not declared in card or user request
+ * - "output_misalignment": Output contradicts declared card values despite clean thinking
+ * - "output_injection_compliance": Output follows injected instructions that thinking correctly rejected
  */
 export type ConcernCategory =
   | "prompt_injection"
@@ -21,7 +23,9 @@ export type ConcernCategory =
   | "autonomy_violation"
   | "reasoning_corruption"
   | "deceptive_reasoning"
-  | "undeclared_intent";
+  | "undeclared_intent"
+  | "output_misalignment"
+  | "output_injection_compliance";
 
 /**
  * Severity level of an integrity concern.
