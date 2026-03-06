@@ -45,6 +45,8 @@ const VALID_CATEGORIES = new Set<string>([
   "reasoning_corruption",
   "deceptive_reasoning",
   "undeclared_intent",
+  "output_misalignment",
+  "output_injection_compliance",
 ]);
 
 const VALID_SEVERITIES = new Set<string>([
@@ -100,6 +102,18 @@ export interface CheckIntegrityInput {
 
   /** Optional AAP trace link */
   linkedTraceId?: string | null;
+
+  /** Output block metadata (when output analysis is enabled) */
+  output?: {
+    /** SHA-256 hash of the output block */
+    hash: string;
+    /** Original token count */
+    tokensOriginal: number;
+    /** Tokens sent to analysis */
+    tokensAnalyzed: number;
+    /** Whether the output block was truncated */
+    truncated: boolean;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -370,6 +384,16 @@ export function checkIntegrity(input: CheckIntegrityInput): IntegrityCheckpoint 
     thinking_tokens_analyzed: input.thinking.tokensAnalyzed,
     truncated: input.thinking.truncated,
     extraction_confidence: input.thinking.confidence,
+    ...(input.output
+      ? {
+          analysis_scope: "thinking_and_output" as const,
+          output_tokens_original: input.output.tokensOriginal,
+          output_tokens_analyzed: input.output.tokensAnalyzed,
+          output_truncated: input.output.truncated,
+        }
+      : {
+          analysis_scope: "thinking_only" as const,
+        }),
   };
 
   // 6. Assemble and return IntegrityCheckpoint
@@ -380,6 +404,7 @@ export function checkIntegrity(input: CheckIntegrityInput): IntegrityCheckpoint 
     session_id: input.sessionId,
     timestamp: new Date().toISOString(),
     thinking_block_hash: input.thinking.hash,
+    ...(input.output ? { output_block_hash: input.output.hash } : {}),
     provider: input.thinking.provider,
     model: input.thinking.model,
     verdict,

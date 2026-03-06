@@ -173,6 +173,8 @@ function inferDriftDirection(categories: ConcernCategory[]): DriftDirection {
       deceptive_reasoning: "deception_pattern",
       reasoning_corruption: "reasoning_degradation",
       undeclared_intent: "intent_drift",
+      output_misalignment: "value_erosion",
+      output_injection_compliance: "injection_pattern",
     };
     return CATEGORY_TO_DIRECTION[maxCategory] ?? "unknown";
   }

@@ -44,6 +44,18 @@ export interface AnalysisMetadata {
 
   /** Provider adapter extraction confidence (0.0 to 1.0) */
   extraction_confidence: number;
+
+  /** Whether analysis included the output block */
+  analysis_scope?: "thinking_only" | "thinking_and_output";
+
+  /** Number of tokens in the output block (before truncation) */
+  output_tokens_original?: number;
+
+  /** Number of tokens sent to analysis (after truncation) */
+  output_tokens_analyzed?: number;
+
+  /** Whether the output block was truncated */
+  output_truncated?: boolean;
 }
 
 /**
@@ -88,6 +100,12 @@ export interface IntegrityCheckpoint {
    * Hash enables correlation without retaining private reasoning.
    */
   thinking_block_hash: string;
+
+  /**
+   * SHA-256 hash of the output block content (when output analysis is enabled).
+   * Like thinking_block_hash, the full output text MUST NOT be stored.
+   */
+  output_block_hash?: string | null;
 
   /** LLM provider that generated the thinking block */
   provider: string;

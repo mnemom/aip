@@ -20,6 +20,7 @@ import type { DriftState } from "../analysis/drift.js";
 import {
   DEFAULT_ANALYSIS_TIMEOUT_MS,
   DEFAULT_MIN_EVIDENCE_TOKENS,
+  DEFAULT_OUTPUT_TOKEN_BUDGET,
 } from "../constants.js";
 
 // ---------------------------------------------------------------------------
@@ -113,16 +114,24 @@ export function createClient(config: AIPConfig): AIPClient {
         );
       }
 
-      // 2. Build conscience prompt
+      // 2. Extract output block (if output analysis enabled)
+      let outputText: string | undefined;
+      if (config.analyze_output) {
+        outputText = extractOutputText(responseBody);
+      }
+
+      // 3. Build conscience prompt
       const prompt = buildConsciencePrompt({
         card: config.card,
         conscienceValues,
         windowContext: window.getState().checkpoints,
         thinkingBlock: thinking.content,
         taskContext,
+        outputBlock: outputText,
+        outputTokenBudget: config.output_token_budget ?? DEFAULT_OUTPUT_TOKEN_BUDGET,
       });
 
-      // 3. Call analysis LLM
+      // 4. Call analysis LLM
       const startTime = Date.now();
       let analysisResponseText: string;
 
@@ -150,7 +159,7 @@ export function createClient(config: AIPConfig): AIPClient {
 
       const analysisDurationMs = Date.now() - startTime;
 
-      // 4. Parse analysis and create checkpoint
+      // 5. Parse analysis and create checkpoint
       const thinkingHash = hashThinkingBlock(thinking.content);
       const windowState = window.getState();
 
@@ -174,12 +183,22 @@ export function createClient(config: AIPConfig): AIPClient {
         },
         analysisModel: config.analysis_llm.model,
         analysisDurationMs,
+        ...(outputText && prompt.outputOriginalTokens !== undefined
+          ? {
+              output: {
+                hash: hashThinkingBlock(outputText),
+                tokensOriginal: prompt.outputOriginalTokens,
+                tokensAnalyzed: prompt.outputAnalyzedTokens!,
+                truncated: prompt.outputTruncated!,
+              },
+            }
+          : {}),
       });
 
-      // 5. Update window
+      // 6. Update window
       window.push(checkpoint);
 
-      // 6. Detect drift
+      // 7. Detect drift
       const driftResult = detectIntegrityDrift(
         driftState,
         checkpoint,
@@ -187,14 +206,14 @@ export function createClient(config: AIPConfig): AIPClient {
       );
       driftState = driftResult.state;
 
-      // 7. Build signal
+      // 8. Build signal
       const summary = window.getSummary();
       if (driftResult.alert) {
         summary.drift_alert_active = true;
       }
       const signal = buildSignal(checkpoint, summary);
 
-      // 8. Invoke callbacks
+      // 9. Invoke callbacks
       if (config.callbacks?.on_verdict) {
         await config.callbacks.on_verdict(signal);
       }
@@ -295,6 +314,30 @@ async function callAnalysisLLM(
     return textBlock.text;
   } finally {
     clearTimeout(timeoutId);
+  }
+}
+
+/**
+ * Extract output text from a provider response body.
+ * Handles Anthropic Messages API format (content array with text blocks).
+ */
+function extractOutputText(responseBody: string): string | undefined {
+  try {
+    const body = JSON.parse(responseBody) as Record<string, unknown>;
+    const content = body.content as Array<Record<string, unknown>> | undefined;
+    if (!content || !Array.isArray(content)) return undefined;
+
+    // Collect all text blocks (skip thinking blocks)
+    const textParts: string[] = [];
+    for (const block of content) {
+      if (block.type === "text" && typeof block.text === "string") {
+        textParts.push(block.text);
+      }
+    }
+
+    return textParts.length > 0 ? textParts.join("\n") : undefined;
+  } catch {
+    return undefined;
   }
 }
 
