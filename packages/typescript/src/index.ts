@@ -30,6 +30,8 @@ export {
   validateAgreement,
   detectIntegrityDrift,
   createDriftState,
+  validateRecipeContent,
+  normalizeLegacyRecipe,
 } from "./analysis/index.js";
 
 export type {
@@ -37,6 +39,7 @@ export type {
   PromptInput,
   BuiltPrompt,
   DriftState,
+  RecipeValidationResult,
 } from "./analysis/index.js";
 
 // ---------------------------------------------------------------------------
@@ -113,6 +116,22 @@ export type {
   MerkleProof,
   ChainHash,
   CertificateVerificationResult,
+  // Detection recipe
+  RecipeOperator,
+  RecipeSeverity,
+  RecipeScope,
+  RecipeMatchMode,
+  RecipeTier3Action,
+  RecipeCondition,
+  RecipeTier1,
+  RecipeTier2Trigger,
+  RecipeTier2Check,
+  RecipeTier2,
+  RecipeTier3When,
+  RecipeTier3Rule,
+  RecipeTier3,
+  RecipeParsedContent,
+  DetectionRecipe,
 } from "./schemas/index.js";
 
 // ---------------------------------------------------------------------------

@@ -59,3 +59,22 @@ export type {
   ChainHash,
   CertificateVerificationResult,
 } from "./certificate";
+
+// Detection recipe types
+export type {
+  RecipeOperator,
+  RecipeSeverity,
+  RecipeScope,
+  RecipeMatchMode,
+  RecipeTier3Action,
+  RecipeCondition,
+  RecipeTier1,
+  RecipeTier2Trigger,
+  RecipeTier2Check,
+  RecipeTier2,
+  RecipeTier3When,
+  RecipeTier3Rule,
+  RecipeTier3,
+  RecipeParsedContent,
+  DetectionRecipe,
+} from "./recipe";
