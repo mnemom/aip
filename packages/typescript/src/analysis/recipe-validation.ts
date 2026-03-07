@@ -28,6 +28,14 @@ const VALID_OPERATORS = new Set<string>([
   "contains",
 ]);
 
+const VALID_METRICS = new Set<string>([
+  "thinking_output_ratio",
+  "output_token_count",
+  "thinking_token_count",
+  "hedging_word_count",
+  "tool_call_count",
+]);
+
 const VALID_MATCH_MODES = new Set<string>(["any", "all"]);
 
 const VALID_TIER3_ACTIONS = new Set<string>([
@@ -76,6 +84,12 @@ function validateTier1(
     }
     if (typeof c.metric !== "string" || c.metric.length === 0) {
       errors.push(`tier1.conditions[${i}].metric must be a non-empty string`);
+      return false;
+    }
+    if (!VALID_METRICS.has(c.metric as string)) {
+      errors.push(
+        `tier1.conditions[${i}].metric must be one of: ${[...VALID_METRICS].join(", ")} (got "${c.metric}")`,
+      );
       return false;
     }
     if (!VALID_OPERATORS.has(c.operator as string)) {

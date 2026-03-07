@@ -36,12 +36,26 @@ describe("validateRecipeContent", () => {
       tier1: {
         match: "any",
         conditions: [
-          { metric: "m", operator: "nope", threshold: 1, signal: "s" },
+          { metric: "thinking_output_ratio", operator: "nope", threshold: 1, signal: "s" },
         ],
       },
     });
     expect(result.valid).toBe(false);
     expect(result.errors[0]).toContain("operator");
+  });
+
+  it("rejects invalid metric name", () => {
+    const result = validateRecipeContent({
+      tier1: {
+        match: "any",
+        conditions: [
+          { metric: "thinking_output_divergence", operator: "gt", threshold: 0.5, signal: "s" },
+        ],
+      },
+    });
+    expect(result.valid).toBe(false);
+    expect(result.errors[0]).toContain("metric must be one of");
+    expect(result.errors[0]).toContain("thinking_output_divergence");
   });
 
   it("rejects empty content", () => {
