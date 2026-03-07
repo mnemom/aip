@@ -27,3 +27,7 @@ export { validateAgreement } from "./agreement.js";
 // Drift detection
 export { detectIntegrityDrift, createDriftState } from "./drift.js";
 export type { DriftState } from "./drift.js";
+
+// Recipe validation
+export { validateRecipeContent, normalizeLegacyRecipe } from "./recipe-validation.js";
+export type { RecipeValidationResult } from "./recipe-validation.js";
