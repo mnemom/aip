@@ -63,9 +63,11 @@ export type {
 
 // ---------------------------------------------------------------------------
 // Window — session state management
+// Note: WindowManager and createWindowState are intentionally NOT exported.
+// Use createClient() which manages window state internally. Direct window
+// manipulation creates incompatible session state and bypasses drift detection.
 // ---------------------------------------------------------------------------
 
-export { WindowManager, createWindowState } from "./window/index.js";
 export type { WindowState } from "./window/index.js";
 
 // ---------------------------------------------------------------------------
