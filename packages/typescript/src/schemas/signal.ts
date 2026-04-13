@@ -60,8 +60,12 @@ export interface IntegritySignal {
   checkpoint: IntegrityCheckpoint;
 
   /**
-   * Whether the agent should proceed.
-   * true for "clear", true for "review_needed", false for "boundary_violation".
+   * Whether the agent may continue executing.
+   * - `true` for "clear" (no issues) and "review_needed" (warnings only — proceed with optional logging)
+   * - `false` for "boundary_violation" (agent must be stopped)
+   *
+   * For finer-grained control, use `recommended_action` which distinguishes
+   * "clear" from "review_needed" without requiring boolean interpretation.
    */
   proceed: boolean;
 

@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.8.0] - 2026-04-13
+
+### Breaking Changes
+
+**`WindowManager` and `createWindowState` removed from public exports** (pre-1.0.0 audit).
+These were leaky internal abstractions — consumers should use `createClient()`, which manages
+window state internally. Direct window manipulation bypasses drift detection and creates
+incompatible sessions. `WindowState` type remains exported for typing purposes.
+
+```typescript
+// Before (no longer works):
+import { WindowManager, createWindowState } from '@mnemom/agent-integrity-protocol';
+
+// After — all window state managed through createClient():
+import { createClient } from '@mnemom/agent-integrity-protocol';
+const client = createClient({ card, analysisConfig });
+// Window state is handled automatically
+```
+
+**Peer dependency on `@mnemom/agent-alignment-protocol` updated** from `^0.5.0` to `^0.6.0`.
+If you use AAP alongside AIP, upgrade to AAP 0.7.0+ (which includes the new `recommended_action`
+field on `VerificationResult`).
+
+### Fixed
+
+**`IntegritySignal.proceed` docstring clarified.** The previous docstring ambiguously stated
+"true for review_needed", which could imply unsafe auto-retry behavior. The corrected docstring
+makes clear that "review_needed" maps to `proceed: true` with the intent of logging and
+proceeding with care — not silent auto-retry. For precise verdict handling, use
+`recommended_action` which distinguishes all three states explicitly.
+
 ## [Unreleased]
 
 ## [0.4.1] - 2026-02-25
