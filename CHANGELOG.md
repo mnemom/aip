@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-04-13
+
+### 🎯 1.0.0 Stability Commitment
+
+This release locks the public API of `@mnemom/agent-integrity-protocol` for stability.
+
+**What this means:**
+- Breaking changes now require a major version bump to 2.0
+- Each major version is supported for **18 months** from the release of its successor (per ADR-006)
+- Deprecations are announced with `Deprecation`, `Sunset`, and `Link` response headers + email notifications at T+0, +12 months, +16 months, +17 months
+- The API surface frozen in 1.0.0 is considered the canonical contract for all downstream integrations
+
+**Forward-looking note (ADR-007):** A 2.0 is planned that unifies AAP alignment cards and CLPI policy YAML into a single YAML agent card with runtime composition. Target: 6–12 months post-1.0 when production data informs the design.
+
+### Changed
+- Peer dependency `@mnemom/agent-alignment-protocol` bumped to `^1.0.0` (tracks AAP 1.0 stability lock)
+
+### Unchanged from 0.8.0
+- `IntegritySignal.recommended_action` field
+- Removal of `WindowManager` from public exports
+- Clarified `proceed` docstring
+
 ## [0.8.0] - 2026-04-13
 
 ### Breaking Changes
