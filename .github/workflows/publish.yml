@@ -118,8 +118,8 @@ jobs:
     permissions:
       contents: write   # for SBOM attach to GitHub Release
       id-token: write   # for npm OIDC Trusted Publisher
-    # mnemom/.github @ scale/step-29-cleanup merge (ADR-020)
-    uses: mnemom/.github/.github/workflows/npm-publish.yml@e9906593dcd1f0d2d642b92e46818bda1cc46e24
+    # mnemom/.github @ scale/step-29-bump-node24-actions merge (ADR-020)
+    uses: mnemom/.github/.github/workflows/npm-publish.yml@3b60e34e88113070235f2d55248a3455295be153
     with:
       npm-directory: packages/typescript
       tag: latest
@@ -136,8 +136,8 @@ jobs:
     permissions:
       contents: write
       id-token: write
-    # mnemom/.github @ scale/step-29-cleanup merge (ADR-020)
-    uses: mnemom/.github/.github/workflows/npm-publish.yml@e9906593dcd1f0d2d642b92e46818bda1cc46e24
+    # mnemom/.github @ scale/step-29-bump-node24-actions merge (ADR-020)
+    uses: mnemom/.github/.github/workflows/npm-publish.yml@3b60e34e88113070235f2d55248a3455295be153
     with:
       # Defensive defaults: GitHub validates `with:` expressions at load time,
       # before `if:` is evaluated. On a release event the `inputs` context is
