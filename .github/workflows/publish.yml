@@ -1,5 +1,15 @@
 name: Publish
 
+# Thin caller for the canonical npm publish recipe — see ADR-020.
+# All Node version, registry-url, OIDC, provenance, and SBOM logic lives in
+# mnemom/.github/.github/workflows/npm-publish.yml. To change the recipe,
+# edit the canonical workflow there; do not re-add steps inline here.
+#
+# Repo-specific logic that stays inline:
+#   - validate: tag vs. packages/typescript/package.json + packages/python/pyproject.toml versions
+#   - test: TypeScript build/typecheck/test + Python mypy/pytest
+#   - publish-pypi: PyPI is a separate registry, not covered by the npm reusable
+
 on:
   release:
     types: [published]
@@ -18,7 +28,7 @@ on:
 
 permissions: {}
 jobs:
-  # ── Release-triggered publishing (existing) ──
+  # ── Release-triggered: validate → test → (publish-npm, publish-pypi) ──
 
   validate:
     permissions:
@@ -39,15 +49,15 @@ jobs:
           with open('pyproject.toml', 'rb') as f:
               print(tomllib.load(f)['project']['version'])
           ")
-          if [ "$PYPI_VERSION" \!= "${{ steps.tag.outputs.version }}" ]; then
-            echo "ERROR: pyproject.toml version ($PYPI_VERSION) \!= tag (${{ steps.tag.outputs.version }})"
+          if [ "$PYPI_VERSION" != "${{ steps.tag.outputs.version }}" ]; then
+            echo "ERROR: pyproject.toml version ($PYPI_VERSION) != tag (${{ steps.tag.outputs.version }})"
             exit 1
           fi
       - name: Check npm version
         run: |
           NPM_VERSION=$(node -p "require('./packages/typescript/package.json').version")
-          if [ "$NPM_VERSION" \!= "${{ steps.tag.outputs.version }}" ]; then
-            echo "ERROR: package.json version ($NPM_VERSION) \!= tag (${{ steps.tag.outputs.version }})"
+          if [ "$NPM_VERSION" != "${{ steps.tag.outputs.version }}" ]; then
+            echo "ERROR: package.json version ($NPM_VERSION) != tag (${{ steps.tag.outputs.version }})"
             exit 1
           fi
 
@@ -103,73 +113,36 @@ jobs:
           packages-dir: packages/python/dist/
 
   publish-npm:
-    permissions:
-      contents: read
-      id-token: write
-    name: Publish to npm
     needs: [validate, test]
     if: github.event_name == 'release'
-    runs-on: ubuntu-latest
-    environment: production
-    defaults:
-      run:
-        working-directory: packages/typescript
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6
-        with:
-          node-version: "24"
-          registry-url: "https://registry.npmjs.org"
-      - run: npm ci || npm install
-      - run: npm run build
-      - run: npm publish --access public --provenance
+    permissions:
+      contents: write   # for SBOM attach to GitHub Release
+      id-token: write   # for npm OIDC Trusted Publisher
+    # mnemom/.github @ scale/step-29-fix-artifact-name merge (ADR-020)
+    uses: mnemom/.github/.github/workflows/npm-publish.yml@0514f87f1642dfdd3ad26a32c0fe4dcbe9a478b9
+    with:
+      npm-directory: packages/typescript
+      tag: latest
 
   # ── Orchestrator dispatch publishing ──
 
   dispatch-publish:
-    permissions:
-      contents: read
-      id-token: write
     if: github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6
-        with:
-          node-version: "24"
-          registry-url: "https://registry.npmjs.org"
-      - name: Install and build
-        working-directory: ${{ inputs.npm-directory }}
-        run: |
-          npm ci || npm install
-          npm run build --if-present
-      - name: Check if already published
-        id: check
-        working-directory: ${{ inputs.npm-directory }}
-        run: |
-          PKG_NAME=$(node -p "require('./package.json').name")
-          PKG_VERSION=$(node -p "require('./package.json').version")
-          PUBLISHED=$(npm view "${PKG_NAME}@${PKG_VERSION}" version 2>/dev/null || echo "")
-          if [ "$PUBLISHED" = "$PKG_VERSION" ]; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            echo "$PKG_NAME@$PKG_VERSION already published — skipping"
-          else
-            echo "skip=false" >> "$GITHUB_OUTPUT"
-            echo "Will publish $PKG_NAME@$PKG_VERSION"
-          fi
-      - name: Publish
-        if: steps.check.outputs.skip != 'true'
-        working-directory: ${{ inputs.npm-directory }}
-        run: npm publish --access public --provenance
-
-      - name: Generate SBOM
-        uses: anchore/sbom-action@17ae1740179002c89186b61233e0f892c3118b11 # v0
-        with:
-          format: cyclonedx-json
-          output-file: sbom.cdx.json
-      - name: Upload SBOM
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: sbom
-          path: sbom.cdx.json
+    # contents: write is over-granted relative to what dispatch-publish does
+    # (the `gh release upload` step in the reusable workflow is gated on
+    # `event_name == 'release'` and never runs here). But GitHub validates
+    # caller permissions against the called workflow's declared permissions
+    # at workflow load time, before any `if:` is evaluated.
+    permissions:
+      contents: write
+      id-token: write
+    # mnemom/.github @ scale/step-29-fix-artifact-name merge (ADR-020)
+    uses: mnemom/.github/.github/workflows/npm-publish.yml@0514f87f1642dfdd3ad26a32c0fe4dcbe9a478b9
+    with:
+      # Defensive defaults: GitHub validates `with:` expressions at load time,
+      # before `if:` is evaluated. On a release event the `inputs` context is
+      # empty; the `||` fallback keeps the expression valid on both event types.
+      npm-directory: ${{ inputs.npm-directory || 'packages/typescript' }}
+      dispatch-id: ${{ inputs.dispatch-id || '' }}
+      tag: latest
+      attach-sbom-to-release: false   # dispatch path has no release to attach to
