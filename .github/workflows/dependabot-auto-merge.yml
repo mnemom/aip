@@ -1,0 +1,22 @@
+name: Dependabot auto-merge
+
+# Thin caller for the canonical Dependabot auto-merge recipe — see
+# mnemom/.github/.github/workflows/dependabot-auto-merge.yml (added in
+# Scale Step 29 Parking Lot — Dependabot automation).
+#
+# Patch + minor bumps auto-merge once required CI checks are green.
+# Major bumps stay open for human review.
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions: {}
+
+jobs:
+  auto-merge:
+    permissions:
+      contents: write
+      pull-requests: write
+    # mnemom/.github @ scale/step-29-dependabot-automation merge
+    uses: mnemom/.github/.github/workflows/dependabot-auto-merge.yml@2d664fbc43492341aedcc8631a584d51c3918b71
