@@ -1,5 +1,5 @@
 /** Protocol version identifiers. */
-export const AIP_VERSION = "0.5.0";
+export const AIP_VERSION = "1.0.0";
 export const ALGORITHM_VERSION = "1.0.0";
 
 /** Drift detection thresholds (Section 9.1). */
