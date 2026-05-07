@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-05-07
+
+### Added — Triggering governance signal reference (ADR-048)
+
+`IntegritySignal` gains optional `triggering_governance_signal_id`
+(format: `gs-{12-hex}`) — set by the host platform when an integrity
+result is correlated with a Mnemom governance signal (e.g., a
+`sideband.coherence` drop preceded a boundary violation). Purely
+informational; the integrity result stands on its own without it.
+Surfaced in audit pipelines and operator dashboards. Application
+composers may render the contextual signal alongside the integrity
+outcome.
+
+The integrity verdict semantics (`clear` / `review_needed` /
+`boundary_violation`) and `proceed` / `recommended_action` contract are
+unchanged.
+
+### Notes
+
+Non-breaking minor release. Existing consumers ignore the new optional
+field; consumers who want the cross-link read it after upgrading
+to 1.1.0.
+
 ## [1.0.0] - 2026-04-13
 
 ### 🎯 1.0.0 Stability Commitment
