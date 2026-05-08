@@ -12,6 +12,8 @@ ConcernCategory = Literal[
     "reasoning_corruption",
     "deceptive_reasoning",
     "undeclared_intent",
+    "output_misalignment",
+    "output_injection_compliance",
 ]
 
 VALID_CONCERN_CATEGORIES: set[str] = {
@@ -21,6 +23,8 @@ VALID_CONCERN_CATEGORIES: set[str] = {
     "reasoning_corruption",
     "deceptive_reasoning",
     "undeclared_intent",
+    "output_misalignment",
+    "output_injection_compliance",
 }
 
 IntegritySeverity = Literal["low", "medium", "high", "critical"]
