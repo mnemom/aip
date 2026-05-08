@@ -1,14 +1,20 @@
 name: Publish
 
-# Thin caller for the canonical npm publish recipe — see ADR-020.
-# All Node version, registry-url, OIDC, provenance, and SBOM logic lives in
-# mnemom/.github/.github/workflows/npm-publish.yml. To change the recipe,
-# edit the canonical workflow there; do not re-add steps inline here.
+# Thin caller for the canonical publish recipes — see ADR-020.
+# Both npm and PyPI logic now live in reusable workflows under mnemom/.github:
+#   - npm-publish.yml  (provenance, SBOM, OIDC Trusted Publisher)
+#   - pypi-publish.yml (provenance via Trusted Publisher, SBOM, skip-existing)
+# To change either recipe, edit the canonical workflow there; do not re-add
+# steps inline here.
 #
 # Repo-specific logic that stays inline:
 #   - validate: tag vs. packages/typescript/package.json + packages/python/pyproject.toml versions
 #   - test: TypeScript build/typecheck/test + Python mypy/pytest
-#   - publish-pypi: PyPI is a separate registry, not covered by the npm reusable
+#
+# The dispatch-publish path now invokes BOTH reusables in parallel — the
+# orchestrator-driven auto-publish on every main push tries to ship both
+# packages, with each reusable's idempotent skip-on-existing handling the
+# unchanged-version case. Closes the npm/PyPI parity gap (May 8, 2026 audit).
 
 on:
   release:
@@ -90,27 +96,16 @@ jobs:
           pytest
 
   publish-pypi:
-    name: Publish to PyPI
     needs: [validate, test]
     if: github.event_name == 'release'
-    runs-on: ubuntu-latest
     permissions:
-      id-token: write
-      contents: read
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-        with:
-          python-version: "3.12"
-      - name: Build
-        working-directory: packages/python
-        run: |
-          pip install build
-          python -m build
-      - name: Publish
-        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # release/v1
-        with:
-          packages-dir: packages/python/dist/
+      contents: write   # for SBOM attach to GitHub Release
+      id-token: write   # for PyPI OIDC Trusted Publisher
+    # mnemom/.github @ feat/pypi-publish-reusable HEAD — TODO: bump to main SHA
+    # once https://github.com/mnemom/.github/pull/13 merges.
+    uses: mnemom/.github/.github/workflows/pypi-publish.yml@43b2c8de15e1a1d737a667782830bbbaa90100e5
+    with:
+      python-directory: packages/python
 
   publish-npm:
     needs: [validate, test]
@@ -125,8 +120,13 @@ jobs:
       tag: latest
 
   # ── Orchestrator dispatch publishing ──
+  #
+  # The orchestrator's auto-publish-on-main-push fires both jobs below in
+  # parallel. Each reusable's skip-on-existing logic makes a no-op publish
+  # idempotent — when version is unchanged from the registry, the call
+  # short-circuits without touching the registry.
 
-  dispatch-publish:
+  dispatch-publish-npm:
     if: github.event_name == 'workflow_dispatch'
     # contents: write is over-granted relative to what dispatch-publish does
     # (the `gh release upload` step in the reusable workflow is gated on
@@ -145,4 +145,19 @@ jobs:
       npm-directory: ${{ inputs.npm-directory || 'packages/typescript' }}
       dispatch-id: ${{ inputs.dispatch-id || '' }}
       tag: latest
+      attach-sbom-to-release: false   # dispatch path has no release to attach to
+
+  dispatch-publish-pypi:
+    if: github.event_name == 'workflow_dispatch'
+    # Same over-granting rationale as dispatch-publish-npm above —
+    # GitHub validates declared permissions before evaluating `if:`.
+    permissions:
+      contents: write
+      id-token: write
+    # mnemom/.github @ feat/pypi-publish-reusable HEAD — TODO: bump to main SHA
+    # once https://github.com/mnemom/.github/pull/13 merges.
+    uses: mnemom/.github/.github/workflows/pypi-publish.yml@43b2c8de15e1a1d737a667782830bbbaa90100e5
+    with:
+      python-directory: packages/python
+      dispatch-id: ${{ inputs.dispatch-id || '' }}
       attach-sbom-to-release: false   # dispatch path has no release to attach to
