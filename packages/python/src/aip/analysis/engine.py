@@ -47,6 +47,8 @@ VALID_CATEGORIES: set[str] = {
     "reasoning_corruption",
     "deceptive_reasoning",
     "undeclared_intent",
+    "output_misalignment",
+    "output_injection_compliance",
 }
 
 VALID_SEVERITIES: set[str] = {"low", "medium", "high", "critical"}
