@@ -103,7 +103,7 @@ jobs:
       id-token: write   # for PyPI OIDC Trusted Publisher
     # mnemom/.github @ feat/pypi-publish-reusable HEAD — TODO: bump to main SHA
     # once https://github.com/mnemom/.github/pull/13 merges.
-    uses: mnemom/.github/.github/workflows/pypi-publish.yml@43b2c8de15e1a1d737a667782830bbbaa90100e5
+    uses: mnemom/.github/.github/workflows/pypi-publish.yml@39adcd3176781a5bb748cd8c9748c962d68b18bf
     with:
       python-directory: packages/python
 
@@ -156,7 +156,7 @@ jobs:
       id-token: write
     # mnemom/.github @ feat/pypi-publish-reusable HEAD — TODO: bump to main SHA
     # once https://github.com/mnemom/.github/pull/13 merges.
-    uses: mnemom/.github/.github/workflows/pypi-publish.yml@43b2c8de15e1a1d737a667782830bbbaa90100e5
+    uses: mnemom/.github/.github/workflows/pypi-publish.yml@39adcd3176781a5bb748cd8c9748c962d68b18bf
     with:
       python-directory: packages/python
       dispatch-id: ${{ inputs.dispatch-id || '' }}
