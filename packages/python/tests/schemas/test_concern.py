@@ -42,7 +42,7 @@ def test_schema_concern_category_matches_concern_py_literal() -> None:
 
 def test_schema_concern_category_matches_concern_py_valid_set() -> None:
     schema_categories = _schema_enum("ConcernCategory")
-    assert VALID_CONCERN_CATEGORIES == schema_categories, (
+    assert schema_categories == VALID_CONCERN_CATEGORIES, (
         f"VALID_CONCERN_CATEGORIES in aip.schemas.concern drifted from "
         f"schemas/concern.schema.json.\n"
         f"  In set but not in schema: {VALID_CONCERN_CATEGORIES - schema_categories}\n"
@@ -52,7 +52,7 @@ def test_schema_concern_category_matches_concern_py_valid_set() -> None:
 
 def test_schema_concern_category_matches_engine_py_valid_categories() -> None:
     schema_categories = _schema_enum("ConcernCategory")
-    assert VALID_CATEGORIES == schema_categories, (
+    assert schema_categories == VALID_CATEGORIES, (
         f"VALID_CATEGORIES in aip.analysis.engine drifted from "
         f"schemas/concern.schema.json.\n"
         f"  In set but not in schema: {VALID_CATEGORIES - schema_categories}\n"
@@ -72,7 +72,7 @@ def test_schema_severity_matches_concern_py_literal() -> None:
 
 def test_schema_severity_matches_engine_py_valid_severities() -> None:
     schema_severities = _schema_enum("IntegritySeverity")
-    assert VALID_SEVERITIES == schema_severities, (
-        f"VALID_SEVERITIES in aip.analysis.engine drifted from "
-        f"schemas/concern.schema.json."
+    assert schema_severities == VALID_SEVERITIES, (
+        "VALID_SEVERITIES in aip.analysis.engine drifted from "
+        "schemas/concern.schema.json."
     )
