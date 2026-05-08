@@ -63,8 +63,8 @@
     },
     "concerns": {
       "type": "array",
-      "items": { "$ref": "#/$defs/IntegrityConcern" },
-      "description": "List of concerns identified (empty for clear verdicts)"
+      "items": { "$ref": "concern.schema.json" },
+      "description": "List of concerns identified (empty for clear verdicts). Schema lives in concern.schema.json — that file is the canonical source for ConcernCategory and IntegritySeverity enumerations."
     },
     "reasoning_summary": {
       "type": "string",
@@ -88,40 +88,7 @@
     }
   },
   "$defs": {
-    "IntegrityConcern": {
-      "type": "object",
-      "required": ["category", "severity", "description", "evidence"],
-      "properties": {
-        "category": {
-          "type": "string",
-          "enum": [
-            "prompt_injection",
-            "value_misalignment",
-            "autonomy_violation",
-            "reasoning_corruption",
-            "deceptive_reasoning",
-            "undeclared_intent"
-          ]
-        },
-        "severity": {
-          "type": "string",
-          "enum": ["low", "medium", "high", "critical"]
-        },
-        "description": {
-          "type": "string"
-        },
-        "evidence": {
-          "type": "string",
-          "description": "Short quote from thinking block (max 200 chars recommended)"
-        },
-        "relevant_card_field": {
-          "type": ["string", "null"]
-        },
-        "relevant_conscience_value": {
-          "type": ["string", "null"]
-        }
-      }
-    },
+    "IntegrityConcern": { "$ref": "concern.schema.json" },
     "ConscienceContext": {
       "type": "object",
       "required": [

@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "IntegrityConcern",
+  "description": "A specific integrity concern identified during thinking-block analysis. Canonical source of truth for the ConcernCategory and IntegritySeverity enumerations consumed by the TypeScript and Python SDKs (and downstream by the mnemom-prover Rust zkVM guest).",
+  "type": "object",
+  "required": ["category", "severity", "description", "evidence"],
+  "properties": {
+    "category": { "$ref": "#/$defs/ConcernCategory" },
+    "severity": { "$ref": "#/$defs/IntegritySeverity" },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of the concern"
+    },
+    "evidence": {
+      "type": "string",
+      "description": "Direct quote from the thinking block (or output block, prefixed with [OUTPUT]) as evidence for this concern. Max 200 characters per AIP spec."
+    },
+    "relevant_card_field": {
+      "type": ["string", "null"],
+      "description": "Dotted path to the alignment card field most relevant to this concern (e.g., 'autonomy_envelope.forbidden_actions'), or null if none."
+    },
+    "relevant_conscience_value": {
+      "type": ["string", "null"],
+      "description": "Reference to the conscience value most relevant to this concern (e.g., 'BOUNDARY:no_data_exfiltration'), or null if none."
+    }
+  },
+  "$defs": {
+    "ConcernCategory": {
+      "title": "ConcernCategory",
+      "description": "Category of integrity concern detected during analysis. Adding or removing a value here is a breaking schema change — every language SDK and downstream consumer (TS, Python, Rust prover) MUST be kept in sync. CI tests in each consumer assert parity against this enum.",
+      "type": "string",
+      "enum": [
+        "prompt_injection",
+        "value_misalignment",
+        "autonomy_violation",
+        "reasoning_corruption",
+        "deceptive_reasoning",
+        "undeclared_intent",
+        "output_misalignment",
+        "output_injection_compliance"
+      ]
+    },
+    "IntegritySeverity": {
+      "title": "IntegritySeverity",
+      "description": "Severity level of an integrity concern. Total ordering: low < medium < high < critical.",
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"]
+    }
+  }
+}
