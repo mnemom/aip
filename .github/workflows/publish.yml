@@ -1,20 +1,20 @@
 name: Publish
 
-# Thin caller for the canonical publish recipes — see ADR-020.
-# Both npm and PyPI logic now live in reusable workflows under mnemom/.github:
-#   - npm-publish.yml  (provenance, SBOM, OIDC Trusted Publisher)
-#   - pypi-publish.yml (provenance via Trusted Publisher, SBOM, skip-existing)
-# To change either recipe, edit the canonical workflow there; do not re-add
-# steps inline here.
+# npm side: thin caller for the canonical mnemom/.github/npm-publish.yml
+# reusable (ADR-020). PyPI Trusted Publishing does NOT support reusable
+# workflows (https://docs.pypi.org/trusted-publishers/troubleshooting/#reusable-workflows-on-github),
+# so the PyPI publish step is INLINE here. Don't try to lift it into a
+# reusable — the OIDC token's `job_workflow_ref` claim points to the
+# reusable, and PyPI rejects with `invalid-publisher`. Verified painfully
+# May 8, 2026 (the canonical mnemom/.github/.github/workflows/pypi-publish.yml
+# is retained for token-based publishes and as a non-OIDC SBOM utility).
 #
-# Repo-specific logic that stays inline:
+# Repo-specific logic stays inline either way:
 #   - validate: tag vs. packages/typescript/package.json + packages/python/pyproject.toml versions
 #   - test: TypeScript build/typecheck/test + Python mypy/pytest
 #
-# The dispatch-publish path now invokes BOTH reusables in parallel — the
-# orchestrator-driven auto-publish on every main push tries to ship both
-# packages, with each reusable's idempotent skip-on-existing handling the
-# unchanged-version case. Closes the npm/PyPI parity gap (May 8, 2026 audit).
+# The dispatch-publish path fires both publishes in parallel on every main
+# push; each path's skip-on-existing handles unchanged versions.
 
 on:
   release:
@@ -96,16 +96,29 @@ jobs:
           pytest
 
   publish-pypi:
+    name: Publish to PyPI
     needs: [validate, test]
     if: github.event_name == 'release'
+    runs-on: ubuntu-latest
     permissions:
-      contents: write   # for SBOM attach to GitHub Release
-      id-token: write   # for PyPI OIDC Trusted Publisher
-    # mnemom/.github @ feat/pypi-publish-reusable HEAD — TODO: bump to main SHA
-    # once https://github.com/mnemom/.github/pull/13 merges.
-    uses: mnemom/.github/.github/workflows/pypi-publish.yml@39adcd3176781a5bb748cd8c9748c962d68b18bf
-    with:
-      python-directory: packages/python
+      id-token: write   # OIDC → PyPI Trusted Publisher
+      contents: read
+    environment: production
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.12"
+      - name: Build sdist + wheel
+        working-directory: packages/python
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
+          python -m build
+      - name: Publish to PyPI (Trusted Publisher)
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # release/v1
+        with:
+          packages-dir: packages/python/dist/
 
   publish-npm:
     needs: [validate, test]
@@ -121,10 +134,9 @@ jobs:
 
   # ── Orchestrator dispatch publishing ──
   #
-  # The orchestrator's auto-publish-on-main-push fires both jobs below in
-  # parallel. Each reusable's skip-on-existing logic makes a no-op publish
-  # idempotent — when version is unchanged from the registry, the call
-  # short-circuits without touching the registry.
+  # Both jobs fire in parallel on every main push. Each one's skip-on-existing
+  # logic makes a no-op publish idempotent — when version is unchanged from
+  # the registry, the call short-circuits without touching the registry.
 
   dispatch-publish-npm:
     if: github.event_name == 'workflow_dispatch'
@@ -148,16 +160,58 @@ jobs:
       attach-sbom-to-release: false   # dispatch path has no release to attach to
 
   dispatch-publish-pypi:
+    name: Publish packages/python (dispatch)
     if: github.event_name == 'workflow_dispatch'
-    # Same over-granting rationale as dispatch-publish-npm above —
-    # GitHub validates declared permissions before evaluating `if:`.
+    runs-on: ubuntu-latest
     permissions:
-      contents: write
-      id-token: write
-    # mnemom/.github @ feat/pypi-publish-reusable HEAD — TODO: bump to main SHA
-    # once https://github.com/mnemom/.github/pull/13 merges.
-    uses: mnemom/.github/.github/workflows/pypi-publish.yml@39adcd3176781a5bb748cd8c9748c962d68b18bf
-    with:
-      python-directory: packages/python
-      dispatch-id: ${{ inputs.dispatch-id || '' }}
-      attach-sbom-to-release: false   # dispatch path has no release to attach to
+      id-token: write   # OIDC → PyPI Trusted Publisher
+      contents: read
+    environment: production
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.12"
+      - name: Read package metadata
+        id: meta
+        working-directory: packages/python
+        run: |
+          PKG_NAME=$(python3 -c "
+          import tomllib
+          with open('pyproject.toml', 'rb') as f:
+              print(tomllib.load(f)['project']['name'])
+          ")
+          PKG_VERSION=$(python3 -c "
+          import tomllib
+          with open('pyproject.toml', 'rb') as f:
+              print(tomllib.load(f)['project']['version'])
+          ")
+          echo "pkg-name=$PKG_NAME" >> "$GITHUB_OUTPUT"
+          echo "pkg-version=$PKG_VERSION" >> "$GITHUB_OUTPUT"
+      - name: Check if already published
+        id: check
+        run: |
+          PKG_NAME="${{ steps.meta.outputs.pkg-name }}"
+          PKG_VERSION="${{ steps.meta.outputs.pkg-version }}"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "https://pypi.org/pypi/${PKG_NAME}/${PKG_VERSION}/json")
+          if [ "$STATUS" = "200" ]; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "${PKG_NAME}@${PKG_VERSION} already published — skipping"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            echo "Will publish ${PKG_NAME}@${PKG_VERSION}"
+          fi
+      - name: Build sdist + wheel
+        if: steps.check.outputs.skip != 'true'
+        working-directory: packages/python
+        run: |
+          python -m pip install --upgrade pip
+          pip install build
+          python -m build
+      - name: Publish to PyPI (Trusted Publisher)
+        if: steps.check.outputs.skip != 'true'
+        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # release/v1
+        with:
+          packages-dir: packages/python/dist/
+          skip-existing: true
