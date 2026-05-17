@@ -1,0 +1,24 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "release-type": "node",
+  "packages": {
+    "packages/typescript": {
+      "package-name": "@mnemom/agent-integrity-protocol",
+      "changelog-path": "../../CHANGELOG.md",
+      "include-component-in-tag": false
+    }
+  },
+  "changelog-sections": [
+    {"type": "feat",     "section": "Added"},
+    {"type": "fix",      "section": "Fixed"},
+    {"type": "perf",     "section": "Performance"},
+    {"type": "deps",     "section": "Dependencies"},
+    {"type": "refactor", "section": "Changed"},
+    {"type": "revert",   "section": "Reverted"},
+    {"type": "docs",     "section": "Docs"},
+    {"type": "chore",    "section": "Chore", "hidden": true},
+    {"type": "test",     "section": "Tests", "hidden": true},
+    {"type": "ci",       "section": "CI",    "hidden": true},
+    {"type": "build",    "section": "Build", "hidden": true}
+  ]
+}
