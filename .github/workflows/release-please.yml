@@ -13,7 +13,18 @@ jobs:
       contents: write       # create release commits + tags
       pull-requests: write  # open/update the release PR
     steps:
+      # Org policy orgs/mnemom has can_approve_pull_request_reviews=false ORG-WIDE,
+      # which vetoes release-please's default GITHUB_TOKEN from opening the release
+      # PR. Mint a GitHub App ("mnemom-release") token instead — an App identity is
+      # not subject to the Actions-PR policy. (Org secrets MNEMOM_RELEASE_APP_ID +
+      # MNEMOM_RELEASE_PRIVATE_KEY, ALL visibility. Pattern from mnemom-types.)
+      - uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        id: app-token
+        with:
+          app-id: ${{ secrets.MNEMOM_RELEASE_APP_ID }}
+          private-key: ${{ secrets.MNEMOM_RELEASE_PRIVATE_KEY }}
       - uses: googleapis/release-please-action@7987652d64b4581673a76e33ad5e98e3dd56832f # v4.1.3
         with:
+          token: ${{ steps.app-token.outputs.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
