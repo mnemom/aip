@@ -96,6 +96,12 @@ jobs:
           private-key: ${{ secrets.DEPLOY_APP_PRIVATE_KEY }}
           owner: mnemom
 
+      - name: Commit subject
+        id: commit
+        env:
+          HEAD_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: printf 'title=%s\n' "${HEAD_COMMIT_MESSAGE%%$'\n'*}" >> "$GITHUB_OUTPUT"
+
       - uses: peter-evans/repository-dispatch@28959ce8df70de7be546dd1250a005dd32156697 # v4.0.1
         with:
           token: ${{ steps.app-token.outputs.token }}
@@ -105,5 +111,6 @@ jobs:
             {
               "repo": "${{ github.event.repository.name }}",
               "sha": "${{ github.sha }}",
+              "commit_title": ${{ toJSON(steps.commit.outputs.title) }},
               "environment": "${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}"
             }
