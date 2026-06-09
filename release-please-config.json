@@ -5,19 +5,72 @@
     "packages/typescript": {
       "package-name": "@mnemom/agent-integrity-protocol",
       "include-component-in-tag": false
+    },
+    "packages/python": {
+      "release-type": "python",
+      "package-name": "agent-integrity-proto",
+      "skip-github-release": true
     }
   },
   "changelog-sections": [
-    {"type": "feat",     "section": "Added"},
-    {"type": "fix",      "section": "Fixed"},
-    {"type": "perf",     "section": "Performance"},
-    {"type": "deps",     "section": "Dependencies"},
-    {"type": "refactor", "section": "Changed"},
-    {"type": "revert",   "section": "Reverted"},
-    {"type": "docs",     "section": "Docs"},
-    {"type": "chore",    "section": "Chore", "hidden": true},
-    {"type": "test",     "section": "Tests", "hidden": true},
-    {"type": "ci",       "section": "CI",    "hidden": true},
-    {"type": "build",    "section": "Build", "hidden": true}
-  ]
+    {
+      "type": "feat",
+      "section": "Added"
+    },
+    {
+      "type": "fix",
+      "section": "Fixed"
+    },
+    {
+      "type": "perf",
+      "section": "Performance"
+    },
+    {
+      "type": "deps",
+      "section": "Dependencies"
+    },
+    {
+      "type": "refactor",
+      "section": "Changed"
+    },
+    {
+      "type": "revert",
+      "section": "Reverted"
+    },
+    {
+      "type": "docs",
+      "section": "Docs"
+    },
+    {
+      "type": "chore",
+      "section": "Chore",
+      "hidden": true
+    },
+    {
+      "type": "test",
+      "section": "Tests",
+      "hidden": true
+    },
+    {
+      "type": "ci",
+      "section": "CI",
+      "hidden": true
+    },
+    {
+      "type": "build",
+      "section": "Build",
+      "hidden": true
+    }
+  ],
+  "plugins": [
+    {
+      "type": "linked-versions",
+      "groupName": "aip",
+      "components": [
+        "@mnemom/agent-integrity-protocol",
+        "agent-integrity-proto"
+      ]
+    }
+  ],
+  "separate-pull-requests": false
 }
