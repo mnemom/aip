@@ -43,6 +43,28 @@ export interface BuiltPrompt {
   outputTruncated?: boolean;
 }
 
+export interface BuiltPromptParts {
+  system: string;
+  /**
+   * Per-agent semi-stable user content: card summary + conscience values.
+   * Byte-identical across requests for the same agent (same card and
+   * conscience values), regardless of task, session window, thinking, or
+   * output. Safe to place a prompt-cache breakpoint after this part.
+   */
+  userSemiStable: string;
+  /**
+   * Per-request dynamic user content: task context (if any), session window,
+   * thinking block, and output block (if any). Changes on every request.
+   */
+  userDynamic: string;
+  truncated: boolean;
+  originalTokens: number;
+  analyzedTokens: number;
+  outputOriginalTokens?: number;
+  outputAnalyzedTokens?: number;
+  outputTruncated?: boolean;
+}
+
 // ---------------------------------------------------------------------------
 // Token estimation
 // ---------------------------------------------------------------------------
@@ -279,7 +301,27 @@ function truncateOutputBlock(
 // Main builder
 // ---------------------------------------------------------------------------
 
-export function buildConsciencePrompt(input: PromptInput): BuiltPrompt {
+/**
+ * Shared section construction for both prompt builders.
+ *
+ * Computes every user prompt section (plus the system prompt and truncation
+ * metadata) exactly once, so that buildConsciencePrompt and
+ * buildConsciencePromptParts assemble identical content — only the section
+ * ordering differs between the two.
+ */
+interface PromptSections {
+  system: string;
+  cardSection: string;
+  taskSection: string | null;
+  conscienceSection: string | null;
+  windowSection: string;
+  thinkingSection: string;
+  outputSection: string | null;
+  truncation: TruncationResult;
+  outputTruncation?: TruncationResult;
+}
+
+function buildPromptSections(input: PromptInput): PromptSections {
   const budget = input.tokenBudget ?? DEFAULT_THINKING_TOKEN_BUDGET;
   const hasOutput = !!input.outputBlock;
 
@@ -293,44 +335,43 @@ export function buildConsciencePrompt(input: PromptInput): BuiltPrompt {
     outputTruncation = truncateOutputBlock(input.outputBlock, outputBudget);
   }
 
-  // Build system prompt (include output instructions when output block is present)
-  const system = buildSystemPrompt(hasOutput);
-
-  // Build user prompt sections
-  const sections: string[] = [];
-
-  // 1. Card summary
-  sections.push(summarizeCard(input.card));
-
-  // 2. Task context (if provided)
-  if (input.taskContext) {
-    sections.push(`CURRENT TASK: ${input.taskContext}`);
-  }
-
-  // 3. Conscience values (BOUNDARY and FEAR only; omit section if none)
-  const conscienceSection = buildConscienceValuesSection(
-    input.conscienceValues,
-  );
-  if (conscienceSection !== null) {
-    sections.push(conscienceSection);
-  }
-
-  // 4. Session window context
-  sections.push(buildWindowSection(input.windowContext));
-
-  // 5. Thinking block
-  sections.push(`THINKING BLOCK TO EVALUATE:\n\n${truncation.text}`);
-
-  // 6. Output block (when provided)
-  if (outputTruncation) {
-    sections.push(`OUTPUT BLOCK TO EVALUATE:\n\n${outputTruncation.text}`);
-  }
-
-  const user = sections.join("\n\n");
-
   return {
-    system,
-    user,
+    // System prompt (include output instructions when output block is present)
+    system: buildSystemPrompt(hasOutput),
+    // Card summary
+    cardSection: summarizeCard(input.card),
+    // Task context (if provided)
+    taskSection: input.taskContext
+      ? `CURRENT TASK: ${input.taskContext}`
+      : null,
+    // Conscience values (BOUNDARY and FEAR only; omit section if none)
+    conscienceSection: buildConscienceValuesSection(input.conscienceValues),
+    // Session window context
+    windowSection: buildWindowSection(input.windowContext),
+    // Thinking block
+    thinkingSection: `THINKING BLOCK TO EVALUATE:\n\n${truncation.text}`,
+    // Output block (when provided)
+    outputSection: outputTruncation
+      ? `OUTPUT BLOCK TO EVALUATE:\n\n${outputTruncation.text}`
+      : null,
+    truncation,
+    ...(outputTruncation ? { outputTruncation } : {}),
+  };
+}
+
+function buildTruncationMetadata(
+  truncation: TruncationResult,
+  outputTruncation?: TruncationResult,
+): Pick<
+  BuiltPrompt,
+  | "truncated"
+  | "originalTokens"
+  | "analyzedTokens"
+  | "outputOriginalTokens"
+  | "outputAnalyzedTokens"
+  | "outputTruncated"
+> {
+  return {
     truncated: truncation.truncated,
     originalTokens: truncation.originalTokens,
     analyzedTokens: truncation.analyzedTokens,
@@ -341,5 +382,97 @@ export function buildConsciencePrompt(input: PromptInput): BuiltPrompt {
           outputTruncated: outputTruncation.truncated,
         }
       : {}),
+  };
+}
+
+export function buildConsciencePrompt(input: PromptInput): BuiltPrompt {
+  const parts = buildPromptSections(input);
+
+  // Build user prompt sections (legacy order):
+  // 1. Card summary
+  // 2. Task context (if provided)
+  // 3. Conscience values (BOUNDARY and FEAR only; omit section if none)
+  // 4. Session window context
+  // 5. Thinking block
+  // 6. Output block (when provided)
+  const sections: string[] = [];
+
+  sections.push(parts.cardSection);
+  if (parts.taskSection !== null) {
+    sections.push(parts.taskSection);
+  }
+  if (parts.conscienceSection !== null) {
+    sections.push(parts.conscienceSection);
+  }
+  sections.push(parts.windowSection);
+  sections.push(parts.thinkingSection);
+  if (parts.outputSection !== null) {
+    sections.push(parts.outputSection);
+  }
+
+  const user = sections.join("\n\n");
+
+  return {
+    system: parts.system,
+    user,
+    ...buildTruncationMetadata(parts.truncation, parts.outputTruncation),
+  };
+}
+
+/**
+ * Build the conscience prompt split into cache-friendly parts.
+ *
+ * Returns the same system prompt as buildConsciencePrompt, with the user
+ * content split into two strings:
+ *
+ * - `userSemiStable`: card summary + conscience values. Stable across
+ *   requests for the same agent — consumers can place a prompt-cache
+ *   breakpoint (e.g. Anthropic `cache_control`) after this part so repeat
+ *   requests for the same agent read it from cache.
+ * - `userDynamic`: task context + session window + thinking block +
+ *   output block. Changes on every request.
+ *
+ * Joining `userSemiStable` and `userDynamic` with "\n\n" yields a user
+ * prompt with the same sections as buildConsciencePrompt().user.
+ *
+ * IMPORTANT — section order differs from buildConsciencePrompt(): the legacy
+ * builder interleaves the task context between the card summary and the
+ * conscience values, while this opt-in path moves all semi-stable content
+ * (card summary + conscience values) to the front and all dynamic content
+ * (task context, session window, thinking block, output block) after it.
+ * The content of every section is identical; only the ordering changes.
+ * Consumers switching from buildConsciencePrompt should validate analysis
+ * quality on switchover.
+ *
+ * All truncation and token-budget behavior is identical to
+ * buildConsciencePrompt (both call the same internal section builders).
+ */
+export function buildConsciencePromptParts(
+  input: PromptInput,
+): BuiltPromptParts {
+  const parts = buildPromptSections(input);
+
+  // Semi-stable (per-agent): card summary + conscience values
+  const semiStableSections: string[] = [parts.cardSection];
+  if (parts.conscienceSection !== null) {
+    semiStableSections.push(parts.conscienceSection);
+  }
+
+  // Dynamic (per-request): task context + session window + thinking + output
+  const dynamicSections: string[] = [];
+  if (parts.taskSection !== null) {
+    dynamicSections.push(parts.taskSection);
+  }
+  dynamicSections.push(parts.windowSection);
+  dynamicSections.push(parts.thinkingSection);
+  if (parts.outputSection !== null) {
+    dynamicSections.push(parts.outputSection);
+  }
+
+  return {
+    system: parts.system,
+    userSemiStable: semiStableSections.join("\n\n"),
+    userDynamic: dynamicSections.join("\n\n"),
+    ...buildTruncationMetadata(parts.truncation, parts.outputTruncation),
   };
 }

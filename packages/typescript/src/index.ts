@@ -26,6 +26,7 @@ export {
   mapVerdictToProceed,
   hashThinkingBlock,
   buildConsciencePrompt,
+  buildConsciencePromptParts,
   summarizeCard,
   validateAgreement,
   detectIntegrityDrift,
@@ -38,6 +39,7 @@ export type {
   CheckIntegrityInput,
   PromptInput,
   BuiltPrompt,
+  BuiltPromptParts,
   DriftState,
   RecipeValidationResult,
 } from "./analysis/index.js";
