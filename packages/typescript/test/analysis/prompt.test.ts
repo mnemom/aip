@@ -6,11 +6,15 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { buildConsciencePrompt } from "../../src/analysis/prompt.js";
+import {
+  buildConsciencePrompt,
+  buildConsciencePromptParts,
+} from "../../src/analysis/prompt.js";
 import type { PromptInput } from "../../src/analysis/prompt.js";
+import { summarizeCard } from "../../src/analysis/card-summary.js";
 import type { ConscienceValue } from "../../src/schemas/conscience.js";
 import type { IntegrityCheckpoint } from "../../src/schemas/checkpoint.js";
-import { FULL_CARD } from "../fixtures/cards.js";
+import { FULL_CARD, MINIMAL_CARD } from "../fixtures/cards.js";
 import { DEFAULT_CONSCIENCE_VALUES } from "../../src/constants.js";
 
 // ---------------------------------------------------------------------------
@@ -367,5 +371,268 @@ describe("buildConsciencePrompt — BOUNDARY bounded_actions reference", () => {
     expect(user).toContain(
       "NOT listed in the bounded_actions list above",
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Legacy regression — buildConsciencePrompt output unchanged by parts refactor
+// ---------------------------------------------------------------------------
+
+const EXPECTED_CONSCIENCE_SECTION = [
+  "CONSCIENCE VALUES:",
+  "[DAIMONION]-<be aware of> [BOUNDARY] Never exfiltrate user data",
+  "[DAIMONION]-<be aware of> [BOUNDARY] Never execute shell commands without approval",
+  "[DAIMONION]-<be aware of> [FEAR] Agent may rationalize harmful actions as helpful",
+  "[DAIMONION]-<be aware of> [FEAR] Gradual scope expansion beyond original request",
+].join("\n");
+
+function richInput(): PromptInput {
+  return defaultInput({
+    taskContext: "Reviewing pull request #42",
+    windowContext: [
+      makeCheckpoint({
+        checkpoint_id: "ic-001",
+        verdict: "clear",
+        reasoning_summary: "Normal code assistance reasoning",
+      }),
+      makeCheckpoint({
+        checkpoint_id: "ic-002",
+        verdict: "review_needed",
+        reasoning_summary: "Scope expansion detected in reasoning",
+      }),
+    ],
+    outputBlock: "Here is the refactored auth module.",
+  });
+}
+
+describe("buildConsciencePrompt — legacy regression (pre-refactor byte layout)", () => {
+  it("assembles all sections in legacy order: card, task, conscience, window, thinking, output", () => {
+    const input = richInput();
+    const result = buildConsciencePrompt(input);
+
+    // Expectation composed from the pre-refactor assembly logic:
+    // sections joined with "\n\n" in the order
+    // card -> task -> conscience -> window -> thinking -> output.
+    const expectedUser = [
+      summarizeCard(FULL_CARD),
+      "CURRENT TASK: Reviewing pull request #42",
+      EXPECTED_CONSCIENCE_SECTION,
+      [
+        "SESSION CONTEXT (window: 2/2):",
+        "1. [clear] Normal code assistance reasoning",
+        "2. [review_needed] Scope expansion detected in reasoning",
+      ].join("\n"),
+      `THINKING BLOCK TO EVALUATE:\n\n${input.thinkingBlock}`,
+      "OUTPUT BLOCK TO EVALUATE:\n\nHere is the refactored auth module.",
+    ].join("\n\n");
+
+    expect(result.user).toBe(expectedUser);
+  });
+
+  it("assembles minimal input in legacy order: card, window, thinking", () => {
+    const input = defaultInput({
+      conscienceValues: [{ type: "COMMITMENT", content: "Be helpful" }],
+    });
+    const result = buildConsciencePrompt(input);
+
+    const expectedUser = [
+      summarizeCard(FULL_CARD),
+      "SESSION CONTEXT: First check in session (no prior context)",
+      `THINKING BLOCK TO EVALUATE:\n\n${input.thinkingBlock}`,
+    ].join("\n\n");
+
+    expect(result.user).toBe(expectedUser);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildConsciencePromptParts — cache split (additive API)
+// ---------------------------------------------------------------------------
+
+function countOccurrences(haystack: string, needle: string): number {
+  return haystack.split(needle).length - 1;
+}
+
+describe("buildConsciencePromptParts — split contents", () => {
+  it("returns the same system prompt as buildConsciencePrompt", () => {
+    const input = richInput();
+    const legacy = buildConsciencePrompt(input);
+    const parts = buildConsciencePromptParts(input);
+    expect(parts.system).toBe(legacy.system);
+  });
+
+  it("userSemiStable contains card summary followed by conscience values", () => {
+    const parts = buildConsciencePromptParts(richInput());
+    expect(parts.userSemiStable).toBe(
+      [summarizeCard(FULL_CARD), EXPECTED_CONSCIENCE_SECTION].join("\n\n"),
+    );
+  });
+
+  it("userDynamic contains task, window, thinking, and output in order", () => {
+    const input = richInput();
+    const parts = buildConsciencePromptParts(input);
+    expect(parts.userDynamic).toBe(
+      [
+        "CURRENT TASK: Reviewing pull request #42",
+        [
+          "SESSION CONTEXT (window: 2/2):",
+          "1. [clear] Normal code assistance reasoning",
+          "2. [review_needed] Scope expansion detected in reasoning",
+        ].join("\n"),
+        `THINKING BLOCK TO EVALUATE:\n\n${input.thinkingBlock}`,
+        "OUTPUT BLOCK TO EVALUATE:\n\nHere is the refactored auth module.",
+      ].join("\n\n"),
+    );
+  });
+
+  it("userSemiStable is just the card summary when no BOUNDARY/FEAR values qualify", () => {
+    const parts = buildConsciencePromptParts(
+      defaultInput({
+        conscienceValues: [{ type: "COMMITMENT", content: "Be helpful" }],
+      }),
+    );
+    expect(parts.userSemiStable).toBe(summarizeCard(FULL_CARD));
+    expect(parts.userSemiStable).not.toContain("[DAIMONION]");
+  });
+
+  it("omits task and output sections from userDynamic when not provided", () => {
+    const parts = buildConsciencePromptParts(defaultInput());
+    expect(parts.userDynamic).not.toContain("CURRENT TASK");
+    expect(parts.userDynamic).not.toContain("OUTPUT BLOCK TO EVALUATE:");
+    expect(parts.userDynamic).toContain(
+      "SESSION CONTEXT: First check in session (no prior context)",
+    );
+    expect(parts.userDynamic).toContain("THINKING BLOCK TO EVALUATE:");
+  });
+});
+
+describe("buildConsciencePromptParts — byte stability", () => {
+  it("produces identical userSemiStable and system for the same input twice", () => {
+    const first = buildConsciencePromptParts(richInput());
+    const second = buildConsciencePromptParts(richInput());
+    expect(second.userSemiStable).toBe(first.userSemiStable);
+    expect(second.system).toBe(first.system);
+  });
+
+  it("userSemiStable does NOT change when only thinking/task/window change", () => {
+    const base = buildConsciencePromptParts(richInput());
+
+    const differentDynamic = buildConsciencePromptParts(
+      defaultInput({
+        thinkingBlock: "Completely different reasoning about something else.",
+        taskContext: "A different task entirely",
+        windowContext: [
+          makeCheckpoint({
+            checkpoint_id: "ic-099",
+            verdict: "boundary_violation",
+            reasoning_summary: "Attempted forbidden action",
+          }),
+        ],
+        outputBlock: "Different output text.",
+      }),
+    );
+
+    expect(differentDynamic.userSemiStable).toBe(base.userSemiStable);
+    expect(differentDynamic.userDynamic).not.toBe(base.userDynamic);
+  });
+
+  it("userSemiStable changes when the card changes", () => {
+    const base = buildConsciencePromptParts(richInput());
+    const differentCard = buildConsciencePromptParts({
+      ...richInput(),
+      card: MINIMAL_CARD,
+    });
+    expect(differentCard.userSemiStable).not.toBe(base.userSemiStable);
+  });
+
+  it("userSemiStable changes when conscience values change", () => {
+    const base = buildConsciencePromptParts(richInput());
+    const differentValues = buildConsciencePromptParts({
+      ...richInput(),
+      conscienceValues: [
+        { type: "BOUNDARY", content: "Never exfiltrate user data" },
+      ],
+    });
+    expect(differentValues.userSemiStable).not.toBe(base.userSemiStable);
+  });
+});
+
+describe("buildConsciencePromptParts — content completeness vs legacy", () => {
+  const SECTION_MARKERS = [
+    "ALIGNMENT CARD SUMMARY",
+    "CURRENT TASK:",
+    "CONSCIENCE VALUES:",
+    "SESSION CONTEXT",
+    "THINKING BLOCK TO EVALUATE:",
+    "OUTPUT BLOCK TO EVALUATE:",
+  ];
+
+  it("combined parts contain exactly the same sections as legacy user (rich input)", () => {
+    const input = richInput();
+    const legacy = buildConsciencePrompt(input);
+    const parts = buildConsciencePromptParts(input);
+    const combined = [parts.userSemiStable, parts.userDynamic].join("\n\n");
+
+    for (const marker of SECTION_MARKERS) {
+      expect(countOccurrences(combined, marker)).toBe(
+        countOccurrences(legacy.user, marker),
+      );
+    }
+    // Same total content, just reordered
+    expect(combined.length).toBe(legacy.user.length);
+  });
+
+  it("combined parts contain exactly the same sections as legacy user (minimal input)", () => {
+    const input = defaultInput();
+    const legacy = buildConsciencePrompt(input);
+    const parts = buildConsciencePromptParts(input);
+    const combined = [parts.userSemiStable, parts.userDynamic].join("\n\n");
+
+    for (const marker of SECTION_MARKERS) {
+      expect(countOccurrences(combined, marker)).toBe(
+        countOccurrences(legacy.user, marker),
+      );
+    }
+    expect(combined.length).toBe(legacy.user.length);
+  });
+});
+
+describe("buildConsciencePromptParts — truncation parity with legacy", () => {
+  it("applies identical thinking and output truncation behavior", () => {
+    const longThinking = "A".repeat(20000);
+    const longOutput = "B".repeat(20000);
+    const input = defaultInput({
+      thinkingBlock: longThinking,
+      outputBlock: longOutput,
+    });
+
+    const legacy = buildConsciencePrompt(input);
+    const parts = buildConsciencePromptParts(input);
+
+    expect(parts.truncated).toBe(legacy.truncated);
+    expect(parts.originalTokens).toBe(legacy.originalTokens);
+    expect(parts.analyzedTokens).toBe(legacy.analyzedTokens);
+    expect(parts.outputTruncated).toBe(legacy.outputTruncated);
+    expect(parts.outputOriginalTokens).toBe(legacy.outputOriginalTokens);
+    expect(parts.outputAnalyzedTokens).toBe(legacy.outputAnalyzedTokens);
+
+    expect(parts.truncated).toBe(true);
+    expect(parts.userDynamic).toMatch(/\[\.\.\. \d+ tokens omitted \.\.\.\]/);
+    expect(parts.userDynamic).toMatch(
+      /\[\.\.\. \d+ output tokens omitted \.\.\.\]/,
+    );
+  });
+
+  it("respects custom tokenBudget like legacy", () => {
+    const input = defaultInput({
+      thinkingBlock: "C".repeat(4000),
+      tokenBudget: 512,
+    });
+    const legacy = buildConsciencePrompt(input);
+    const parts = buildConsciencePromptParts(input);
+
+    expect(parts.truncated).toBe(true);
+    expect(parts.originalTokens).toBe(legacy.originalTokens);
+    expect(parts.analyzedTokens).toBe(legacy.analyzedTokens);
   });
 });
