@@ -1,3 +1,4 @@
 {
-  "packages/typescript": "1.2.0"
+  "packages/typescript": "1.2.0",
+  "packages/python": "1.2.0"
 }
