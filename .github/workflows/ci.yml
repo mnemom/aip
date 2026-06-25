@@ -64,6 +64,11 @@ jobs:
         run: ruff check src/ tests/
 
       - name: Typecheck
+        # mypy's target is fixed by [tool.mypy] python_version = "3.10" in
+        # pyproject.toml, so it produces identical results on every matrix
+        # interpreter — running it on all three legs was redundant. Gated to the
+        # highest matrix version (3.12) so it runs exactly once.
+        if: matrix.python-version == '3.12'
         run: mypy src/
 
       - name: Test
