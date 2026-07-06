@@ -1,0 +1,728 @@
+# ADW ZTE trigger — copy to <target-repo>/.github/workflows/adw-zte.yml
+#
+# GitHub Actions stands in for an inbound webhook server. It reacts to issue
+# events / manual dispatch and runs the mnemom-adw worker inside CI (un-nested,
+# so the agent's tools work normally — unlike a worker spawned inside an
+# interactive Claude session). See docs/ci-setup.md for the one-time setup.
+name: ADW ZTE (Wintermute worker)
+
+on:
+  # Fire only on `labeled` — the label is the intended trigger. An unlabeled
+  # `opened` issue would spawn a run that immediately skips at the `if:` guard, and
+  # an issue created WITH an adw:* label fires BOTH `opened` and `labeled` (a
+  # double-trigger). `workflow_dispatch` covers the manual case. (MNE-251)
+  # The gate's `issues` branch keys off the ADDED label (`github.event.label.name`),
+  # not label presence — see the gate comment below. (MNE-420)
+  issues:
+    types: [labeled]
+  issue_comment:
+    types: [created]
+  # PR-level shepherd trigger (MNE-915): an `adw:ship` label ADDED to a PR routes the
+  # worker to the PR-rooted ship path (`mnemom-adw --ship-pr <n>`) — ANY branch name, no
+  # tracking issue, no `<class>-issue-<n>-adw-<id>` worker-branch convention, no
+  # issue→branch dedup (the PR IS the unit). The companion `adw ship` COMMENT on a PR is
+  # handled by the `issue_comment` event above (a PR comment carries
+  # github.event.issue.pull_request). Both keep the SAME trusted-author firewall as the
+  # issue path and run on a PR-scoped concurrency group (adw-zte-pr-<n>). Like the issues
+  # branch, the gate keys off the ADDED label (github.event.label.name), never presence,
+  # and a Bot label-add never triggers. From a fork, `pull_request` runs WITHOUT secrets
+  # (no App/Claude credential), so the heavy job can't act — the trusted-author gate is
+  # the firewall for same-repo (lane) branches.
+  pull_request:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Issue number to run on"
+        required: true
+      adw_id:
+        description: "Existing ADW id (optional, to resume)"
+        required: false
+      dry_run:
+        # Dry-run is an EXPLICIT opt-in (MNE-389): only a manual dispatch that ticks
+        # this box runs --dry-run. Every other trigger (adw:* labels, `adw run` /
+        # `adw retry` comments, repository_dispatch, an unqualified dispatch) runs
+        # LIVE — merge on green — matching the docs-repo semantics.
+        description: "Dry run: run the whole pipeline but STOP before merging (default: off — runs are LIVE)"
+        type: boolean
+        default: false
+  repository_dispatch:
+    types: [adw-zte]
+  # Event-driven ship resume (ADW_EVENT_DRIVEN_SHIP): when the worker parks a
+  # ship awaiting required checks (adw:awaiting-checks label + [ADW-SHIP-PAUSE]
+  # comment), the completion of a check suite on the ADW branch resumes
+  # --ship-only — no runner idles polling CI in the meantime. The gate's
+  # check_suite branch below verifies the resume conditions (canonical ADW
+  # branch, open + labelled issue, open PR) before the heavy job runs.
+  check_suite:
+    types: [completed]
+  # Bounded fallback sweep (MNE-463): the check_suite resume above is the FAST
+  # path, but it can miss. The triggering check suite(s) can complete BEFORE the
+  # park registers its adw:awaiting-checks label (a launch-vs-park TOCTOU), so no
+  # future check_suite: completed ever arrives for the parked head — and the only
+  # remaining suites (non-required claude / mergify) can sit `queued` forever.
+  # This periodic sweep re-dispatches every parked (adw:awaiting-checks) issue
+  # back through the resume path, so a green PR can never strand waiting for an
+  # event that already fired. The worker re-reads the COMMIT-LEVEL required-check
+  # status on resume and merges only through the full gate chain (it never merges
+  # on a pending/red required check), and the cross-run resume cap
+  # (ADW_MAX_SHIP_RESUMES) bounds how many times any one issue re-parks — so the
+  # sweep cannot loop a stuck PR forever.
+  schedule:
+    - cron: "*/15 * * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  # Cheap pre-gate (no checkout, no concurrency): evaluates the trust / grammar /
+  # freeze guard and decides whether the heavy `zte` job runs. Because this job carries
+  # NO concurrency group, a guard-FAILING (noise) trigger — every non-command issue
+  # comment, including the worker's own [ADW-AGENTS] progress posts — is skipped HERE
+  # and never reaches a job that joins the per-issue concurrency group. Previously the
+  # group lived at the workflow level, so those skip-bound runs churned its single
+  # pending slot and could cancel a legitimate queued run (MNE-291). Only guard-PASSING
+  # runs reach `zte`.
+  #
+  # Only TRUSTED human triggers: the adw:zte / adw:ship / adw:sync / adw:rebase
+  # labels, or a RECOGNIZED `adw <command>` comment, from a repo owner / member /
+  # collaborator — never the bot's own [ADW-AGENTS] comments (loop guard), never on a
+  # frozen issue. workflow_dispatch / repository_dispatch already require write access.
+  #
+  # PR-level shepherd (MNE-915): the worker ALSO fires on a PR-rooted gesture — an
+  # `adw:ship` label added to a PR, or an `adw ship` comment ON a PR (issue_comment with
+  # github.event.issue.pull_request set) — routing to `mnemom-adw --ship-pr <n>`. The
+  # ISSUE-comment grammar branch keeps its `issue.pull_request == null` guard (issue
+  # comments only); the PR-comment branch is the explicit `!= null` counterpart, scoped to
+  # `adw ship` alone. Same OWNER/MEMBER/COLLABORATOR + non-Bot + [ADW-AGENTS]-loop guards.
+  #
+  # Label grammar (MNE-420): the `issues` branch gates on WHICH label was just added
+  # (`github.event.label.name` == exactly one adw command label), NEVER on label
+  # PRESENCE (`issue.labels.*`). Presence-gating made every later `labeled` event on
+  # an issue that still carried adw:zte a trigger: an issue created with
+  # `bug` + `adw:zte` fired one run per label (a double-fire), and — far worse — the
+  # worker's own `adw:needs-human` label add on an abort RE-LAUNCHED the very run
+  # that had just stopped to ask a human. `adw:needs-human` is a STOP signal and must
+  # never appear as a trigger label here. A bot actor (sender type `Bot` / login
+  # ending in `[bot]`, e.g. the worker's own App identity) never label-triggers a
+  # run — the labeled-event mirror of the [ADW-AGENTS] comment loop guard below.
+  #
+  # Comment grammar (free text like "adw fix lint issues" must NOT spawn a run): the
+  # comment body must START WITH exactly one recognized command line —
+  #   `adw run` / `adw zte`  → full pipeline, from SCRATCH (--force-fresh): on an issue
+  #                            that already has an open ADW PR, re-implement against that
+  #                            PR's branch under a fresh adw_id rather than resuming at
+  #                            ship — so a code-defect CI failure isn't a dead end (MNE-406)
+  #   `adw ship`             → ship-only (merge the existing PR)
+  #   `adw retry`            → full pipeline that RESUMES the open PR at its failed phase
+  #                            (no --force-fresh) — ship-only resume when a PR exists
+  #   `adw sync` / `adw rebase` → sync-only (re-sync the PR branch, no merge)
+  # Each command token is matched at a WORD BOUNDARY (MNE-431): bare (the whole body),
+  # or immediately followed by a SPACE, an LF, or a CRLF (the GitHub web UI submits
+  # CRLF). This is the expression-language stand-in for `^adw (run|zte|ship|retry|sync|
+  # rebase)\b` — so `adw retry — <operator context>` (trailing notes on the SAME line)
+  # now triggers (it was SILENTLY dropped before — five operator commands lost on
+  # 2026-06-10, MNE-431), while the boundary keeps "adw retryfoo" / "adw fix ..." OUT
+  # (no re-widening to arbitrary `adw <instruction>` — the MNE-345 regression guard).
+  # An `adw ` prefix that matches NO command is no longer silently ignored: the
+  # `feedback` job below posts an explicit "unrecognized command" reply (MNE-431 part 2).
+  gate:
+    runs-on: ubuntu-latest
+    # The resume step needs READ access to issues/PRs to verify the resume
+    # conditions; still no write scope on the gate (MNE-321).
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'repository_dispatch' ||
+      (github.event_name == 'check_suite' &&
+        github.event.check_suite.head_branch != null &&
+        contains(github.event.check_suite.head_branch, '-issue-') &&
+        contains(github.event.check_suite.head_branch, '-adw-')) ||
+      (github.event_name == 'issues' &&
+        (github.event.label.name == 'adw:zte' ||
+         github.event.label.name == 'adw:ship' ||
+         github.event.label.name == 'adw:sync' ||
+         github.event.label.name == 'adw:rebase') &&
+        github.event.sender.type != 'Bot' &&
+        !endsWith(github.event.sender.login, '[bot]') &&
+        !contains(github.event.issue.labels.*.name, 'adw:freeze') &&
+        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.issue.author_association)) ||
+      (github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request == null &&
+        !contains(github.event.issue.labels.*.name, 'adw:freeze') &&
+        !contains(github.event.comment.body, '[ADW-AGENTS]') &&
+        (github.event.comment.body == 'adw run' || startsWith(github.event.comment.body, 'adw run ') || startsWith(github.event.comment.body, format('adw run{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw run{0}', fromJSON('"\r\n"'))) ||
+         github.event.comment.body == 'adw zte' || startsWith(github.event.comment.body, 'adw zte ') || startsWith(github.event.comment.body, format('adw zte{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw zte{0}', fromJSON('"\r\n"'))) ||
+         github.event.comment.body == 'adw ship' || startsWith(github.event.comment.body, 'adw ship ') || startsWith(github.event.comment.body, format('adw ship{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw ship{0}', fromJSON('"\r\n"'))) ||
+         github.event.comment.body == 'adw retry' || startsWith(github.event.comment.body, 'adw retry ') || startsWith(github.event.comment.body, format('adw retry{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw retry{0}', fromJSON('"\r\n"'))) ||
+         github.event.comment.body == 'adw sync' || startsWith(github.event.comment.body, 'adw sync ') || startsWith(github.event.comment.body, format('adw sync{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw sync{0}', fromJSON('"\r\n"'))) ||
+         github.event.comment.body == 'adw rebase' || startsWith(github.event.comment.body, 'adw rebase ') || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\r\n"')))) &&
+        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)) ||
+      (github.event_name == 'pull_request' &&
+        github.event.action == 'labeled' &&
+        github.event.label.name == 'adw:ship' &&
+        github.event.sender.type != 'Bot' &&
+        !endsWith(github.event.sender.login, '[bot]') &&
+        !contains(github.event.pull_request.labels.*.name, 'adw:freeze') &&
+        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.pull_request.author_association)) ||
+      (github.event_name == 'issue_comment' &&
+        github.event.issue.pull_request != null &&
+        !contains(github.event.issue.labels.*.name, 'adw:freeze') &&
+        github.event.sender.type != 'Bot' &&
+        !endsWith(github.event.sender.login, '[bot]') &&
+        !contains(github.event.comment.body, '[ADW-AGENTS]') &&
+        (github.event.comment.body == 'adw ship' || startsWith(github.event.comment.body, 'adw ship ') || startsWith(github.event.comment.body, format('adw ship{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw ship{0}', fromJSON('"\r\n"')))) &&
+        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
+    outputs:
+      should_run: ${{ steps.decide.outputs.should_run }}
+      resume_issue: ${{ steps.decide.outputs.resume_issue }}
+      # PR-rooted trigger (MNE-915): non-empty for an `adw:ship` PR label / `adw ship` PR
+      # comment. Drives the PR-scoped concurrency group + the --ship-pr worker invocation.
+      pr_number: ${{ steps.decide.outputs.pr_number }}
+    steps:
+      # The gate's `if:` already vetted every non-resume trigger; a check_suite
+      # resume additionally needs the issue-side conditions verified: the issue
+      # parsed from the canonical ADW branch token must be OPEN, carry the
+      # adw:awaiting-checks resume label (set only by the worker when it parked
+      # the ship), NOT be frozen, and still have an open PR on that branch. The
+      # branch name reaches the shell ONLY via env (MNE-311) — check_suite
+      # head_branch is repo-controlled but the discipline is uniform.
+      - id: decide
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_BRANCH: ${{ github.event.check_suite.head_branch }}
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          # PR-rooted trigger context (MNE-915), via env (never interpolated — MNE-311):
+          # the PR number on a `pull_request` event, the comment's issue number + a
+          # PR-comment flag on an `issue_comment` event.
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          COMMENT_ISSUE_NUMBER: ${{ github.event.issue.number }}
+          IS_PR_COMMENT: ${{ github.event.issue.pull_request != null }}
+        run: |
+          # PR-rooted (MNE-915): emit the PR number so the heavy job uses the PR-scoped
+          # concurrency group + the --ship-pr path. The gate `if:` already vetted the
+          # trust / grammar / freeze conditions for these events, so no extra check here.
+          PR_NUM=""
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            PR_NUM="$PR_NUMBER"
+          elif [ "$EVENT_NAME" = "issue_comment" ] && [ "$IS_PR_COMMENT" = "true" ]; then
+            PR_NUM="$COMMENT_ISSUE_NUMBER"
+          fi
+          if [ "$EVENT_NAME" != "check_suite" ]; then
+            { echo "should_run=true"; echo "resume_issue="; echo "pr_number=$PR_NUM"; } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          skip() { { echo "should_run=false"; echo "resume_issue="; echo "pr_number="; } >> "$GITHUB_OUTPUT"; exit 0; }
+          ISSUE=$(expr "$HEAD_BRANCH" : '.*-issue-\([0-9]\{1,\}\)-adw-' || true)
+          [ -n "$ISSUE" ] || skip
+          STATE=$(gh api "repos/$REPO/issues/$ISSUE" --jq '.state' 2>/dev/null || true)
+          [ "$STATE" = "open" ] || skip
+          LABELS=$(gh api "repos/$REPO/issues/$ISSUE" --jq '[.labels[].name] | join(",")' 2>/dev/null || true)
+          printf '%s' "$LABELS" | grep -q 'adw:awaiting-checks' || skip
+          if printf '%s' "$LABELS" | grep -q 'adw:freeze'; then skip; fi
+          PR_OPEN=$(gh api "repos/$REPO/pulls?head=${REPO%%/*}:$HEAD_BRANCH&state=open" --jq 'length' 2>/dev/null || echo 0)
+          [ "${PR_OPEN:-0}" -ge 1 ] || skip
+          { echo "should_run=true"; echo "resume_issue=$ISSUE"; echo "pr_number="; } >> "$GITHUB_OUTPUT"
+
+  # Unrecognized-command feedback (MNE-431 part 2): fail LOUDLY instead of silently
+  # ignoring an `adw ` comment that doesn't parse. Before this, a trusted author whose
+  # comment started with `adw ` but matched no command (a typo, a malformed `adw retry`,
+  # an `adw <free instruction>`) got NO run AND no feedback — the operator had to
+  # diagnose the silent drop and re-post. This job fires ONLY when, with the SAME
+  # trust/freeze/bot guards as the gate's comment branch, the body starts with `adw `
+  # but does NOT match any recognized command (the exact NEGATION of the gate's comment
+  # grammar — so the two can never both fire on one comment), and posts a one-line
+  # "unrecognized command" reply listing the recognized verbs. It is read-mostly: the
+  # only mutation is the feedback comment (issues: write), it NEVER runs a pipeline,
+  # NEVER labels, and NEVER weakens a gate — it only converts a silent drop into a
+  # visible error. The `[ADW-AGENTS]` body marks the reply as a bot comment so it
+  # cannot itself re-trigger the gate (loop guard) or this job (its own grammar guard).
+  feedback:
+    if: >
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request == null &&
+      !contains(github.event.issue.labels.*.name, 'adw:freeze') &&
+      github.event.sender.type != 'Bot' &&
+      !endsWith(github.event.sender.login, '[bot]') &&
+      !contains(github.event.comment.body, '[ADW-AGENTS]') &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
+      startsWith(github.event.comment.body, 'adw ') &&
+      !(github.event.comment.body == 'adw run' || startsWith(github.event.comment.body, 'adw run ') || startsWith(github.event.comment.body, format('adw run{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw run{0}', fromJSON('"\r\n"'))) ||
+        github.event.comment.body == 'adw zte' || startsWith(github.event.comment.body, 'adw zte ') || startsWith(github.event.comment.body, format('adw zte{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw zte{0}', fromJSON('"\r\n"'))) ||
+        github.event.comment.body == 'adw ship' || startsWith(github.event.comment.body, 'adw ship ') || startsWith(github.event.comment.body, format('adw ship{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw ship{0}', fromJSON('"\r\n"'))) ||
+        github.event.comment.body == 'adw retry' || startsWith(github.event.comment.body, 'adw retry ') || startsWith(github.event.comment.body, format('adw retry{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw retry{0}', fromJSON('"\r\n"'))) ||
+        github.event.comment.body == 'adw sync' || startsWith(github.event.comment.body, 'adw sync ') || startsWith(github.event.comment.body, format('adw sync{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw sync{0}', fromJSON('"\r\n"'))) ||
+        github.event.comment.body == 'adw rebase' || startsWith(github.event.comment.body, 'adw rebase ') || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\r\n"'))))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Post unrecognized-command feedback
+        env:
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # No untrusted interpolation in the body (MNE-311): the reply text is a fixed
+          # literal naming the recognized verbs; the issue number reaches gh only as a
+          # quoted shell var. We deliberately do NOT echo the operator's command back
+          # (avoids reflecting attacker-controlled text into the comment).
+          # shellcheck disable=SC2016  # backticks here are literal markdown in the reply
+          # text, NOT command substitution; single-quoting is intentional (no expansion).
+          # (Strict actionlint repos — e.g. polis — fail the sync PR without this. MNE-1349.)
+          BODY='[ADW-AGENTS] cli: 🤔 Unrecognized `adw` command. Recognized commands (the verb must be the FIRST token of the first line; trailing notes on that line are allowed): `adw run`, `adw zte`, `adw ship`, `adw retry`, `adw sync`, `adw rebase`. No run was started.'
+          gh api "repos/$REPO/issues/$ISSUE/comments" -X POST -f "body=$BODY" \
+            2>/dev/null || echo "WARN: could not post unrecognized-command feedback"
+
+  # Bounded fallback sweep (MNE-463): runs ONLY on the schedule cron. Re-dispatches
+  # every parked (adw:awaiting-checks) issue that still has an open PR back through
+  # the resume path via repository_dispatch (event adw-zte → the gate's non-resume
+  # branch → a ship-only resume). This is the backstop for the launch-vs-park TOCTOU:
+  # if the triggering check_suite completion fired before the park registered its
+  # label, no future check_suite event arrives, and only this sweep re-invokes the
+  # worker. The sweep itself NEVER merges or evaluates checks — it only re-launches
+  # the worker, which re-reads the COMMIT-LEVEL required-check status and merges only
+  # through the full gate chain (never on a pending/red required check). Bounded twice
+  # over: the cron cadence rate-limits re-dispatch, and the worker's cross-run resume
+  # cap (ADW_MAX_SHIP_RESUMES) aborts-to-human after N distinct re-parks, so a genuinely
+  # stuck PR surfaces to a human instead of looping. Frozen issues are skipped. The
+  # sweep is intentionally a NO-OP on every non-schedule trigger.
+  sweep:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    steps:
+      # An App token (same creds as the worker job) so the repository_dispatch lands
+      # on this repo. github.token cannot self-dispatch a repository_dispatch event.
+      - name: Mint GitHub App token
+        id: app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ vars.ADW_APP_ID }}
+          private-key: ${{ secrets.ADW_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: |
+            ${{ github.event.repository.name }}
+      - name: Re-dispatch parked (awaiting-checks) issues
+        env:
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          # List open issues carrying the parked resume label. Frozen issues are
+          # excluded (the freeze label is the kill-switch). For each, only re-dispatch
+          # when an open PR still exists on its canonical ADW branch (a stale label on
+          # a closed/merged PR is left for the worker's own terminal label hygiene).
+          ISSUES=$(gh api "repos/$REPO/issues?state=open&labels=adw:awaiting-checks&per_page=100" \
+            --jq '.[] | select([.labels[].name] | index("adw:freeze") | not) | .number' \
+            2>/dev/null || true)
+          [ -n "$ISSUES" ] || { echo "no parked issues to sweep"; exit 0; }
+          for ISSUE in $ISSUES; do
+            # Confirm an open ADW PR still exists for this issue before re-dispatching.
+            PR_OPEN=$(gh api "repos/$REPO/pulls?state=open&per_page=100" \
+              --jq "[.[] | select(.head.ref | test(\"-issue-${ISSUE}-adw-\"))] | length" \
+              2>/dev/null || echo 0)
+            if [ "${PR_OPEN:-0}" -ge 1 ]; then
+              echo "re-dispatching parked issue #$ISSUE"
+              gh api "repos/$REPO/dispatches" -X POST \
+                -f event_type=adw-zte \
+                -F "client_payload[issue_number]=$ISSUE" \
+                -F "client_payload[ship_only]=true" \
+                2>/dev/null || echo "WARN: dispatch failed for #$ISSUE"
+            else
+              echo "issue #$ISSUE has no open ADW PR; skipping (stale label)"
+            fi
+          done
+
+  zte:
+    # Heavy worker job — runs only when the gate passed. A skipped gate (guard false)
+    # propagates to skip this job too, so it never starts and never joins the group.
+    # The per-issue concurrency lives HERE (job-level), not workflow-level: one run per
+    # issue, never cancel in-progress (a kill mid-merge is dangerous).
+    needs: gate
+    if: needs.gate.outputs.should_run == 'true'
+    # The heavy worker job carries the write scopes the gate doesn't need: it
+    # pushes branches, opens/merges PRs, and comments/labels issues. Declared
+    # here (job-level) so the cheap `gate` job stays read-only (MNE-321).
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      checks: read
+      # statuses: write — the worker publishes its `ADW Review` commit status on the PR
+      # head (ship phase `post_commit_status`) so the review-gate verdict survives an
+      # ephemeral run for branch protection / a merge queue. Dropping this scope (the
+      # mnemom-website #663 least-privilege change, MNE-417) 403'd every post ("Resource
+      # not accessible by integration"); the worker now aborts-to-human on a failed
+      # critical-gate publish, and this scope is the root-cause fix so the post succeeds.
+      statuses: write
+    concurrency:
+      # ONE group per issue across EVERY trigger type — a check_suite resume
+      # (issue number recovered by the gate from the branch token) can never run
+      # concurrently with a comment/label-triggered run on the same issue. With
+      # cancel-in-progress off, a storm of k check-suite completions per SHA
+      # collapses to at most one running + one pending run (GitHub supersedes
+      # queued runs in the group); redundant resumes are also cheap (green
+      # checks return on the first poll; still-pending re-parks after the short
+      # initial wait, bounded by ADW_MAX_SHIP_RESUMES).
+      # PR-rooted runs (MNE-915) take a DISTINCT per-PR group `adw-zte-pr-<n>` so a PR
+      # ship can never collide with (or be superseded by) the per-issue worker group —
+      # the two number spaces overlap but the `pr-` segment keeps them disjoint. Every
+      # other trigger keeps the per-issue group `adw-zte-<issue>`. cancel-in-progress stays
+      # false on both (a kill mid-merge is dangerous; MNE-444).
+      group: adw-zte-${{ needs.gate.outputs.pr_number != '' && format('pr-{0}', needs.gate.outputs.pr_number) || (needs.gate.outputs.resume_issue || github.event.issue.number || github.event.inputs.issue_number || github.event.client_payload.issue_number) }}
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      # Claude auth (already an org/repo secret). The Agent SDK bundles its own
+      # `claude` binary, so no separate CLI install is needed.
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      # A GitHub App token (not the default GITHUB_TOKEN) so the worker's pushes
+      # and PRs TRIGGER downstream CI — otherwise the ship loop waits forever on
+      # checks that never run. Scoped to this repo + the private worker repo.
+      # Uses the dedicated write-capable App (mnemom-adw) — NOT the read-only
+      # mnemom-ci-reader (vars.APP_ID). Needs contents+pull-requests+issues write so
+      # the worker can push branches, open/merge PRs, and comment/label issues.
+      - name: Mint GitHub App token
+        id: app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          app-id: ${{ vars.ADW_APP_ID }}
+          private-key: ${{ secrets.ADW_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: |
+            ${{ github.event.repository.name }}
+            mnemom-adw
+
+      # The App installation token lives ~1h from this point. Record the mint time so
+      # the worker can checkpoint (commit+push pending work) BEFORE the cliff instead
+      # of silently losing commits when a >60min run outlives the token (MNE-393).
+      - name: Record token mint time
+        id: mint
+        run: echo "minted_at=$(date -u +%s)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app.outputs.token }}
+
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+        with:
+          # Cache uv's wheel/source store across runs: the worker install below
+          # re-resolves mnemom-adw@main every run (correct — it must track main),
+          # but its dependency set (pydantic, the Agent SDK, …) is stable and
+          # restores from the cache instead of the network (~30-60s saved/run).
+          enable-cache: true
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.12"
+
+      - name: Configure git identity
+        run: |
+          git config user.name  "wintermute-eng-fleet[bot]"
+          git config user.email "wintermute-eng-fleet[bot]@users.noreply.github.com"
+
+      - name: Install the mnemom-adw worker (+ Agent SDK)
+        # The worker library lives at packages/adw-worker in the mnemom-adw monorepo (the repo
+        # is a uv workspace; its root is not an installable package). Install from that
+        # subdirectory, falling back to the repo root for the brief transition window before
+        # the monorepo split landed (the fallback is a no-op once main carries the new layout).
+        run: |
+          BASE="git+https://x-access-token:${{ steps.app.outputs.token }}@github.com/${{ github.repository_owner }}/mnemom-adw.git@main"
+          uv tool install --python 3.12 "mnemom-adw[sdk] @ ${BASE}#subdirectory=packages/adw-worker" \
+            || uv tool install --python 3.12 "mnemom-adw[sdk] @ ${BASE}"
+
+      - name: Resolve context
+        id: ctx
+        env:
+          # The raw comment body (only present on issue_comment events). Read via env so
+          # the command grammar is matched in shell, never interpolated into the script.
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          EVENT_NAME: ${{ github.event_name }}
+          # Issue number / adw id read via env so the (attacker-controllable on
+          # workflow_dispatch / repository_dispatch) values are never interpolated into
+          # the script body — they reach $GITHUB_OUTPUT only through quoted shell vars.
+          ISSUE_NUMBER: ${{ github.event.issue.number || github.event.inputs.issue_number || github.event.client_payload.issue_number }}
+          ADW_ID: ${{ github.event.inputs.adw_id || github.event.client_payload.adw_id }}
+          # repository_dispatch ship-only resume (MNE-463 bounded fallback sweep): the
+          # sweep job re-dispatches a parked issue with client_payload[ship_only]=true so
+          # it resumes the PR at ship (re-read commit-level checks → merge through the
+          # full gate chain) rather than re-running the full pipeline from scratch. Read
+          # via env (never interpolated into the script body) like every dispatch value.
+          SHIP_ONLY_DISPATCH: ${{ github.event.client_payload.ship_only }}
+          # Event-driven ship resume: the issue number the gate recovered from the
+          # check_suite head branch's canonical ADW token (empty on other events).
+          RESUME_ISSUE: ${{ needs.gate.outputs.resume_issue }}
+          # PR-rooted ship (MNE-915): the PR number the gate resolved (empty on every
+          # other trigger). A trusted gate output — still routed via env, not inline.
+          PR_NUMBER_CTX: ${{ needs.gate.outputs.pr_number }}
+          # Label-derived modes (issues / issue_comment carry the issue's labels).
+          HAS_SHIP_LABEL: ${{ contains(github.event.issue.labels.*.name, 'adw:ship') }}
+          HAS_SYNC_LABEL: ${{ contains(github.event.issue.labels.*.name, 'adw:sync') || contains(github.event.issue.labels.*.name, 'adw:rebase') }}
+        run: |
+          # PR-rooted ship (MNE-915): the gate resolved a PR number (an `adw:ship` PR
+          # label or an `adw ship` PR comment). Route to `mnemom-adw --ship-pr <n>` — no
+          # issue positional, no other mode flag, always LIVE. ship_pr is the only output
+          # that path consumes; the rest stay off so it can never also pass --ship-only
+          # / --sync-only / --force-fresh.
+          if [ -n "$PR_NUMBER_CTX" ]; then
+            {
+              echo "issue="
+              echo "adw_id="
+              echo "ship_pr=$PR_NUMBER_CTX"
+              echo "ship_only=false"
+              echo "sync_only=false"
+              echo "force_fresh=false"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # check_suite resume: the gate verified the resume conditions and
+          # recovered the issue; the mode is always ship-only (resume the parked
+          # ship against the existing PR — never a fresh full pipeline, so never
+          # force-fresh either).
+          if [ "$EVENT_NAME" = "check_suite" ]; then
+            {
+              echo "issue=$RESUME_ISSUE"
+              echo "adw_id="
+              echo "ship_pr="
+              echo "ship_only=true"
+              echo "sync_only=false"
+              echo "force_fresh=false"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          {
+            echo "issue=$ISSUE_NUMBER"
+            echo "adw_id=$ADW_ID"
+            echo "ship_pr="
+          } >> "$GITHUB_OUTPUT"
+
+          # Map the trigger to exactly one mode (ship_only | sync_only | full). The
+          # comment grammar (first token only) wins over labels when both are present;
+          # the `if:` guard already rejected free text, so only recognized commands
+          # reach here. `cmd` is the first whitespace-delimited word PAIR of the body.
+          #
+          # force_fresh (MNE-406): a FULL run on an issue that already has an open ADW
+          # PR re-runs the pipeline from scratch (fresh adw_id, re-implement against the
+          # existing branch) rather than resuming at ship — the documented `adw run` /
+          # `adw zte` "re-run from scratch" semantics. `adw retry` deliberately OMITS it
+          # so it keeps the ship-only resume behavior. Inert when no open PR exists
+          # (the worker only adopts a branch when one is found). Never set on ship-only
+          # / sync-only (those don't run the full pipeline).
+          ship_only=false
+          sync_only=false
+          force_fresh=false
+          if [ "$EVENT_NAME" = "repository_dispatch" ] && [ "$SHIP_ONLY_DISPATCH" = "true" ]; then
+            # Bounded fallback sweep (MNE-463): a re-dispatched parked issue resumes
+            # the existing PR at ship (re-read commit-level required checks → merge
+            # through the full gate chain) — never a fresh full pipeline.
+            ship_only=true
+          elif [ "$EVENT_NAME" = "issue_comment" ]; then
+            cmd=$(printf '%s' "$COMMENT_BODY" | head -n1 | awk '{print $1, $2}')
+            case "$cmd" in
+              "adw ship")            ship_only=true ;;
+              "adw sync"|"adw rebase") sync_only=true ;;
+              "adw run"|"adw zte")   force_fresh=true ;;  # re-run from scratch (MNE-406)
+              # "adw retry" → full pipeline that RESUMES (force_fresh stays false).
+            esac
+          else
+            # issues / dispatch: derive the mode from labels (ship wins over sync,
+            # both win over a full adw:zte run). A full adw:zte LABEL run is force-fresh
+            # too (matches the `adw zte` comment command's from-scratch semantics) — BUT
+            # only when no explicit adw_id was supplied: a workflow_/repository_dispatch
+            # that passes an adw_id is documented as a RESUME of that specific run, so it
+            # keeps resume semantics (force_fresh stays false), mirroring `adw retry`.
+            if [ "$HAS_SHIP_LABEL" = "true" ]; then
+              ship_only=true
+            elif [ "$HAS_SYNC_LABEL" = "true" ]; then
+              sync_only=true
+            elif [ -z "$ADW_ID" ]; then
+              force_fresh=true
+            fi
+          fi
+          {
+            echo "ship_only=$ship_only"
+            echo "sync_only=$sync_only"
+            echo "force_fresh=$force_fresh"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Run the worker
+        id: worker
+        # Per-phase/whole-worker timeout BUDGET (MNE-338): the step's own cap is set
+        # BELOW the job's timeout-minutes (90) so a hung/over-budget worker is killed
+        # at the STEP boundary — leaving the always() finalizer step below enough of
+        # the job budget to post the 🛑 abort-to-human + adw:needs-human, instead of a
+        # job-level runner kill that ends the run with zero footprint. (E2E hangs are
+        # additionally bounded by ADW_E2E_TIMEOUT_SEC + the per-message idle watchdog.)
+        timeout-minutes: 80
+        env:
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+          GITHUB_PAT: ${{ steps.app.outputs.token }}
+          # Token-expiry hardening (MNE-393). The App token above lives ~1h; the
+          # worker uses the mint timestamp to checkpoint (commit+push) before the
+          # cliff (ADW_TOKEN_CLIFF_MIN, default 50min), and falls back to the
+          # workflow's own GITHUB_TOKEN for the LAST-GASP needs-human comment +
+          # `adw:needs-human` label when the App token is already dead. The job's
+          # permissions block (issues: write, pull-requests: write) is what scopes
+          # that fallback — do not drop those when editing this workflow.
+          ADW_TOKEN_MINTED_AT: ${{ steps.mint.outputs.minted_at }}
+          ADW_FALLBACK_TOKEN: ${{ github.token }}
+          # In-run token refresh (MNE-407). The App installation token above lives
+          # ~1h; long runs (aap test suites, multi-phase website work) hit that cliff
+          # almost deterministically, each death costing a full retry cycle. With the
+          # App credentials here, the worker mints a FRESH installation token before
+          # the cliff and hot-swaps it (env + gh auth + the git push credential),
+          # resetting the cliff clock so the run continues past ~1h instead of dying.
+          # The refresh is fail-SAFE: absent these vars (or on any mint failure) the
+          # worker degrades to MNE-393's checkpoint + last-gasp surface unchanged.
+          # ADW_APP_PRIVATE_KEY is the SAME secret the mint step above already reads —
+          # the worker never logs it. The installation id is looked up from the App
+          # JWT when ADW_APP_INSTALLATION_ID is unset, so no extra secret is needed.
+          ADW_APP_ID: ${{ vars.ADW_APP_ID }}
+          ADW_APP_PRIVATE_KEY: ${{ secrets.ADW_APP_PRIVATE_KEY }}
+          # work_root = the checkout, so the capability manifest + run state + any
+          # worktrees resolve under the repo. cwd is already the repo (origin set).
+          MNEMOM_ADW_HOME: ${{ github.workspace }}
+          # Heavy phases (opus implement/resolve) get a longer per-call HARD CAP.
+          # Hang detection is the per-message idle watchdog (default 600s): a
+          # steadily-streaming heavy run may use the whole cap; a silent one dies
+          # after one idle window. The cap is generous for that reason.
+          ADW_AGENT_TIMEOUT_SEC_HEAVY: "3600"
+          ADW_AGENT_IDLE_TIMEOUT_SEC: "600"
+          # Per-phase E2E timeout BUDGET (MNE-338): the E2E suite was the most common
+          # silent-death site (the run's last comment was "🌐 Running E2E tests…" then
+          # nothing). Cap the E2E sub-phase wall-clock so it aborts-to-human cleanly
+          # well inside the step's 80-min budget instead of dragging the whole worker
+          # toward the runner kill. The /test_e2e + /resolve_failed_e2e_test agent
+          # calls still carry the idle watchdog; this is the phase-level ceiling.
+          ADW_E2E_TIMEOUT_SEC: "1500"
+          # Phase-marker file (MNE-338): the conductor records the phase it is ENTERING
+          # here as each phase starts, so the always() finalizer step can NAME the last
+          # phase in its abort handoff when a runner kill leaves no in-process handler
+          # to run. Lives under the checkout the finalizer step shares; best-effort.
+          ADW_PHASE_MARKER_FILE: ${{ github.workspace }}/.adw-current-phase
+          # Event-driven shipping: instead of idle-polling CI for up to 45 min on
+          # this runner, the ship phase waits a short initial window
+          # (ADW_EVENT_SHIP_INITIAL_WAIT_MIN, default 3), then parks the run
+          # (adw:awaiting-checks label + [ADW-SHIP-PAUSE] comment, clean exit 0);
+          # the check_suite trigger above resumes --ship-only when checks finish.
+          # Cross-run resume bound: ADW_MAX_SHIP_RESUMES (worker default 5).
+          ADW_EVENT_DRIVEN_SHIP: "true"
+          # Realtime session-event tap (observability) — OFF unless both are set.
+          # The worker mirrors its streamed SDK messages to the fleet event hub
+          # best-effort (never blocks/breaks the run); with either unset the tap is a no-op, so this is
+          # safe to leave unconfigured. Provision the repo/org var + secret to light
+          # it up. See src/mnemom_adw/event_stream.py.
+          ADW_EVENT_INGEST_URL: ${{ vars.ADW_EVENT_INGEST_URL }}
+          ADW_EVENT_INGEST_TOKEN: ${{ secrets.ADW_EVENT_INGEST_TOKEN }}
+          # The issue number, adw id, and repo slug reach the worker only as quoted
+          # shell vars — never interpolated into the command body (they can carry
+          # attacker-controlled input on workflow_dispatch / repository_dispatch).
+          ISSUE: ${{ steps.ctx.outputs.issue }}
+          ADW_ID: ${{ steps.ctx.outputs.adw_id }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          # PR-rooted ship (MNE-915): the PR number resolved by the gate (empty on every
+          # other trigger). Non-empty → run `mnemom-adw --ship-pr <n>` instead of the
+          # issue-positional invocation. A trusted ctx output; consumed only as "$SHIP_PR".
+          SHIP_PR: ${{ steps.ctx.outputs.ship_pr }}
+          # --adw-id's VALUE comes from "$ADW_ID"; this boolean only decides whether the
+          # literal --adw-id flag is emitted (a hostile adw_id can never become a flag).
+          WANT_ADW_ID: ${{ steps.ctx.outputs.ship_only != 'true' && steps.ctx.outputs.sync_only != 'true' && steps.ctx.outputs.adw_id != '' }}
+          # force-fresh (MNE-406): a full-pipeline `adw run` / `adw zte` re-runs from
+          # scratch (re-implement against the open PR's branch) instead of resuming at
+          # ship. Set only on a full run (the ctx step never emits it for ship/sync), so
+          # ship-only / sync-only can never pass --force-fresh. `adw retry` keeps resume.
+          WANT_FORCE_FRESH: ${{ steps.ctx.outputs.force_fresh == 'true' }}
+          # Dry-run is an explicit opt-in (MNE-389): ONLY a workflow_dispatch with
+          # dry_run=true passes --dry-run. Labels, comment commands, repository_dispatch,
+          # and an unqualified manual dispatch all run LIVE (merge on green) — previously
+          # everything except `dispatch + dry_run=false` was dry, so a comment-triggered
+          # `adw retry` could never complete the ship it was asked to complete. sync-only
+          # never takes --dry-run (a sync never merges). Evaluated to a literal boolean in
+          # env (not inline in the command) to keep the run: body free of any
+          # `${{ github.* }}` interpolation (MNE-311).
+          WANT_DRY_RUN: ${{ steps.ctx.outputs.sync_only != 'true' && github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true' }}
+        run: |
+          # ship-only / sync-only select LITERAL flags from trusted steps.ctx booleans
+          # (no user data), so they stay as conditional flag-selection expressions;
+          # --adw-id and --dry-run are gated on the boolean env vars above and pass the
+          # adw-id VALUE only as a quoted shell var.
+          adw_id_flag=""
+          [ "$WANT_ADW_ID" = "true" ] && adw_id_flag="--adw-id"
+          dry_run_flag=""
+          [ "$WANT_DRY_RUN" = "true" ] && dry_run_flag="--dry-run"
+          force_fresh_flag=""
+          [ "$WANT_FORCE_FRESH" = "true" ] && force_fresh_flag="--force-fresh"
+          # PR-rooted ship (MNE-915): shepherd the PR directly — no issue positional, no
+          # other mode flag, always LIVE. SHIP_PR is non-empty ONLY for an `adw:ship` PR
+          # label / `adw ship` PR comment (the ctx step gates every other path off it).
+          if [ -n "$SHIP_PR" ]; then
+            mnemom-adw --ship-pr "$SHIP_PR" --repo "$GITHUB_REPOSITORY"
+          else
+            mnemom-adw "$ISSUE" --repo "$GITHUB_REPOSITORY" \
+              ${adw_id_flag:+"$adw_id_flag" "$ADW_ID"} \
+              ${{ steps.ctx.outputs.ship_only == 'true' && '--ship-only' || '' }} \
+              ${{ steps.ctx.outputs.sync_only == 'true' && '--sync-only' || '' }} \
+              ${force_fresh_flag:+"$force_fresh_flag"} \
+              ${dry_run_flag:+"$dry_run_flag"}
+          fi
+
+      # Terminal-status finalizer (MNE-338). Runs on EVERY non-clean worker outcome —
+      # failure, the step-timeout kill above, OR a job cancellation — because of
+      # `if: always()` plus the `steps.worker.outcome != 'success'` guard. (`always()`
+      # keeps the step alive after a job-level cancellation; the guard makes it a no-op
+      # on a clean run.) A runner kill leaves the worker's Python process dead before
+      # any in-process abort-to-human can run, so the issue is stranded with a
+      # non-terminal "🌐 Running E2E tests…" comment, no adw:needs-human, no shipper
+      # outcome — and a human must notice. This step backfills the guarantee: it posts
+      # the 🛑 abort-to-human handoff (naming the last phase from the phase-marker file)
+      # + adw:needs-human IFF no terminal ADW comment is already on the issue (so it
+      # never double-posts when the worker DID abort cleanly). It authenticates with the
+      # workflow's OWN GITHUB_TOKEN (ADW_FALLBACK_TOKEN), independent of the App token's
+      # ~1h life, so the handoff lands even when a token-cliff death coincided with the
+      # kill. The job's permissions block (issues: write) scopes that fallback.
+      #
+      # SAFETY: this NEVER weakens a gate. It only ADDS a needs-human escalation when a
+      # run died without one; a clean run (steps.worker.outcome == 'success') is left
+      # untouched, and the worker's own terminal surfaces (🛑 / 🎉 Shipped /
+      # [ADW-SHIP-PAUSE] / ✅ merged) make this a no-op so a parked event-driven ship is
+      # never mistaken for a death. The finalizer itself always exits 0 (best-effort
+      # backstop), so it can never turn a green run red.
+      - name: Finalize terminal status (silent-death guard)
+        id: finalize
+        if: always() && steps.worker.outcome != 'success'
+        env:
+          # Fallback credential ONLY (the App token may be dead after a runner kill) —
+          # the same independent-lifetime token the worker's MNE-393 last-gasp uses.
+          ADW_FALLBACK_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          # The phase-marker the worker wrote as each phase started (names the last phase).
+          ADW_PHASE_MARKER_FILE: ${{ github.workspace }}/.adw-current-phase
+          # The issue number reaches the finalizer ONLY via env as a quoted shell var,
+          # never interpolated into the run body (MNE-311) — same discipline as the ctx
+          # step. The worker step's resolved ctx output is preferred; the raw trigger
+          # value is the fallback when the worker died before ctx resolved. For a PR-rooted
+          # ship (MNE-915) the PR number is the unit, so the ship_pr ctx output + the raw
+          # pull_request.number are folded into the chain (gh issue comment/edit resolve a
+          # PR number, so the 🛑 handoff + adw:needs-human land on the PR thread).
+          FINALIZE_ISSUE: ${{ steps.ctx.outputs.issue || steps.ctx.outputs.ship_pr || needs.gate.outputs.resume_issue || github.event.issue.number || github.event.pull_request.number || github.event.inputs.issue_number || github.event.client_payload.issue_number }}
+          # The worker step's outcome, named in the handoff (failure / cancelled / etc.).
+          WORKER_OUTCOME: ${{ steps.worker.outcome }}
+        run: |
+          # mnemom-adw is already installed (the worker step above ran). Even on a
+          # step-timeout kill the tool is on PATH. Pass the issue + outcome as quoted
+          # shell vars; --last-phase is read from the phase-marker file inside the tool.
+          mnemom-adw --finalize \
+            --issue "$FINALIZE_ISSUE" \
+            --job-status "$WORKER_OUTCOME"
