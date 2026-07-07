@@ -1,0 +1,79 @@
+# Capability manifest for the mnemom-adw worker on mnemom/aip.
+# aip is the PUBLIC, release-please-managed monorepo publishing the Agent Integrity
+# Protocol SDKs: a Python package at packages/python (PyPI: agent-integrity-proto) and a
+# parallel TypeScript port at packages/typescript (npm: @mnemom/agent-integrity-protocol).
+# Because it is PUBLIC this is SUPERVISED (merge_strategy: external): the worker drives the
+# CI checks green + labels the PR `agent`, then STOPS — a human reviews + merges. No
+# autonomous merge into the public SDK. (Same posture as the mnemom/aap precedent.)
+#
+# There is also a packages/verifier (TypeScript) — it has its own package.json/tsup/vitest
+# config but is NOT wired into .github/workflows/ci.yml (that workflow only runs the
+# `typescript` and `python` jobs below). Out of scope for `commands`/`required_checks`
+# until it grows a CI job of its own; revisit this manifest if/when it does.
+#
+# stack = python (nominal primary — both languages are exercised below).
+# package_manager = uv: aip's Python side is uv-native (packages/python/uv.lock,
+# .python-version=3.12; ci.yml uses astral-sh/setup-uv + `uv sync --locked` + `uv run
+# --locked`), unlike aap's pip-based commands — verified live, not assumed. The TS verbs
+# call npm explicitly (packages/typescript/package-lock.json; ci.yml uses `npm ci`).
+stack: python
+package_manager: uv
+merge_strategy: external
+
+# Dual-language verbs, lifted from the REAL steps in .github/workflows/ci.yml (the
+# workflow that produces the required checks below) plus packages/python/pyproject.toml
+# and packages/typescript/package.json. Each verb is self-contained (installs its own
+# deps first — adw-zte.yml only installs the worker, not the target's deps) and uses the
+# non-watching runner (`vitest run`, never the watcher).
+#   - lint:      ruff check (Python only). packages/typescript/package.json DOES define a
+#                "lint" script, but it's a bare alias for typecheck (`tsc --noEmit`,
+#                identical string) — running it again here would just re-doing the
+#                typecheck verb's work under a different name, so it's covered there
+#                instead (mirrors aap's "no separate TS lint" structure, for a different
+#                underlying reason: alias vs. absent).
+#   - typecheck: mypy src/ (Python) AND tsc --noEmit (TS). Unlike aap — whose CI never ran
+#                mypy — aip's ci.yml has an explicit "Typecheck" step in the `python` job
+#                (`uv run --locked --extra dev mypy src/`, gated on the 3.12 leg since
+#                mypy's target is pinned by [tool.mypy] python_version and would be
+#                identical across the matrix), so mypy is a REAL CI-gating command here,
+#                not merely a local nicety folded into lint.
+#   - test:      pytest (Python, picks up coverage addopts from pyproject.toml) AND
+#                `vitest run` (TS, via `npm run test`).
+#   - build:     `uv build` for the Python sdist+wheel (uv-native equivalent of aap's
+#                `pip install build && python -m build` — self-contained, no extra pip
+#                install needed given uv is already the resolver) AND the TS bundle via
+#                tsup (`npm run build` → dist/).
+# All four verified green from a clean checkout (packages/python: uv sync --locked --extra
+# dev; ruff — all checks passed; mypy — no issues in 29 source files; pytest — 298 passed;
+# uv build — sdist+wheel built. packages/typescript: npm ci; tsc --noEmit clean; vitest —
+# 354 passed across 20 files; tsup build succeeded) before this manifest landed.
+# Deps + artifacts (.venv/, packages/python/dist/, packages/python/coverage.xml,
+# node_modules/, packages/typescript/dist/) are gitignored and must never be committed.
+commands:
+  lint: cd packages/python && uv sync --locked --extra dev && uv run --locked --extra dev ruff check src/ tests/
+  typecheck: cd packages/python && uv sync --locked --extra dev && uv run --locked --extra dev mypy src/ && cd ../typescript && npm ci && npm run typecheck
+  test: cd packages/python && uv sync --locked --extra dev && uv run --locked --extra dev pytest && cd ../typescript && npm ci && npm run test
+  build: cd packages/python && uv sync --locked --extra dev && uv build && cd ../typescript && npm ci && npm run build
+
+# aip is a pair of SDK libraries (Python + TS clients) with NO rendered UI, so there are no
+# user-visible UX surfaces to gate — keep this empty so the visual-validation phase stays
+# OFF (mirrors aap's non-visual-target posture).
+ux_path_globs: []
+
+# Required CI checks the worker drives green before handing off — the EXACT contexts
+# main's branch protection requires to merge, verified via:
+#   gh api repos/mnemom/aip/branches/main/protection
+#   → ["Python SDK (3.10)","Python SDK (3.11)","Python SDK (3.12)","TypeScript SDK","CodeQL"]
+# CodeQL is ALSO branch-protection-required but is non-driveable security analysis (a
+# separate GitHub App's check, not one of the per-language jobs the worker can fix). Like
+# the aap/docs/website precedent, treat CodeQL as an abort-to-human security gate and OMIT
+# it here — a CodeQL finding needs a human; the worker can't "drive it green."
+required_checks:
+  - "Python SDK (3.10)"
+  - "Python SDK (3.11)"
+  - "Python SDK (3.12)"
+  - "TypeScript SDK"
+
+# Publish/release is owned by the repo's own pipeline (publish.yml + release-please),
+# never the worker.
+targets: []
