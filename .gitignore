@@ -75,3 +75,6 @@ architecture/
 .claude/
 .mcp.json
 *.tgz
+
+# pytest coverage XML report (build artifact; MNE-975 shepherd)
+coverage.xml
