@@ -22,12 +22,16 @@ on:
   # tracking issue, no `<class>-issue-<n>-adw-<id>` worker-branch convention, no
   # issue→branch dedup (the PR IS the unit). The companion `adw ship` COMMENT on a PR is
   # handled by the `issue_comment` event above (a PR comment carries
-  # github.event.issue.pull_request). Both keep the SAME trusted-author firewall as the
-  # issue path and run on a PR-scoped concurrency group (adw-zte-pr-<n>). Like the issues
-  # branch, the gate keys off the ADDED label (github.event.label.name), never presence,
-  # and a Bot label-add never triggers. From a fork, `pull_request` runs WITHOUT secrets
-  # (no App/Claude credential), so the heavy job can't act — the trusted-author gate is
-  # the firewall for same-repo (lane) branches.
+  # github.event.issue.pull_request) — as is its resync-only companion, an `adw sync` /
+  # `adw rebase` COMMENT on a PR (MNE-1619), which routes to `mnemom-adw --sync-pr <n>`
+  # instead: same PR-is-the-unit bootstrap, but re-syncs the branch with the base and
+  # stops (no required-check wait, no merge attempt). There is deliberately no PR-LABEL
+  # equivalent for sync (unlike `adw:ship`) — only the comment form. Both keep the SAME
+  # trusted-author firewall as the issue path and run on a PR-scoped concurrency group
+  # (adw-zte-pr-<n>). Like the issues branch, the gate keys off the ADDED label
+  # (github.event.label.name), never presence, and a Bot label-add never triggers. From a
+  # fork, `pull_request` runs WITHOUT secrets (no App/Claude credential), so the heavy job
+  # can't act — the trusted-author gate is the firewall for same-repo (lane) branches.
   pull_request:
     types: [labeled]
   workflow_dispatch:
@@ -94,7 +98,13 @@ jobs:
   # github.event.issue.pull_request set) — routing to `mnemom-adw --ship-pr <n>`. The
   # ISSUE-comment grammar branch keeps its `issue.pull_request == null` guard (issue
   # comments only); the PR-comment branch is the explicit `!= null` counterpart, scoped to
-  # `adw ship` alone. Same OWNER/MEMBER/COLLABORATOR + non-Bot + [ADW-AGENTS]-loop guards.
+  # `adw ship` / `adw sync` / `adw rebase`. Same OWNER/MEMBER/COLLABORATOR + non-Bot +
+  # [ADW-AGENTS]-loop guards.
+  #
+  # PR-rooted sync (MNE-1619): the `adw sync` / `adw rebase` COMMENT on a PR is the
+  # resync-only companion — routes to `mnemom-adw --sync-pr <n>` instead of `--ship-pr`.
+  # Deliberately COMMENT-only (no `adw:sync` / `adw:rebase` PR LABEL branch, unlike
+  # `adw:ship`) — mirrors exactly what MNE-1619 asked for, nothing wider.
   #
   # Label grammar (MNE-420): the `issues` branch gates on WHICH label was just added
   # (`github.event.label.name` == exactly one adw command label), NEVER on label
@@ -117,6 +127,12 @@ jobs:
   #   `adw retry`            → full pipeline that RESUMES the open PR at its failed phase
   #                            (no --force-fresh) — ship-only resume when a PR exists
   #   `adw sync` / `adw rebase` → sync-only (re-sync the PR branch, no merge)
+  #   `adw continue`         → resume a run parked by the opt-in adw:design-gate pause
+  #                            (MNE-1618) at BUILD directly — plan/design_review are never
+  #                            re-run. Works identically for a human or the lane-lead
+  #                            dispatcher (same trust check as every other verb here); the
+  #                            worker itself fails closed if no design-gate pause is
+  #                            actually pending (adw:design-gate-pending absent).
   # Each command token is matched at a WORD BOUNDARY (MNE-431): bare (the whole body),
   # or immediately followed by a SPACE, an LF, or a CRLF (the GitHub web UI submits
   # CRLF). This is the expression-language stand-in for `^adw (run|zte|ship|retry|sync|
@@ -159,7 +175,8 @@ jobs:
          github.event.comment.body == 'adw ship' || startsWith(github.event.comment.body, 'adw ship ') || startsWith(github.event.comment.body, format('adw ship{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw ship{0}', fromJSON('"\r\n"'))) ||
          github.event.comment.body == 'adw retry' || startsWith(github.event.comment.body, 'adw retry ') || startsWith(github.event.comment.body, format('adw retry{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw retry{0}', fromJSON('"\r\n"'))) ||
          github.event.comment.body == 'adw sync' || startsWith(github.event.comment.body, 'adw sync ') || startsWith(github.event.comment.body, format('adw sync{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw sync{0}', fromJSON('"\r\n"'))) ||
-         github.event.comment.body == 'adw rebase' || startsWith(github.event.comment.body, 'adw rebase ') || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\r\n"')))) &&
+         github.event.comment.body == 'adw rebase' || startsWith(github.event.comment.body, 'adw rebase ') || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\r\n"'))) ||
+         github.event.comment.body == 'adw continue' || startsWith(github.event.comment.body, 'adw continue ') || startsWith(github.event.comment.body, format('adw continue{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw continue{0}', fromJSON('"\r\n"')))) &&
         contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)) ||
       (github.event_name == 'pull_request' &&
         github.event.action == 'labeled' &&
@@ -174,7 +191,9 @@ jobs:
         github.event.sender.type != 'Bot' &&
         !endsWith(github.event.sender.login, '[bot]') &&
         !contains(github.event.comment.body, '[ADW-AGENTS]') &&
-        (github.event.comment.body == 'adw ship' || startsWith(github.event.comment.body, 'adw ship ') || startsWith(github.event.comment.body, format('adw ship{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw ship{0}', fromJSON('"\r\n"')))) &&
+        (github.event.comment.body == 'adw ship' || startsWith(github.event.comment.body, 'adw ship ') || startsWith(github.event.comment.body, format('adw ship{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw ship{0}', fromJSON('"\r\n"'))) ||
+         github.event.comment.body == 'adw sync' || startsWith(github.event.comment.body, 'adw sync ') || startsWith(github.event.comment.body, format('adw sync{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw sync{0}', fromJSON('"\r\n"'))) ||
+         github.event.comment.body == 'adw rebase' || startsWith(github.event.comment.body, 'adw rebase ') || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\r\n"')))) &&
         contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
     outputs:
       should_run: ${{ steps.decide.outputs.should_run }}
@@ -182,6 +201,10 @@ jobs:
       # PR-rooted trigger (MNE-915): non-empty for an `adw:ship` PR label / `adw ship` PR
       # comment. Drives the PR-scoped concurrency group + the --ship-pr worker invocation.
       pr_number: ${{ steps.decide.outputs.pr_number }}
+      # PR-rooted sync (MNE-1619): "true" ONLY for an `adw sync` / `adw rebase` PR
+      # COMMENT (never for the `adw:ship` PR label or an `adw ship` comment) — routes the
+      # SAME pr_number to `--sync-pr` instead of `--ship-pr`.
+      pr_sync: ${{ steps.decide.outputs.pr_sync }}
     steps:
       # The gate's `if:` already vetted every non-resume trigger; a check_suite
       # resume additionally needs the issue-side conditions verified: the issue
@@ -198,25 +221,37 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           # PR-rooted trigger context (MNE-915), via env (never interpolated — MNE-311):
           # the PR number on a `pull_request` event, the comment's issue number + a
-          # PR-comment flag on an `issue_comment` event.
+          # PR-comment flag on an `issue_comment` event. COMMENT_BODY (MNE-1619) is read
+          # here ONLY to distinguish `adw sync`/`adw rebase` from `adw ship` on an already
+          # gate-vetted PR comment — never used to widen the trust decision above.
           PR_NUMBER: ${{ github.event.pull_request.number }}
           COMMENT_ISSUE_NUMBER: ${{ github.event.issue.number }}
           IS_PR_COMMENT: ${{ github.event.issue.pull_request != null }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
           # PR-rooted (MNE-915): emit the PR number so the heavy job uses the PR-scoped
           # concurrency group + the --ship-pr path. The gate `if:` already vetted the
           # trust / grammar / freeze conditions for these events, so no extra check here.
+          # PR-rooted sync (MNE-1619): on a PR COMMENT, `adw sync` / `adw rebase` sets
+          # pr_sync=true so the heavy job routes to `--sync-pr` instead of `--ship-pr`
+          # (the `pull_request` labeled event is `adw:ship`-only, so pr_sync stays false
+          # there — no PR-label equivalent for sync).
           PR_NUM=""
+          PR_SYNC="false"
           if [ "$EVENT_NAME" = "pull_request" ]; then
             PR_NUM="$PR_NUMBER"
           elif [ "$EVENT_NAME" = "issue_comment" ] && [ "$IS_PR_COMMENT" = "true" ]; then
             PR_NUM="$COMMENT_ISSUE_NUMBER"
+            cmd=$(printf '%s' "$COMMENT_BODY" | head -n1 | awk '{print $1, $2}')
+            case "$cmd" in
+              "adw sync"|"adw rebase") PR_SYNC="true" ;;
+            esac
           fi
           if [ "$EVENT_NAME" != "check_suite" ]; then
-            { echo "should_run=true"; echo "resume_issue="; echo "pr_number=$PR_NUM"; } >> "$GITHUB_OUTPUT"
+            { echo "should_run=true"; echo "resume_issue="; echo "pr_number=$PR_NUM"; echo "pr_sync=$PR_SYNC"; } >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          skip() { { echo "should_run=false"; echo "resume_issue="; echo "pr_number="; } >> "$GITHUB_OUTPUT"; exit 0; }
+          skip() { { echo "should_run=false"; echo "resume_issue="; echo "pr_number="; echo "pr_sync=false"; } >> "$GITHUB_OUTPUT"; exit 0; }
           ISSUE=$(expr "$HEAD_BRANCH" : '.*-issue-\([0-9]\{1,\}\)-adw-' || true)
           [ -n "$ISSUE" ] || skip
           STATE=$(gh api "repos/$REPO/issues/$ISSUE" --jq '.state' 2>/dev/null || true)
@@ -226,7 +261,7 @@ jobs:
           if printf '%s' "$LABELS" | grep -q 'adw:freeze'; then skip; fi
           PR_OPEN=$(gh api "repos/$REPO/pulls?head=${REPO%%/*}:$HEAD_BRANCH&state=open" --jq 'length' 2>/dev/null || echo 0)
           [ "${PR_OPEN:-0}" -ge 1 ] || skip
-          { echo "should_run=true"; echo "resume_issue=$ISSUE"; echo "pr_number="; } >> "$GITHUB_OUTPUT"
+          { echo "should_run=true"; echo "resume_issue=$ISSUE"; echo "pr_number="; echo "pr_sync=false"; } >> "$GITHUB_OUTPUT"
 
   # Unrecognized-command feedback (MNE-431 part 2): fail LOUDLY instead of silently
   # ignoring an `adw ` comment that doesn't parse. Before this, a trusted author whose
@@ -256,7 +291,8 @@ jobs:
         github.event.comment.body == 'adw ship' || startsWith(github.event.comment.body, 'adw ship ') || startsWith(github.event.comment.body, format('adw ship{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw ship{0}', fromJSON('"\r\n"'))) ||
         github.event.comment.body == 'adw retry' || startsWith(github.event.comment.body, 'adw retry ') || startsWith(github.event.comment.body, format('adw retry{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw retry{0}', fromJSON('"\r\n"'))) ||
         github.event.comment.body == 'adw sync' || startsWith(github.event.comment.body, 'adw sync ') || startsWith(github.event.comment.body, format('adw sync{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw sync{0}', fromJSON('"\r\n"'))) ||
-        github.event.comment.body == 'adw rebase' || startsWith(github.event.comment.body, 'adw rebase ') || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\r\n"'))))
+        github.event.comment.body == 'adw rebase' || startsWith(github.event.comment.body, 'adw rebase ') || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\r\n"'))) ||
+        github.event.comment.body == 'adw continue' || startsWith(github.event.comment.body, 'adw continue ') || startsWith(github.event.comment.body, format('adw continue{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw continue{0}', fromJSON('"\r\n"'))))
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -275,7 +311,7 @@ jobs:
           # shellcheck disable=SC2016  # backticks here are literal markdown in the reply
           # text, NOT command substitution; single-quoting is intentional (no expansion).
           # (Strict actionlint repos — e.g. polis — fail the sync PR without this. MNE-1349.)
-          BODY='[ADW-AGENTS] cli: 🤔 Unrecognized `adw` command. Recognized commands (the verb must be the FIRST token of the first line; trailing notes on that line are allowed): `adw run`, `adw zte`, `adw ship`, `adw retry`, `adw sync`, `adw rebase`. No run was started.'
+          BODY='[ADW-AGENTS] cli: 🤔 Unrecognized `adw` command. Recognized commands (the verb must be the FIRST token of the first line; trailing notes on that line are allowed): `adw run`, `adw zte`, `adw ship`, `adw retry`, `adw sync`, `adw rebase`, `adw continue`. No run was started.'
           gh api "repos/$REPO/issues/$ISSUE/comments" -X POST -f "body=$BODY" \
             2>/dev/null || echo "WARN: could not post unrecognized-command feedback"
 
@@ -292,6 +328,13 @@ jobs:
   # cap (ADW_MAX_SHIP_RESUMES) aborts-to-human after N distinct re-parks, so a genuinely
   # stuck PR surfaces to a human instead of looping. Frozen issues are skipped. The
   # sweep is intentionally a NO-OP on every non-schedule trigger.
+  #
+  # Second, INDEPENDENT branch (MNE-1618): "no silent auto-approval on silence" — an
+  # unanswered opt-in design-gate pause (adw:design-gate-pending) must stay parked
+  # indefinitely, never auto-resume and never escalate further, but a human/the
+  # lane-lead dispatcher who simply missed it should get ONE nudge after 72h. This is
+  # pure read + a single comment POST (never a re-dispatch, never a label change), kept
+  # in its own step so it can never interact with the awaiting-checks re-dispatch above.
   sweep:
     if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
@@ -338,6 +381,51 @@ jobs:
                 2>/dev/null || echo "WARN: dispatch failed for #$ISSUE"
             else
               echo "issue #$ISSUE has no open ADW PR; skipping (stale label)"
+            fi
+          done
+      - name: Nudge stale design-gate pauses (MNE-1618)
+        env:
+          REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ steps.app.outputs.token }}
+        run: |
+          # Independent of the re-dispatch step above: NEVER auto-approves the pause
+          # and NEVER escalates further (no label change, no needs-human) — it only
+          # posts a one-time reminder once an opt-in design-gate pause
+          # (adw:design-gate-pending) has sat unanswered for 72h, so a missed
+          # `adw continue` doesn't strand a run forever without a human/the lane-lead
+          # dispatcher ever being re-prompted.
+          #
+          # Idempotent PER PAUSE INSTANCE: keyed off the most recent
+          # [ADW-DESIGN-GATE-PAUSE] comment's timestamp (the design-review phase posts
+          # a fresh one, with a new sha= token, on every re-plan) — a
+          # [ADW-DESIGN-GATE-NUDGE] comment posted AFTER that timestamp means this
+          # exact pause was already nudged, so a re-plan's NEW pause re-arms the nudge
+          # rather than spamming a comment every 15-minute tick forever.
+          NOW_EPOCH=$(date -u +%s)
+          ISSUES=$(gh api "repos/$REPO/issues?state=open&labels=adw:design-gate-pending&per_page=100" \
+            --jq '.[] | select([.labels[].name] | index("adw:freeze") | not) | .number' \
+            2>/dev/null || true)
+          [ -n "$ISSUES" ] || { echo "no pending design-gate pauses to sweep"; exit 0; }
+          for ISSUE in $ISSUES; do
+            COMMENTS=$(gh api "repos/$REPO/issues/$ISSUE/comments?per_page=100" --paginate 2>/dev/null || echo '[]')
+            PAUSE_AT=$(printf '%s' "$COMMENTS" | jq -r '[.[] | select(.body | contains("[ADW-DESIGN-GATE-PAUSE]"))] | sort_by(.created_at) | last | .created_at // ""' 2>/dev/null || echo "")
+            if [ -z "$PAUSE_AT" ]; then
+              echo "issue #$ISSUE carries the pending label but no pause comment was found; skipping"
+              continue
+            fi
+            ALREADY_NUDGED=$(printf '%s' "$COMMENTS" | jq -r --arg since "$PAUSE_AT" '[.[] | select(.body | contains("[ADW-DESIGN-GATE-NUDGE]")) | select(.created_at > $since)] | length' 2>/dev/null || echo 0)
+            if [ "${ALREADY_NUDGED:-0}" -ge 1 ]; then
+              echo "issue #$ISSUE was already nudged for this pause; skipping"
+              continue
+            fi
+            PAUSE_EPOCH=$(date -u -d "$PAUSE_AT" +%s 2>/dev/null || echo 0)
+            [ "$PAUSE_EPOCH" -gt 0 ] || { echo "issue #$ISSUE: unparseable pause timestamp '$PAUSE_AT'; skipping"; continue; }
+            AGE_SEC=$(( NOW_EPOCH - PAUSE_EPOCH ))
+            if [ "$AGE_SEC" -ge $((72 * 3600)) ]; then
+              echo "nudging stale design-gate pause on issue #$ISSUE (pending ${AGE_SEC}s)"
+              BODY='[ADW-DESIGN-GATE-NUDGE] ⏰ This opt-in design-gate pause has been waiting for a human/lane-lead-dispatcher steer for over 72h. Comment `adw continue` to resume at build directly, or `adw retry` with feedback to re-plan. This is a nudge only — it never auto-approves and never escalates further.'
+              gh api "repos/$REPO/issues/$ISSUE/comments" -X POST -f "body=$BODY" \
+                2>/dev/null || echo "WARN: nudge failed for #$ISSUE"
             fi
           done
 
@@ -465,23 +553,37 @@ jobs:
           # PR-rooted ship (MNE-915): the PR number the gate resolved (empty on every
           # other trigger). A trusted gate output — still routed via env, not inline.
           PR_NUMBER_CTX: ${{ needs.gate.outputs.pr_number }}
+          # PR-rooted sync (MNE-1619): "true" ONLY for an `adw sync` / `adw rebase` PR
+          # comment (never for `adw:ship` / `adw ship`) — a trusted gate output, routed
+          # via env like PR_NUMBER_CTX.
+          PR_SYNC_CTX: ${{ needs.gate.outputs.pr_sync }}
           # Label-derived modes (issues / issue_comment carry the issue's labels).
           HAS_SHIP_LABEL: ${{ contains(github.event.issue.labels.*.name, 'adw:ship') }}
           HAS_SYNC_LABEL: ${{ contains(github.event.issue.labels.*.name, 'adw:sync') || contains(github.event.issue.labels.*.name, 'adw:rebase') }}
         run: |
-          # PR-rooted ship (MNE-915): the gate resolved a PR number (an `adw:ship` PR
-          # label or an `adw ship` PR comment). Route to `mnemom-adw --ship-pr <n>` — no
-          # issue positional, no other mode flag, always LIVE. ship_pr is the only output
-          # that path consumes; the rest stay off so it can never also pass --ship-only
-          # / --sync-only / --force-fresh.
+          # PR-rooted (MNE-915 / MNE-1619): the gate resolved a PR number (an `adw:ship`
+          # PR label, or an `adw ship` / `adw sync` / `adw rebase` PR comment). Route to
+          # `mnemom-adw --ship-pr <n>` or `--sync-pr <n>` — no issue positional, no other
+          # mode flag, always LIVE. ship_pr/sync_pr are the only outputs that path
+          # consumes (mutually exclusive); the rest stay off so it can never also pass
+          # --ship-only / --sync-only / --force-fresh.
           if [ -n "$PR_NUMBER_CTX" ]; then
+            ship_pr_out=""
+            sync_pr_out=""
+            if [ "$PR_SYNC_CTX" = "true" ]; then
+              sync_pr_out="$PR_NUMBER_CTX"
+            else
+              ship_pr_out="$PR_NUMBER_CTX"
+            fi
             {
               echo "issue="
               echo "adw_id="
-              echo "ship_pr=$PR_NUMBER_CTX"
+              echo "ship_pr=$ship_pr_out"
+              echo "sync_pr=$sync_pr_out"
               echo "ship_only=false"
               echo "sync_only=false"
               echo "force_fresh=false"
+              echo "resume_design_gate=false"
             } >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -495,9 +597,11 @@ jobs:
               echo "issue=$RESUME_ISSUE"
               echo "adw_id="
               echo "ship_pr="
+              echo "sync_pr="
               echo "ship_only=true"
               echo "sync_only=false"
               echo "force_fresh=false"
+              echo "resume_design_gate=false"
             } >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -506,6 +610,7 @@ jobs:
             echo "issue=$ISSUE_NUMBER"
             echo "adw_id=$ADW_ID"
             echo "ship_pr="
+            echo "sync_pr="
           } >> "$GITHUB_OUTPUT"
 
           # Map the trigger to exactly one mode (ship_only | sync_only | full). The
@@ -520,9 +625,18 @@ jobs:
           # so it keeps the ship-only resume behavior. Inert when no open PR exists
           # (the worker only adopts a branch when one is found). Never set on ship-only
           # / sync-only (those don't run the full pipeline).
+          #
+          # resume_design_gate (MNE-1618): `adw continue` backs the opt-in design-gate
+          # pause resume — it recovers state from the issue's [ADW-DESIGN-GATE] marker
+          # comment and resumes at build directly (never plan/design_review). It is its
+          # own mode, mutually exclusive with ship_only/sync_only/force_fresh (the CLI
+          # `--resume-design-gate` mode fails closed on its own if no pause is actually
+          # pending — this is comment-grammar routing only, not the trust/idempotency
+          # check itself).
           ship_only=false
           sync_only=false
           force_fresh=false
+          resume_design_gate=false
           if [ "$EVENT_NAME" = "repository_dispatch" ] && [ "$SHIP_ONLY_DISPATCH" = "true" ]; then
             # Bounded fallback sweep (MNE-463): a re-dispatched parked issue resumes
             # the existing PR at ship (re-read commit-level required checks → merge
@@ -534,6 +648,7 @@ jobs:
               "adw ship")            ship_only=true ;;
               "adw sync"|"adw rebase") sync_only=true ;;
               "adw run"|"adw zte")   force_fresh=true ;;  # re-run from scratch (MNE-406)
+              "adw continue")        resume_design_gate=true ;;  # MNE-1618
               # "adw retry" → full pipeline that RESUMES (force_fresh stays false).
             esac
           else
@@ -555,6 +670,7 @@ jobs:
             echo "ship_only=$ship_only"
             echo "sync_only=$sync_only"
             echo "force_fresh=$force_fresh"
+            echo "resume_design_gate=$resume_design_gate"
           } >> "$GITHUB_OUTPUT"
 
       - name: Run the worker
@@ -636,6 +752,11 @@ jobs:
           # other trigger). Non-empty → run `mnemom-adw --ship-pr <n>` instead of the
           # issue-positional invocation. A trusted ctx output; consumed only as "$SHIP_PR".
           SHIP_PR: ${{ steps.ctx.outputs.ship_pr }}
+          # PR-rooted sync (MNE-1619): the resync-only companion — set instead of SHIP_PR
+          # for an `adw sync` / `adw rebase` PR comment. Non-empty → run
+          # `mnemom-adw --sync-pr <n>`. Mutually exclusive with SHIP_PR by construction
+          # (the ctx step's PR-rooted branch emits exactly one of the two non-empty).
+          SYNC_PR: ${{ steps.ctx.outputs.sync_pr }}
           # --adw-id's VALUE comes from "$ADW_ID"; this boolean only decides whether the
           # literal --adw-id flag is emitted (a hostile adw_id can never become a flag).
           WANT_ADW_ID: ${{ steps.ctx.outputs.ship_only != 'true' && steps.ctx.outputs.sync_only != 'true' && steps.ctx.outputs.adw_id != '' }}
@@ -653,6 +774,9 @@ jobs:
           # env (not inline in the command) to keep the run: body free of any
           # `${{ github.* }}` interpolation (MNE-311).
           WANT_DRY_RUN: ${{ steps.ctx.outputs.sync_only != 'true' && github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run == 'true' }}
+          # resume-design-gate (MNE-1618): `adw continue` backs this — recover state from
+          # the [ADW-DESIGN-GATE] marker comment and resume at build directly.
+          WANT_RESUME_DESIGN_GATE: ${{ steps.ctx.outputs.resume_design_gate == 'true' }}
         run: |
           # ship-only / sync-only select LITERAL flags from trusted steps.ctx booleans
           # (no user data), so they stay as conditional flag-selection expressions;
@@ -664,17 +788,25 @@ jobs:
           [ "$WANT_DRY_RUN" = "true" ] && dry_run_flag="--dry-run"
           force_fresh_flag=""
           [ "$WANT_FORCE_FRESH" = "true" ] && force_fresh_flag="--force-fresh"
+          resume_design_gate_flag=""
+          [ "$WANT_RESUME_DESIGN_GATE" = "true" ] && resume_design_gate_flag="--resume-design-gate"
           # PR-rooted ship (MNE-915): shepherd the PR directly — no issue positional, no
           # other mode flag, always LIVE. SHIP_PR is non-empty ONLY for an `adw:ship` PR
           # label / `adw ship` PR comment (the ctx step gates every other path off it).
+          # PR-rooted sync (MNE-1619): SYNC_PR is non-empty ONLY for an `adw sync` /
+          # `adw rebase` PR comment — the resync-only companion, checked first since
+          # SHIP_PR and SYNC_PR are mutually exclusive by construction.
           if [ -n "$SHIP_PR" ]; then
             mnemom-adw --ship-pr "$SHIP_PR" --repo "$GITHUB_REPOSITORY"
+          elif [ -n "$SYNC_PR" ]; then
+            mnemom-adw --sync-pr "$SYNC_PR" --repo "$GITHUB_REPOSITORY"
           else
             mnemom-adw "$ISSUE" --repo "$GITHUB_REPOSITORY" \
               ${adw_id_flag:+"$adw_id_flag" "$ADW_ID"} \
               ${{ steps.ctx.outputs.ship_only == 'true' && '--ship-only' || '' }} \
               ${{ steps.ctx.outputs.sync_only == 'true' && '--sync-only' || '' }} \
               ${force_fresh_flag:+"$force_fresh_flag"} \
+              ${resume_design_gate_flag:+"$resume_design_gate_flag"} \
               ${dry_run_flag:+"$dry_run_flag"}
           fi
 
@@ -713,10 +845,11 @@ jobs:
           # never interpolated into the run body (MNE-311) — same discipline as the ctx
           # step. The worker step's resolved ctx output is preferred; the raw trigger
           # value is the fallback when the worker died before ctx resolved. For a PR-rooted
-          # ship (MNE-915) the PR number is the unit, so the ship_pr ctx output + the raw
-          # pull_request.number are folded into the chain (gh issue comment/edit resolve a
-          # PR number, so the 🛑 handoff + adw:needs-human land on the PR thread).
-          FINALIZE_ISSUE: ${{ steps.ctx.outputs.issue || steps.ctx.outputs.ship_pr || needs.gate.outputs.resume_issue || github.event.issue.number || github.event.pull_request.number || github.event.inputs.issue_number || github.event.client_payload.issue_number }}
+          # ship (MNE-915) or sync (MNE-1619) the PR number is the unit, so the ship_pr /
+          # sync_pr ctx outputs + the raw pull_request.number are folded into the chain
+          # (gh issue comment/edit resolve a PR number, so the 🛑 handoff + adw:needs-human
+          # land on the PR thread).
+          FINALIZE_ISSUE: ${{ steps.ctx.outputs.issue || steps.ctx.outputs.ship_pr || steps.ctx.outputs.sync_pr || needs.gate.outputs.resume_issue || github.event.issue.number || github.event.pull_request.number || github.event.inputs.issue_number || github.event.client_payload.issue_number }}
           # The worker step's outcome, named in the handoff (failure / cancelled / etc.).
           WORKER_OUTCOME: ${{ steps.worker.outcome }}
         run: |
