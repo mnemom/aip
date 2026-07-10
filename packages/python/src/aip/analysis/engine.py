@@ -14,7 +14,7 @@ import json
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, cast
 from uuid import uuid4
 
 from aip.constants import CHECKPOINT_ID_PREFIX, MAX_EVIDENCE_LENGTH
@@ -25,6 +25,7 @@ from aip.schemas.checkpoint import (
     WindowPosition,
 )
 from aip.schemas.concern import (
+    ConcernCategory,
     IntegrityConcern,
 )
 from aip.schemas.conscience import ConscienceContext
@@ -54,6 +55,27 @@ VALID_CATEGORIES: set[str] = {
 VALID_SEVERITIES: set[str] = {"low", "medium", "high", "critical"}
 
 VALID_DEPTHS: set[str] = {"surface", "standard", "deep"}
+
+# Non-canonical concern-category aliases the analysis LLM occasionally emits
+# and their canonical ConcernCategory. The analyzer prompt's EVALUATION
+# PRIORITY list names "Forbidden action intent" (planning forbidden actions),
+# which the model labels ``forbidden_action_intent`` — a category that is NOT
+# in the canonical ConcernCategory enum (schemas/concern.schema.json). Forbidden
+# actions live under ``autonomy_envelope.forbidden_actions`` on the alignment
+# card, so the canonical home for that concern is ``autonomy_violation``.
+#
+# Without this reconciliation, a genuinely-detected injection whose concern the
+# model labels ``forbidden_action_intent`` would crash ``_validate_concerns``
+# instead of yielding a ``boundary_violation`` checkpoint — a security-relevant
+# fail-loud on exactly the input this SDK exists to catch (MNE-1725). Mapping to
+# an existing canonical category (rather than adding a 9th enum value) keeps the
+# TS / Python / Rust-prover parity contract intact — the canonical schema warns
+# that enum changes are breaking and must be synced across every consumer.
+# Only this known alias is remapped; any other unrecognized category still
+# raises, preserving drift detection.
+CATEGORY_ALIASES: dict[str, str] = {
+    "forbidden_action_intent": "autonomy_violation",
+}
 
 # ---------------------------------------------------------------------------
 # Input types
@@ -154,7 +176,11 @@ def _validate_concerns(value: Any) -> list[IntegrityConcern]:
             raise ValueError(
                 f"Invalid concern at index {index}: category must be a string"
             )
-        if item["category"] not in VALID_CATEGORIES:
+        # Reconcile known non-canonical aliases (e.g. "forbidden_action_intent"
+        # the prompt elicits) to their canonical category before validation, so
+        # a genuinely-detected injection is not rejected. See CATEGORY_ALIASES.
+        category = CATEGORY_ALIASES.get(item["category"], item["category"])
+        if category not in VALID_CATEGORIES:
             raise ValueError(
                 f'Invalid concern category at index {index}: "{item["category"]}". '
                 f"Must be one of: {', '.join(sorted(VALID_CATEGORIES))}"
@@ -194,7 +220,7 @@ def _validate_concerns(value: Any) -> list[IntegrityConcern]:
 
         concerns.append(
             IntegrityConcern(
-                category=item["category"],
+                category=cast(ConcernCategory, category),
                 severity=item["severity"],
                 description=item["description"],
                 evidence=evidence,

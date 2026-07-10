@@ -13,6 +13,7 @@ import re
 from datetime import datetime
 
 from aip.analysis.engine import (
+    VALID_CATEGORIES,
     CheckIntegrityInput,
     ThinkingInput,
     build_signal,
@@ -25,6 +26,7 @@ from aip.constants import MAX_EVIDENCE_LENGTH
 from aip.schemas.checkpoint import WindowPosition
 from aip.schemas.signal import VerdictCounts, WindowSummary
 from tests.conftest import (
+    INJECTION_FENCED_FORBIDDEN_ACTION_RESPONSE,
     VERDICT_BOUNDARY_DECEPTION,
     VERDICT_BOUNDARY_INJECTION,
     VERDICT_CLEAR,
@@ -285,6 +287,78 @@ class TestCheckIntegrity:
         assert result.concerns[0].severity == "high"
         assert result.concerns[1].category == "autonomy_violation"
         assert result.concerns[1].severity == "medium"
+
+
+class TestCheckIntegrityInjectionRegression:
+    """MNE-1725: a genuinely-detected injection must return a boundary_violation
+    checkpoint, not THROW.
+
+    Two crash modes seen in the wild on 1.2.0, reproduced with the real captured
+    analysis response ``INJECTION_FENCED_FORBIDDEN_ACTION_RESPONSE``:
+      (a) the JSON verdict is wrapped in a ```json markdown code fence, and
+      (b) a concern uses the category ``forbidden_action_intent`` (the name the
+          analyzer prompt's EVALUATION PRIORITY list elicits), which is not a
+          canonical ConcernCategory.
+    Either one made ``check_integrity`` raise ``ValueError`` — a security-relevant
+    fail-loud on exactly the input the SDK exists to catch.
+    """
+
+    def test_fenced_forbidden_action_injection_returns_boundary_violation(
+        self,
+    ) -> None:
+        inp = make_input(VERDICT_CLEAR)
+        inp.analysis_response = INJECTION_FENCED_FORBIDDEN_ACTION_RESPONSE
+        # Must NOT raise, and must classify as a boundary violation.
+        result = check_integrity(inp)
+        assert result.verdict == "boundary_violation"
+        assert len(result.concerns) == 2
+        # forbidden_action_intent is reconciled to the canonical autonomy_violation.
+        assert result.concerns[0].category == "prompt_injection"
+        assert result.concerns[1].category == "autonomy_violation"
+        # Every emitted category is canonical (validator-accepted).
+        assert all(c.category in VALID_CATEGORIES for c in result.concerns)
+        # The highest-value path yields deny_and_escalate / proceed=False.
+        assert (
+            map_verdict_to_action(result.verdict, result.concerns)
+            == "deny_and_escalate"
+        )
+        assert map_verdict_to_proceed(result.verdict) is False
+
+    def test_markdown_fenced_json_is_parsed(self) -> None:
+        # Mode (a) in isolation: a fenced canonical response parses cleanly.
+        inp = make_input(VERDICT_CLEAR)
+        inp.analysis_response = "```json\n" + json.dumps(VERDICT_BOUNDARY_INJECTION) + "\n```"
+        result = check_integrity(inp)
+        assert result.verdict == "boundary_violation"
+        assert result.concerns[0].category == "prompt_injection"
+
+    def test_forbidden_action_intent_maps_to_autonomy_violation(self) -> None:
+        # Mode (b) in isolation: the alias is reconciled, not rejected.
+        concern = dict(VERDICT_BOUNDARY_INJECTION["concerns"][0])
+        concern["category"] = "forbidden_action_intent"
+        inp = make_input(VERDICT_CLEAR)
+        inp.analysis_response = json.dumps({
+            **VERDICT_BOUNDARY_INJECTION,
+            "concerns": [concern],
+        })
+        result = check_integrity(inp)
+        assert result.concerns[0].category == "autonomy_violation"
+
+    def test_unknown_category_still_raises(self) -> None:
+        # Reconciliation is narrow: an genuinely-unknown category still fails
+        # loud, preserving drift detection against the canonical enum.
+        concern = dict(VERDICT_BOUNDARY_INJECTION["concerns"][0])
+        concern["category"] = "some_new_uncanonical_category"
+        inp = make_input(VERDICT_CLEAR)
+        inp.analysis_response = json.dumps({
+            **VERDICT_BOUNDARY_INJECTION,
+            "concerns": [concern],
+        })
+        try:
+            check_integrity(inp)
+            assert False, "Expected ValueError"
+        except ValueError as e:
+            assert "Invalid concern category" in str(e)
 
 
 # ---------------------------------------------------------------------------
