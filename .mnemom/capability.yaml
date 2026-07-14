@@ -43,8 +43,8 @@ merge_strategy: external
 #                `pip install build && python -m build` — self-contained, no extra pip
 #                install needed given uv is already the resolver) AND the TS bundle via
 #                tsup (`npm run build` → dist/).
-# All four verified green from a clean checkout (packages/python: uv sync --locked --extra
-# dev; ruff — all checks passed; mypy — no issues in 29 source files; pytest — 298 passed;
+# All four verified green from a clean checkout (packages/python: uv sync --extra dev;
+# ruff — all checks passed; mypy — no issues in 29 source files; pytest — 298 passed;
 # uv build — sdist+wheel built. packages/typescript: npm ci; tsc --noEmit clean; vitest —
 # 354 passed across 20 files; tsup build succeeded) before this manifest landed.
 # Deps + artifacts (.venv/, packages/python/dist/, packages/python/coverage.xml,
