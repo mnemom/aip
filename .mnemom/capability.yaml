@@ -16,10 +16,6 @@
 # .python-version=3.12; ci.yml uses astral-sh/setup-uv + `uv sync --locked` + `uv run
 # --locked`), unlike aap's pip-based commands — verified live, not assumed. The TS verbs
 # call npm explicitly (packages/typescript/package-lock.json; ci.yml uses `npm ci`).
-# NOTE: --locked is omitted from the commands below (but IS used in ci.yml). The ADW
-# runner uses setup-uv@v7.6.0+ which sets UV_FROZEN=1 globally; uv rejects --locked
-# when UV_FROZEN is already set (they are mutually exclusive). UV_FROZEN provides
-# equivalent lockfile protection in the ADW runner context.
 stack: python
 package_manager: uv
 merge_strategy: external
@@ -54,10 +50,10 @@ merge_strategy: external
 # Deps + artifacts (.venv/, packages/python/dist/, packages/python/coverage.xml,
 # node_modules/, packages/typescript/dist/) are gitignored and must never be committed.
 commands:
-  lint: cd packages/python && uv sync --extra dev && uv run --extra dev ruff check src/ tests/
-  typecheck: cd packages/python && uv sync --extra dev && uv run --extra dev mypy src/ && cd ../typescript && npm ci && npm run typecheck
-  test: cd packages/python && uv sync --extra dev && uv run --extra dev pytest && cd ../typescript && npm ci && npm run test
-  build: cd packages/python && uv sync --extra dev && uv build && cd ../typescript && npm ci && npm run build
+  lint: cd packages/python && uv sync --locked --extra dev && uv run --locked --extra dev ruff check src/ tests/
+  typecheck: cd packages/python && uv sync --locked --extra dev && uv run --locked --extra dev mypy src/ && cd ../typescript && npm ci && npm run typecheck
+  test: cd packages/python && uv sync --locked --extra dev && uv run --locked --extra dev pytest && cd ../typescript && npm ci && npm run test
+  build: cd packages/python && uv sync --locked --extra dev && uv build && cd ../typescript && npm ci && npm run build
 
 # aip is a pair of SDK libraries (Python + TS clients) with NO rendered UI, so there are no
 # user-visible UX surfaces to gate — keep this empty so the visual-validation phase stays

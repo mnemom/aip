@@ -15,9 +15,9 @@ stability contracts, protocol evolution, and cross-layer integration principles.
 
 | ADR | Title | Status | Canonical home |
 |-----|-------|--------|----------------|
-| ADR-006 | API stability and major-version support window | Adopted | `mnemom/decisions` (pending — see note) |
-| ADR-007 | Unified YAML agent card — 2.0 design intent | Adopted | `mnemom/decisions` (pending — see note) |
-| ADR-048 | Triggering governance signal reference (operator-vs-agent layering) | Adopted | `mnemom/decisions` (pending — see note) |
+| ADR-006 | API stability and major-version support window | Adopted | [mnemom/decisions](https://github.com/mnemom/decisions/blob/main/adr-006-api-stability.md) *(pending — repo not yet created)* |
+| ADR-007 | Unified YAML agent card — 2.0 design intent | Adopted | [mnemom/decisions](https://github.com/mnemom/decisions/blob/main/adr-007-unified-yaml-agent-card.md) *(pending — repo not yet created)* |
+| ADR-048 | Triggering governance signal reference (operator-vs-agent layering) | Adopted | [mnemom/decisions](https://github.com/mnemom/decisions/blob/main/adr-048-triggering-governance-signal.md) *(pending — repo not yet created)* |
 
 ### ADR-006 — API stability and major-version support window
 
@@ -64,5 +64,4 @@ The `mnemom/decisions` repository does not yet exist (verified 2026-07-13 via
 `gh api repos/mnemom/decisions` → 404). Canonical-home links will resolve once
 that repo is created. The slug convention expected is
 `github.com/mnemom/decisions/blob/main/adr-006-*.md` (and similarly for ADR-007,
-ADR-048). When the repo is created, replace the "pending" placeholders above with
-direct links.
+ADR-048). When the repo is created, update the pending links above.
