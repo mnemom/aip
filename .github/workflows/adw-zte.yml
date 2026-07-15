@@ -683,6 +683,17 @@ jobs:
         # additionally bounded by ADW_E2E_TIMEOUT_SEC + the per-message idle watchdog.)
         timeout-minutes: 80
         env:
+          # This job runs un-nested inside GitHub Actions CI (the checkout IS the
+          # working root — never a locally-cloned dev checkout), so a ship/sync resume
+          # against an existing branch must take the in-place fetch+checkout path
+          # (`_checkout_branch_for_ship`'s `is_in_ci()` branch — `phase.is_in_ci()` reads
+          # exactly this var), never the "outside CI" worktree-attach path (which can try
+          # to CREATE the branch and collides with a resume against a branch that already
+          # has an open PR). This var was never wired here before, so `is_in_ci()` always
+          # read False in this workflow and every ship-only/PR-rooted resume took the
+          # worktree-attach path unconditionally (mnemom-platform#906: `adw retry` failed
+          # twice with `fatal: a branch named '...' already exists`).
+          ADW_IN_CI: "true"
           GH_TOKEN: ${{ steps.app.outputs.token }}
           GITHUB_PAT: ${{ steps.app.outputs.token }}
           # Token-expiry hardening (MNE-393). The App token above lives ~1h; the
