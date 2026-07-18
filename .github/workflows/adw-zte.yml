@@ -423,6 +423,9 @@ jobs:
             AGE_SEC=$(( NOW_EPOCH - PAUSE_EPOCH ))
             if [ "$AGE_SEC" -ge $((72 * 3600)) ]; then
               echo "nudging stale design-gate pause on issue #$ISSUE (pending ${AGE_SEC}s)"
+              # shellcheck disable=SC2016  # backticks here are literal markdown in the reply
+              # text, NOT command substitution; single-quoting is intentional (no expansion).
+              # (Strict actionlint repos — e.g. polis — fail the sync PR without this. MNE-1349.)
               BODY='[ADW-DESIGN-GATE-NUDGE] ⏰ This opt-in design-gate pause has been waiting for a human/lane-lead-dispatcher steer for over 72h. Comment `adw continue` to resume at build directly, or `adw retry` with feedback to re-plan. This is a nudge only — it never auto-approves and never escalates further.'
               gh api "repos/$REPO/issues/$ISSUE/comments" -X POST -f "body=$BODY" \
                 2>/dev/null || echo "WARN: nudge failed for #$ISSUE"
