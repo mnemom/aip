@@ -270,13 +270,13 @@ import {
 
 ## Status
 
-**Current Version**: 0.4.0
+**Current Version**: [![PyPI](https://img.shields.io/pypi/v/agent-integrity-proto.svg)](https://pypi.org/project/agent-integrity-proto/) [![npm](https://img.shields.io/npm/v/@mnemom/agent-integrity-protocol.svg)](https://www.npmjs.com/package/@mnemom/agent-integrity-protocol)
 
 | Component | Status |
 |-----------|--------|
 | Specification | ✅ Complete |
-| TypeScript SDK | ✅ Complete (272 tests) |
-| Python SDK | ✅ Complete (267 tests) |
+| TypeScript SDK | ✅ Complete (419 tests) |
+| Python SDK | ✅ Complete (349 tests) |
 | Provider Adapters | ✅ Anthropic, OpenAI, Google, Fallback |
 | Session Windowing | ✅ Complete |
 | Drift Detection | ✅ Complete |
