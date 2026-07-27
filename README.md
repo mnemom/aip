@@ -270,7 +270,7 @@ import {
 
 ## Status
 
-**Current Version**: 1.2.0
+**Current Version**: [![PyPI](https://img.shields.io/pypi/v/agent-integrity-proto.svg)](https://pypi.org/project/agent-integrity-proto/) [![npm](https://img.shields.io/npm/v/@mnemom/agent-integrity-protocol.svg)](https://www.npmjs.com/package/@mnemom/agent-integrity-protocol)
 
 | Component | Status |
 |-----------|--------|
