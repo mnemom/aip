@@ -98,8 +98,8 @@ jobs:
   # github.event.issue.pull_request set) — routing to `mnemom-adw --ship-pr <n>`. The
   # ISSUE-comment grammar branch keeps its `issue.pull_request == null` guard (issue
   # comments only); the PR-comment branch is the explicit `!= null` counterpart, scoped to
-  # `adw ship` / `adw sync` / `adw rebase`. Same OWNER/MEMBER/COLLABORATOR + non-Bot +
-  # [ADW-AGENTS]-loop guards.
+  # `adw ship` / `adw sync` / `adw rebase`. Same non-Bot + [ADW-AGENTS]-loop guards, and
+  # the same real-permission trust check (MNE-2774) applied in the `decide` step below.
   #
   # PR-rooted sync (MNE-1619): the `adw sync` / `adw rebase` COMMENT on a PR is the
   # resync-only companion — routes to `mnemom-adw --sync-pr <n>` instead of `--ship-pr`.
@@ -142,6 +142,26 @@ jobs:
   # (no re-widening to arbitrary `adw <instruction>` — the MNE-345 regression guard).
   # An `adw ` prefix that matches NO command is no longer silently ignored: the
   # `feedback` job below posts an explicit "unrecognized command" reply (MNE-431 part 2).
+  #
+  # Trust check via REAL repo permission, not author_association (MNE-2774). The `if:`
+  # above is a pre-filter ONLY now — event/label/grammar/freeze/bot-sender, all free of
+  # an API call — and no longer gates on `author_association` for the `issues` /
+  # `issue_comment` / `pull_request` branches. That check silently misclassified any
+  # actor whose ORG MEMBERSHIP IS PRIVATE as untrusted (author_association only sees
+  # PUBLIC org membership), so the OWNER/MEMBER/COLLABORATOR trust check was a false
+  # negative — a full-fleet outage class for any private member, discovered when every
+  # `adw:zte` label-add from a private member skipped silently. The `decide` step below
+  # now resolves the acting user's ACTUAL permission on this repo via
+  # `GET /repos/{owner}/{repo}/collaborators/{login}/permission` and requires
+  # write/admin — correct for private members, and a TIGHTER bar than author_association
+  # ever was (an org MEMBER with no configured repo access no longer passes). A
+  # non-collaborator 404s from that endpoint and fails closed exactly like today.
+  # workflow_dispatch / repository_dispatch already require write access to invoke; the
+  # check_suite resume path re-verifies the issue's live state at runtime regardless —
+  # neither needs this check. Cost: the gate job now actually starts (a runner spins up)
+  # for an UNTRUSTED actor's matching label/comment, instead of being skipped entirely
+  # by the `if:` — a small compute cost, never a trust weakening, since `zte` still only
+  # runs when `decide` sets `should_run=true`.
   gate:
     runs-on: ubuntu-latest
     # The resume step needs READ access to issues/PRs to verify the resume
@@ -164,11 +184,12 @@ jobs:
          github.event.label.name == 'adw:rebase') &&
         github.event.sender.type != 'Bot' &&
         !endsWith(github.event.sender.login, '[bot]') &&
-        !contains(github.event.issue.labels.*.name, 'adw:freeze') &&
-        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.issue.author_association)) ||
+        !contains(github.event.issue.labels.*.name, 'adw:freeze')) ||
       (github.event_name == 'issue_comment' &&
         github.event.issue.pull_request == null &&
         !contains(github.event.issue.labels.*.name, 'adw:freeze') &&
+        github.event.sender.type != 'Bot' &&
+        !endsWith(github.event.sender.login, '[bot]') &&
         !contains(github.event.comment.body, '[ADW-AGENTS]') &&
         (github.event.comment.body == 'adw run' || startsWith(github.event.comment.body, 'adw run ') || startsWith(github.event.comment.body, format('adw run{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw run{0}', fromJSON('"\r\n"'))) ||
          github.event.comment.body == 'adw zte' || startsWith(github.event.comment.body, 'adw zte ') || startsWith(github.event.comment.body, format('adw zte{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw zte{0}', fromJSON('"\r\n"'))) ||
@@ -176,15 +197,13 @@ jobs:
          github.event.comment.body == 'adw retry' || startsWith(github.event.comment.body, 'adw retry ') || startsWith(github.event.comment.body, format('adw retry{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw retry{0}', fromJSON('"\r\n"'))) ||
          github.event.comment.body == 'adw sync' || startsWith(github.event.comment.body, 'adw sync ') || startsWith(github.event.comment.body, format('adw sync{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw sync{0}', fromJSON('"\r\n"'))) ||
          github.event.comment.body == 'adw rebase' || startsWith(github.event.comment.body, 'adw rebase ') || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\r\n"'))) ||
-         github.event.comment.body == 'adw continue' || startsWith(github.event.comment.body, 'adw continue ') || startsWith(github.event.comment.body, format('adw continue{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw continue{0}', fromJSON('"\r\n"')))) &&
-        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)) ||
+         github.event.comment.body == 'adw continue' || startsWith(github.event.comment.body, 'adw continue ') || startsWith(github.event.comment.body, format('adw continue{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw continue{0}', fromJSON('"\r\n"'))))) ||
       (github.event_name == 'pull_request' &&
         github.event.action == 'labeled' &&
         github.event.label.name == 'adw:ship' &&
         github.event.sender.type != 'Bot' &&
         !endsWith(github.event.sender.login, '[bot]') &&
-        !contains(github.event.pull_request.labels.*.name, 'adw:freeze') &&
-        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.pull_request.author_association)) ||
+        !contains(github.event.pull_request.labels.*.name, 'adw:freeze')) ||
       (github.event_name == 'issue_comment' &&
         github.event.issue.pull_request != null &&
         !contains(github.event.issue.labels.*.name, 'adw:freeze') &&
@@ -193,8 +212,7 @@ jobs:
         !contains(github.event.comment.body, '[ADW-AGENTS]') &&
         (github.event.comment.body == 'adw ship' || startsWith(github.event.comment.body, 'adw ship ') || startsWith(github.event.comment.body, format('adw ship{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw ship{0}', fromJSON('"\r\n"'))) ||
          github.event.comment.body == 'adw sync' || startsWith(github.event.comment.body, 'adw sync ') || startsWith(github.event.comment.body, format('adw sync{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw sync{0}', fromJSON('"\r\n"'))) ||
-         github.event.comment.body == 'adw rebase' || startsWith(github.event.comment.body, 'adw rebase ') || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\r\n"')))) &&
-        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
+         github.event.comment.body == 'adw rebase' || startsWith(github.event.comment.body, 'adw rebase ') || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\r\n"')))))
     outputs:
       should_run: ${{ steps.decide.outputs.should_run }}
       resume_issue: ${{ steps.decide.outputs.resume_issue }}
@@ -228,7 +246,26 @@ jobs:
           COMMENT_ISSUE_NUMBER: ${{ github.event.issue.number }}
           IS_PR_COMMENT: ${{ github.event.issue.pull_request != null }}
           COMMENT_BODY: ${{ github.event.comment.body }}
+          # Real-permission trust check (MNE-2774): the acting user for every
+          # label/comment-triggered branch is `sender` — who added the label or posted
+          # the comment — never interpolated, read only via env (MNE-311).
+          SENDER_LOGIN: ${{ github.event.sender.login }}
         run: |
+          skip() { { echo "should_run=false"; echo "resume_issue="; echo "pr_number="; echo "pr_sync=false"; } >> "$GITHUB_OUTPUT"; exit 0; }
+          # MNE-2774: verify ACTUAL repo permission instead of author_association, which
+          # cannot see private org membership. Only the three actor-triggered event types
+          # need this; workflow_dispatch/repository_dispatch already require write access
+          # to invoke, and check_suite is a resume of an already-verified run.
+          case "$EVENT_NAME" in
+            issues|issue_comment|pull_request)
+              [ -n "$SENDER_LOGIN" ] || skip
+              PERM=$(gh api "repos/$REPO/collaborators/$SENDER_LOGIN/permission" --jq '.permission' 2>/dev/null || echo "none")
+              case "$PERM" in
+                admin|write) ;;
+                *) skip ;;
+              esac
+              ;;
+          esac
           # PR-rooted (MNE-915): emit the PR number so the heavy job uses the PR-scoped
           # concurrency group + the --ship-pr path. The gate `if:` already vetted the
           # trust / grammar / freeze conditions for these events, so no extra check here.
@@ -251,7 +288,6 @@ jobs:
             { echo "should_run=true"; echo "resume_issue="; echo "pr_number=$PR_NUM"; echo "pr_sync=$PR_SYNC"; } >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          skip() { { echo "should_run=false"; echo "resume_issue="; echo "pr_number="; echo "pr_sync=false"; } >> "$GITHUB_OUTPUT"; exit 0; }
           ISSUE=$(expr "$HEAD_BRANCH" : '.*-issue-\([0-9]\{1,\}\)-adw-' || true)
           [ -n "$ISSUE" ] || skip
           STATE=$(gh api "repos/$REPO/issues/$ISSUE" --jq '.state' 2>/dev/null || true)
@@ -284,7 +320,6 @@ jobs:
       github.event.sender.type != 'Bot' &&
       !endsWith(github.event.sender.login, '[bot]') &&
       !contains(github.event.comment.body, '[ADW-AGENTS]') &&
-      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
       startsWith(github.event.comment.body, 'adw ') &&
       !(github.event.comment.body == 'adw run' || startsWith(github.event.comment.body, 'adw run ') || startsWith(github.event.comment.body, format('adw run{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw run{0}', fromJSON('"\r\n"'))) ||
         github.event.comment.body == 'adw zte' || startsWith(github.event.comment.body, 'adw zte ') || startsWith(github.event.comment.body, format('adw zte{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw zte{0}', fromJSON('"\r\n"'))) ||
@@ -303,7 +338,17 @@ jobs:
           REPO: ${{ github.repository }}
           ISSUE: ${{ github.event.issue.number }}
           GH_TOKEN: ${{ github.token }}
+          SENDER_LOGIN: ${{ github.event.sender.login }}
         run: |
+          # Real-permission trust check (MNE-2774): author_association cannot see
+          # private org membership; verify the commenter's actual repo permission
+          # instead. Untrusted → silent no-op (same as before: no reply, no signal
+          # to a non-collaborator about the trust boundary).
+          PERM=$(gh api "repos/$REPO/collaborators/$SENDER_LOGIN/permission" --jq '.permission' 2>/dev/null || echo "none")
+          case "$PERM" in
+            admin|write) ;;
+            *) echo "untrusted actor ($SENDER_LOGIN: $PERM) — no feedback posted"; exit 0 ;;
+          esac
           # No untrusted interpolation in the body (MNE-311): the reply text is a fixed
           # literal naming the recognized verbs; the issue number reaches gh only as a
           # quoted shell var. We deliberately do NOT echo the operator's command back
@@ -730,6 +775,14 @@ jobs:
           # after one idle window. The cap is generous for that reason.
           ADW_AGENT_TIMEOUT_SEC_HEAVY: "3600"
           ADW_AGENT_IDLE_TIMEOUT_SEC: "600"
+          # Total wall-clock the worker may spend, mirroring this step's own
+          # timeout-minutes: 80 above. The worker clamps every per-call watchdog to
+          # what is left of this and refuses a call/retry it cannot finish, so the
+          # kill happens INSIDE the process (abort-to-human runs) instead of at the
+          # step boundary (silent runner kill). Keep in sync with timeout-minutes:
+          # the worker carries the same value as a code default, so an out-of-sync
+          # copy only ever makes the guard more conservative, never less.
+          ADW_RUN_BUDGET_SEC: "4800"
           # Per-phase E2E timeout BUDGET (MNE-338): the E2E suite was the most common
           # silent-death site (the run's last comment was "🌐 Running E2E tests…" then
           # nothing). Cap the E2E sub-phase wall-clock so it aborts-to-human cleanly
