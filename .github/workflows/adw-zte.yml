@@ -114,8 +114,11 @@ jobs:
   # worker's own `adw:needs-human` label add on an abort RE-LAUNCHED the very run
   # that had just stopped to ask a human. `adw:needs-human` is a STOP signal and must
   # never appear as a trigger label here. A bot actor (sender type `Bot` / login
-  # ending in `[bot]`, e.g. the worker's own App identity) never label-triggers a
-  # run — the labeled-event mirror of the [ADW-AGENTS] comment loop guard below.
+  # ending in `[bot]`) never label-triggers a run UNLESS it is a trusted fleet
+  # dispatcher App identity (MNE-2952, see the trusted-App-sender allow-list note
+  # below) — the labeled-event mirror of the [ADW-AGENTS] comment loop guard, still
+  # fully in force for the worker's OWN in-run CI identity (`github-actions[bot]`),
+  # Dependabot, and every other automated actor.
   #
   # Comment grammar (free text like "adw fix lint issues" must NOT spawn a run): the
   # comment body must START WITH exactly one recognized command line —
@@ -162,6 +165,34 @@ jobs:
   # for an UNTRUSTED actor's matching label/comment, instead of being skipped entirely
   # by the `if:` — a small compute cost, never a trust weakening, since `zte` still only
   # runs when `decide` sets `should_run=true`.
+  #
+  # Trusted-App-sender allow-list (MNE-2952). The blanket `sender.type != 'Bot' &&
+  # !endsWith(sender.login, '[bot]')` check above was meant to stop the WORKER'S OWN
+  # in-run CI identity (`github-actions[bot]`) from self-triggering a new run via its
+  # own mid-run label/comment actions (the MNE-420 loop guard) — but it also silently
+  # blocked the fleet's own GitHub App installation (`fleet/scripts/gh-app.sh`, bot
+  # login `mnemom-adw-<operator>[bot]`), which every lane's dispatcher/lead loop was
+  # mandated (2026-07-23) to use for ALL GitHub writes. That App is a human-delegated,
+  # charter-governed actor (a lane lead/dispatcher operating under the fleet's own
+  # rule-5/NEVER-AUTO approval gates), not autonomous self-triggering — so blocking it
+  # was an unintended side effect, not the loop guard's actual target: every
+  # `adw:zte`/`adw:ship`/`adw:sync`/`adw:rebase` label-add made via `gh-app.sh` was a
+  # silent no-op fleet-wide, discovered ~5 days into the mandate. Every `sender.type
+  # != 'Bot' && !endsWith(sender.login, '[bot]')` pair below is therefore OR'd with a
+  # narrow allow-list match — `endsWith(sender.login, '[bot]') &&
+  # startsWith(sender.login, 'mnemom-adw-')` — that admits ONLY a bot login matching
+  # the fleet App naming convention (any current or future per-operator installation)
+  # and nothing else: `github-actions[bot]`, `dependabot[bot]`, and any other
+  # automated actor remain blocked exactly as before. A spoofed login would require
+  # already controlling that GitHub App's installation — equivalent to a credential
+  # compromise, not a gap this check can widen or narrow. The downstream MNE-2774
+  # real-permission check in `decide` below gets the matching carve-out: a GitHub
+  # App's bot user is NOT a repo collaborator (confirmed empirically —
+  # `GET /repos/{owner}/{repo}/collaborators/{login}/permission` returns
+  # `"permission": "none"` for it even where the App is installed with write access),
+  # so it 404/none's out of that lookup by construction; trust for this identity comes
+  # from the fleet-controlled App installation's own permission grant, verified here
+  # by the login pattern instead of the collaborator ACL.
   gate:
     runs-on: ubuntu-latest
     # The resume step needs READ access to issues/PRs to verify the resume
@@ -182,14 +213,14 @@ jobs:
          github.event.label.name == 'adw:ship' ||
          github.event.label.name == 'adw:sync' ||
          github.event.label.name == 'adw:rebase') &&
-        github.event.sender.type != 'Bot' &&
-        !endsWith(github.event.sender.login, '[bot]') &&
+        ((github.event.sender.type != 'Bot' && !endsWith(github.event.sender.login, '[bot]')) ||
+         (endsWith(github.event.sender.login, '[bot]') && startsWith(github.event.sender.login, 'mnemom-adw-'))) &&
         !contains(github.event.issue.labels.*.name, 'adw:freeze')) ||
       (github.event_name == 'issue_comment' &&
         github.event.issue.pull_request == null &&
         !contains(github.event.issue.labels.*.name, 'adw:freeze') &&
-        github.event.sender.type != 'Bot' &&
-        !endsWith(github.event.sender.login, '[bot]') &&
+        ((github.event.sender.type != 'Bot' && !endsWith(github.event.sender.login, '[bot]')) ||
+         (endsWith(github.event.sender.login, '[bot]') && startsWith(github.event.sender.login, 'mnemom-adw-'))) &&
         !contains(github.event.comment.body, '[ADW-AGENTS]') &&
         (github.event.comment.body == 'adw run' || startsWith(github.event.comment.body, 'adw run ') || startsWith(github.event.comment.body, format('adw run{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw run{0}', fromJSON('"\r\n"'))) ||
          github.event.comment.body == 'adw zte' || startsWith(github.event.comment.body, 'adw zte ') || startsWith(github.event.comment.body, format('adw zte{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw zte{0}', fromJSON('"\r\n"'))) ||
@@ -201,14 +232,14 @@ jobs:
       (github.event_name == 'pull_request' &&
         github.event.action == 'labeled' &&
         github.event.label.name == 'adw:ship' &&
-        github.event.sender.type != 'Bot' &&
-        !endsWith(github.event.sender.login, '[bot]') &&
+        ((github.event.sender.type != 'Bot' && !endsWith(github.event.sender.login, '[bot]')) ||
+         (endsWith(github.event.sender.login, '[bot]') && startsWith(github.event.sender.login, 'mnemom-adw-'))) &&
         !contains(github.event.pull_request.labels.*.name, 'adw:freeze')) ||
       (github.event_name == 'issue_comment' &&
         github.event.issue.pull_request != null &&
         !contains(github.event.issue.labels.*.name, 'adw:freeze') &&
-        github.event.sender.type != 'Bot' &&
-        !endsWith(github.event.sender.login, '[bot]') &&
+        ((github.event.sender.type != 'Bot' && !endsWith(github.event.sender.login, '[bot]')) ||
+         (endsWith(github.event.sender.login, '[bot]') && startsWith(github.event.sender.login, 'mnemom-adw-'))) &&
         !contains(github.event.comment.body, '[ADW-AGENTS]') &&
         (github.event.comment.body == 'adw ship' || startsWith(github.event.comment.body, 'adw ship ') || startsWith(github.event.comment.body, format('adw ship{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw ship{0}', fromJSON('"\r\n"'))) ||
          github.event.comment.body == 'adw sync' || startsWith(github.event.comment.body, 'adw sync ') || startsWith(github.event.comment.body, format('adw sync{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw sync{0}', fromJSON('"\r\n"'))) ||
@@ -256,13 +287,26 @@ jobs:
           # cannot see private org membership. Only the three actor-triggered event types
           # need this; workflow_dispatch/repository_dispatch already require write access
           # to invoke, and check_suite is a resume of an already-verified run.
+          # MNE-2952: a trusted fleet dispatcher App sender (already matched by the gate
+          # `if:` above against the `mnemom-adw-*[bot]` allow-list) is NOT a repo
+          # collaborator — the collaborators/permission endpoint returns "none" for it
+          # even when the App is installed with write access (confirmed empirically) —
+          # so it must bypass this lookup rather than fail it. Its trust already comes
+          # from the fleet-controlled App installation, verified by login pattern; every
+          # other sender (a human, or any non-fleet bot) still goes through the real
+          # permission check exactly as before.
           case "$EVENT_NAME" in
             issues|issue_comment|pull_request)
               [ -n "$SENDER_LOGIN" ] || skip
-              PERM=$(gh api "repos/$REPO/collaborators/$SENDER_LOGIN/permission" --jq '.permission' 2>/dev/null || echo "none")
-              case "$PERM" in
-                admin|write) ;;
-                *) skip ;;
+              case "$SENDER_LOGIN" in
+                mnemom-adw-*"[bot]") ;;
+                *)
+                  PERM=$(gh api "repos/$REPO/collaborators/$SENDER_LOGIN/permission" --jq '.permission' 2>/dev/null || echo "none")
+                  case "$PERM" in
+                    admin|write) ;;
+                    *) skip ;;
+                  esac
+                  ;;
               esac
               ;;
           esac
@@ -317,8 +361,8 @@ jobs:
       github.event_name == 'issue_comment' &&
       github.event.issue.pull_request == null &&
       !contains(github.event.issue.labels.*.name, 'adw:freeze') &&
-      github.event.sender.type != 'Bot' &&
-      !endsWith(github.event.sender.login, '[bot]') &&
+      ((github.event.sender.type != 'Bot' && !endsWith(github.event.sender.login, '[bot]')) ||
+       (endsWith(github.event.sender.login, '[bot]') && startsWith(github.event.sender.login, 'mnemom-adw-'))) &&
       !contains(github.event.comment.body, '[ADW-AGENTS]') &&
       startsWith(github.event.comment.body, 'adw ') &&
       !(github.event.comment.body == 'adw run' || startsWith(github.event.comment.body, 'adw run ') || startsWith(github.event.comment.body, format('adw run{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw run{0}', fromJSON('"\r\n"'))) ||
