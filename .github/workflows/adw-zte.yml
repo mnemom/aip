@@ -69,9 +69,13 @@ on:
   # back through the resume path, so a green PR can never strand waiting for an
   # event that already fired. The worker re-reads the COMMIT-LEVEL required-check
   # status on resume and merges only through the full gate chain (it never merges
-  # on a pending/red required check), and the cross-run resume cap
-  # (ADW_MAX_SHIP_RESUMES) bounds how many times any one issue re-parks — so the
-  # sweep cannot loop a stuck PR forever.
+  # on a pending/red required check), and TWO cross-run bounds keep the sweep from
+  # looping a stuck PR forever: ADW_MAX_SHIP_RESUMES (default 5) bounds how many
+  # DISTINCT heads one issue parks, and ADW_MAX_SHIP_REPARKS (default 10) bounds
+  # how many times the SAME unchanged head is re-parked. The second one is what
+  # this sweep runs into: a head whose checks never go terminal is re-parked ~4x
+  # an hour and never mints a new head, so the distinct-head cap alone could never
+  # be reached (it was, until then, genuinely unbounded).
   schedule:
     - cron: "*/15 * * * *"
 
@@ -413,9 +417,12 @@ jobs:
   # worker. The sweep itself NEVER merges or evaluates checks — it only re-launches
   # the worker, which re-reads the COMMIT-LEVEL required-check status and merges only
   # through the full gate chain (never on a pending/red required check). Bounded twice
-  # over: the cron cadence rate-limits re-dispatch, and the worker's cross-run resume
-  # cap (ADW_MAX_SHIP_RESUMES) aborts-to-human after N distinct re-parks, so a genuinely
-  # stuck PR surfaces to a human instead of looping. Frozen issues are skipped. The
+  # over: the cron cadence rate-limits re-dispatch, and the worker's cross-run bounds
+  # abort-to-human — ADW_MAX_SHIP_RESUMES after N DISTINCT parked heads, and
+  # ADW_MAX_SHIP_REPARKS after N re-parks of the SAME unchanged head — so a genuinely
+  # stuck PR surfaces to a human instead of looping. Both are needed: this sweep's own
+  # failure mode is the second one (an unchanged head, re-parked forever, minting no new
+  # head for the distinct-head cap to count). Frozen issues are skipped. The
   # sweep is intentionally a NO-OP on every non-schedule trigger.
   #
   # Second, INDEPENDENT branch (MNE-1618): "no silent auto-approval on silence" — an
@@ -551,7 +558,8 @@ jobs:
       # collapses to at most one running + one pending run (GitHub supersedes
       # queued runs in the group); redundant resumes are also cheap (green
       # checks return on the first poll; still-pending re-parks after the short
-      # initial wait, bounded by ADW_MAX_SHIP_RESUMES).
+      # initial wait, bounded by ADW_MAX_SHIP_REPARKS — the same-head bound, since
+      # a resume storm is by definition all on ONE head).
       # PR-rooted runs (MNE-915) take a DISTINCT per-PR group `adw-zte-pr-<n>` so a PR
       # ship can never collide with (or be superseded by) the per-issue worker group —
       # the two number spaces overlap but the `pr-` segment keeps them disjoint. Every
@@ -844,7 +852,10 @@ jobs:
           # (ADW_EVENT_SHIP_INITIAL_WAIT_MIN, default 3), then parks the run
           # (adw:awaiting-checks label + [ADW-SHIP-PAUSE] comment, clean exit 0);
           # the check_suite trigger above resumes --ship-only when checks finish.
-          # Cross-run resume bound: ADW_MAX_SHIP_RESUMES (worker default 5).
+          # Cross-run resume bounds: ADW_MAX_SHIP_RESUMES (distinct parked heads,
+          # worker default 5) and ADW_MAX_SHIP_REPARKS (re-parks of the SAME
+          # unchanged head, worker default 10; those carry an [ADW-SHIP-REPARK]
+          # comment instead). Both abort-to-human at the bound.
           ADW_EVENT_DRIVEN_SHIP: "true"
           # Realtime session-event tap (observability) — OFF unless both are set.
           # The worker mirrors its streamed SDK messages to the fleet event hub
