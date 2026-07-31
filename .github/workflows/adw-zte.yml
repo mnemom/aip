@@ -647,19 +647,19 @@ jobs:
         id: mint
         run: echo "minted_at=$(date -u +%s)" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           token: ${{ steps.app.outputs.token }}
 
-      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
           # Cache uv's wheel/source store across runs: the worker install below
           # re-resolves mnemom-adw@main every run (correct — it must track main),
           # but its dependency set (pydantic, the Agent SDK, …) is stable and
           # restores from the cache instead of the network (~30-60s saved/run).
           enable-cache: true
-      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.12"
 
@@ -822,6 +822,139 @@ jobs:
             echo "force_fresh=$force_fresh"
             echo "resume_design_gate=$resume_design_gate"
           } >> "$GITHUB_OUTPUT"
+
+      # Node toolchain for the TARGET repo (MNE-2282 follow-on). The quality gate runs
+      # the repo's own package.json scripts (`lint`, `test`, `typecheck`), so those
+      # binaries have to exist in the workspace before the worker starts. This trio
+      # detects, installs a Node runtime, and restores the dependency tree.
+      #
+      # The detector picks the package manager by declared intent first and evidence
+      # second: the `packageManager` field is the repo's own pin and wins outright;
+      # otherwise `pnpm-lock.yaml`, then `package-lock.json`. A repo can carry several
+      # lockfiles at once (mnemom-website has `pnpm-lock.yaml`, `package-lock.json` and
+      # `deno.lock` side by side), so the order is what makes the choice single-valued.
+      # Every install path is lockfile-frozen: `pnpm install --frozen-lockfile` /
+      # `npm ci` reproduce the committed tree exactly and leave the lockfile untouched,
+      # which keeps `.github/**`-adjacent NEVER-AUTO paths and the repo's own lockfile
+      # out of the diff the worker later ships.
+      #
+      # The detector is deliberately plain POSIX shell with no `${{ }}` interpolation in
+      # its body, so packages/adw-worker/tests/test_adw_zte_template.py can lift the
+      # script straight out of this file and execute it against fixture directories.
+      - name: Detect the target repo's Node toolchain
+        id: node
+        run: |
+          MANAGER=none
+          REASON="no root package.json"
+          PM_FIELD=""
+
+          if [ -f package.json ]; then
+            # `packageManager` is attacker-controlled on a fork PR, and both PM_FIELD and
+            # REASON below are written verbatim into $GITHUB_OUTPUT, which is a newline-
+            # delimited key=value file. An embedded newline would therefore inject a
+            # second key and silently override `manager` (e.g. "pnpm@9\nmanager=none"
+            # turns the install step off while the run still looks healthy). So the value
+            # is reduced to its first line and then whitelisted down to the character set
+            # a corepack spec can legitimately use — no newline survives to the write.
+            PM_FIELD=$(python3 -c 'import json,re;v=(json.load(open("package.json")).get("packageManager") or "").splitlines();print(re.sub(r"[^A-Za-z0-9@._+-]","",v[0].strip())[:64] if v else "")' 2>/dev/null || echo "")
+            case "$PM_FIELD" in
+              pnpm@*) MANAGER=pnpm; REASON="packageManager: $PM_FIELD" ;;
+              npm@*)  MANAGER=npm;  REASON="packageManager: $PM_FIELD" ;;
+              *)
+                if [ -f pnpm-lock.yaml ]; then
+                  MANAGER=pnpm; REASON="pnpm-lock.yaml"
+                elif [ -f package-lock.json ]; then
+                  MANAGER=npm; REASON="package-lock.json"
+                else
+                  REASON="package.json with no packageManager field and no supported lockfile"
+                fi
+                ;;
+            esac
+          fi
+
+          # Node version, same declared-intent-first order: .nvmrc, then engines.node,
+          # then the major this fleet's repos are on. Pinning a major rather than
+          # `lts/*` keeps the gate on the same runtime the repo's own CI uses.
+          NODE_VERSION=""
+          if [ -f .nvmrc ]; then
+            NODE_VERSION=$(sed -n 's/^[[:space:]]*v\{0,1\}\([^[:space:]]*\).*/\1/p' .nvmrc | head -n 1)
+          fi
+          if [ -z "$NODE_VERSION" ] && [ -f package.json ]; then
+            NODE_VERSION=$(python3 -c 'import json,re;e=(json.load(open("package.json")).get("engines") or {}).get("node") or "";m=re.search(r"\d+",e);print(m.group(0) if m else "")' 2>/dev/null || echo "")
+          fi
+          [ -n "$NODE_VERSION" ] || NODE_VERSION=22
+
+          echo "Node toolchain: manager=$MANAGER node=$NODE_VERSION ($REASON)"
+          {
+            echo "manager=$MANAGER"
+            echo "node-version=$NODE_VERSION"
+            echo "packagemanager-field=$PM_FIELD"
+            echo "reason=$REASON"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Set up Node
+        if: steps.node.outputs.manager == 'pnpm' || steps.node.outputs.manager == 'npm'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ steps.node.outputs.node-version }}
+
+      - name: Install the target repo's Node dependencies
+        if: steps.node.outputs.manager == 'pnpm' || steps.node.outputs.manager == 'npm'
+        env:
+          # Private @mnemom/* packages resolve from GitHub Packages; the consuming repo's
+          # root .npmrc maps the scope and reads ${GITHUB_TOKEN}. This is the WORKFLOW's
+          # own token — the `packages: read` permission at the top of this job scopes it.
+          # The App token minted above is a different credential and carries no package
+          # access, so it is deliberately not used here.
+          GITHUB_TOKEN: ${{ github.token }}
+          # Kept alongside GITHUB_TOKEN because the two cover DIFFERENT registries: the
+          # scope map above resolves @mnemom/* from GitHub Packages, while a repo whose
+          # .npmrc also points at a private npmjs.com registry reads NODE_AUTH_TOKEN.
+          # A repo needing neither simply never dereferences them.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          ADW_NODE_MANAGER: ${{ steps.node.outputs.manager }}
+          # Passed as an ENV var, never interpolated into the script body — and the
+          # detector has already whitelisted it down to the corepack character set.
+          ADW_PACKAGEMANAGER_FIELD: ${{ steps.node.outputs.packagemanager-field }}
+        # Every install below runs `--ignore-scripts`, and that is not a performance
+        # tweak — it is the trust boundary of this job. The step installs dependencies
+        # resolved from a lockfile that lives in the very branch under test, while the job
+        # holds `contents: write` + `pull-requests: write` and NODE_AUTH_TOKEN is in the
+        # environment. A dependency's install-time script therefore runs AS the gate, with
+        # the gate's credentials, before any review has happened. pnpm 10 already blocks
+        # dependency build scripts by default and requires an explicit
+        # `pnpm.onlyBuiltDependencies` allowlist; this makes the same guarantee
+        # unconditional and extends it to npm, whose `npm ci` still runs everything.
+        # Consequence, accepted deliberately: a repo whose BUILD needs a postinstall must
+        # run it from its own build script, where it is reviewed, rather than implicitly at
+        # install time. Do NOT add a per-repo escape hatch here — that reopens the hole for
+        # exactly the repos most worth targeting.
+        run: |
+          if [ "$ADW_NODE_MANAGER" = "pnpm" ]; then
+            if ! command -v pnpm >/dev/null 2>&1; then
+              # corepack honours the packageManager pin when one is declared, so it is
+              # tried first. Its stderr is deliberately NOT silenced: a corepack failure
+              # that is not simply "binary absent" is a real misconfiguration, and
+              # swallowing it turns a readable error into a mystery in the fallback path.
+              if ! corepack enable pnpm; then
+                # Runners without corepack. Install the repo's OWN pinned spec rather
+                # than whatever `pnpm` resolves to at run time — an unpinned global
+                # install is a supply-chain hole, and a floating major can also disagree
+                # with the lockfile the very next command asks it to honour frozen.
+                # The `+sha512.…` integrity suffix corepack allows is not installable
+                # by npm, so it is trimmed; with no usable pin, fall back to `pnpm`.
+                PNPM_SPEC=${ADW_PACKAGEMANAGER_FIELD%%+*}
+                case "$PNPM_SPEC" in
+                  pnpm@*) : ;;
+                  *) PNPM_SPEC=pnpm ;;
+                esac
+                npm install --global --ignore-scripts "$PNPM_SPEC"
+              fi
+            fi
+            pnpm install --frozen-lockfile --ignore-scripts
+          else
+            npm ci --ignore-scripts
+          fi
 
       - name: Run the worker
         id: worker
