@@ -69,9 +69,13 @@ on:
   # back through the resume path, so a green PR can never strand waiting for an
   # event that already fired. The worker re-reads the COMMIT-LEVEL required-check
   # status on resume and merges only through the full gate chain (it never merges
-  # on a pending/red required check), and the cross-run resume cap
-  # (ADW_MAX_SHIP_RESUMES) bounds how many times any one issue re-parks — so the
-  # sweep cannot loop a stuck PR forever.
+  # on a pending/red required check), and TWO cross-run bounds keep the sweep from
+  # looping a stuck PR forever: ADW_MAX_SHIP_RESUMES (default 5) bounds how many
+  # DISTINCT heads one issue parks, and ADW_MAX_SHIP_REPARKS (default 10) bounds
+  # how many times the SAME unchanged head is re-parked. The second one is what
+  # this sweep runs into: a head whose checks never go terminal is re-parked ~4x
+  # an hour and never mints a new head, so the distinct-head cap alone could never
+  # be reached (it was, until then, genuinely unbounded).
   schedule:
     - cron: "*/15 * * * *"
 
@@ -98,13 +102,27 @@ jobs:
   # github.event.issue.pull_request set) — routing to `mnemom-adw --ship-pr <n>`. The
   # ISSUE-comment grammar branch keeps its `issue.pull_request == null` guard (issue
   # comments only); the PR-comment branch is the explicit `!= null` counterpart, scoped to
-  # `adw ship` / `adw sync` / `adw rebase`. Same OWNER/MEMBER/COLLABORATOR + non-Bot +
-  # [ADW-AGENTS]-loop guards.
+  # `adw ship` / `adw sync` / `adw rebase`. Same non-Bot + [ADW-AGENTS]-loop guards, and
+  # the same real-permission trust check (MNE-2774) applied in the `decide` step below.
   #
   # PR-rooted sync (MNE-1619): the `adw sync` / `adw rebase` COMMENT on a PR is the
   # resync-only companion — routes to `mnemom-adw --sync-pr <n>` instead of `--ship-pr`.
   # Deliberately COMMENT-only (no `adw:sync` / `adw:rebase` PR LABEL branch, unlike
   # `adw:ship`) — mirrors exactly what MNE-1619 asked for, nothing wider.
+  #
+  # PR-rooted retry (MNE-3341): `adw retry` on a PR now ALSO routes to `--sync-pr` —
+  # the same resync-only companion as `adw sync` / `adw rebase`. Retry's issue-side
+  # meaning is "full pipeline that RESUMES the open PR at its failed phase"; there is
+  # no `--retry-pr` invocation mode, and re-implementing that resume semantics as a
+  # THIRD PR-rooted worker mode was judged too ambiguous to build blind (a wrong
+  # dispatch is worse than a clear rejection). Mapping onto the resync-only path is the
+  # safe, already-proven reading: it re-syncs the PR branch against its base with no
+  # side effects beyond what `adw sync`/`adw rebase` already do today, which is enough
+  # to unstick the CONFLICTING-PR class this verb is actually used for in practice (see
+  # the canary proof in scratchpad/adw-retry-on-pr-silent-drop.md). `adw run` / `adw
+  # zte` / `adw continue` on a PR remain OUT of scope — those carry from-scratch /
+  # design-gate-resume semantics with no safe PR-rooted analogue, so they still fall
+  # through to the `feedback` job's explicit rejection below rather than being guessed.
   #
   # Label grammar (MNE-420): the `issues` branch gates on WHICH label was just added
   # (`github.event.label.name` == exactly one adw command label), NEVER on label
@@ -114,8 +132,11 @@ jobs:
   # worker's own `adw:needs-human` label add on an abort RE-LAUNCHED the very run
   # that had just stopped to ask a human. `adw:needs-human` is a STOP signal and must
   # never appear as a trigger label here. A bot actor (sender type `Bot` / login
-  # ending in `[bot]`, e.g. the worker's own App identity) never label-triggers a
-  # run — the labeled-event mirror of the [ADW-AGENTS] comment loop guard below.
+  # ending in `[bot]`) never label-triggers a run UNLESS it is a trusted fleet
+  # dispatcher App identity (MNE-2952, see the trusted-App-sender allow-list note
+  # below) — the labeled-event mirror of the [ADW-AGENTS] comment loop guard, still
+  # fully in force for the worker's OWN in-run CI identity (`github-actions[bot]`),
+  # Dependabot, and every other automated actor.
   #
   # Comment grammar (free text like "adw fix lint issues" must NOT spawn a run): the
   # comment body must START WITH exactly one recognized command line —
@@ -142,6 +163,54 @@ jobs:
   # (no re-widening to arbitrary `adw <instruction>` — the MNE-345 regression guard).
   # An `adw ` prefix that matches NO command is no longer silently ignored: the
   # `feedback` job below posts an explicit "unrecognized command" reply (MNE-431 part 2).
+  #
+  # Trust check via REAL repo permission, not author_association (MNE-2774). The `if:`
+  # above is a pre-filter ONLY now — event/label/grammar/freeze/bot-sender, all free of
+  # an API call — and no longer gates on `author_association` for the `issues` /
+  # `issue_comment` / `pull_request` branches. That check silently misclassified any
+  # actor whose ORG MEMBERSHIP IS PRIVATE as untrusted (author_association only sees
+  # PUBLIC org membership), so the OWNER/MEMBER/COLLABORATOR trust check was a false
+  # negative — a full-fleet outage class for any private member, discovered when every
+  # `adw:zte` label-add from a private member skipped silently. The `decide` step below
+  # now resolves the acting user's ACTUAL permission on this repo via
+  # `GET /repos/{owner}/{repo}/collaborators/{login}/permission` and requires
+  # write/admin — correct for private members, and a TIGHTER bar than author_association
+  # ever was (an org MEMBER with no configured repo access no longer passes). A
+  # non-collaborator 404s from that endpoint and fails closed exactly like today.
+  # workflow_dispatch / repository_dispatch already require write access to invoke; the
+  # check_suite resume path re-verifies the issue's live state at runtime regardless —
+  # neither needs this check. Cost: the gate job now actually starts (a runner spins up)
+  # for an UNTRUSTED actor's matching label/comment, instead of being skipped entirely
+  # by the `if:` — a small compute cost, never a trust weakening, since `zte` still only
+  # runs when `decide` sets `should_run=true`.
+  #
+  # Trusted-App-sender allow-list (MNE-2952). The blanket `sender.type != 'Bot' &&
+  # !endsWith(sender.login, '[bot]')` check above was meant to stop the WORKER'S OWN
+  # in-run CI identity (`github-actions[bot]`) from self-triggering a new run via its
+  # own mid-run label/comment actions (the MNE-420 loop guard) — but it also silently
+  # blocked the fleet's own GitHub App installation (`fleet/scripts/gh-app.sh`, bot
+  # login `mnemom-adw-<operator>[bot]`), which every lane's dispatcher/lead loop was
+  # mandated (2026-07-23) to use for ALL GitHub writes. That App is a human-delegated,
+  # charter-governed actor (a lane lead/dispatcher operating under the fleet's own
+  # rule-5/NEVER-AUTO approval gates), not autonomous self-triggering — so blocking it
+  # was an unintended side effect, not the loop guard's actual target: every
+  # `adw:zte`/`adw:ship`/`adw:sync`/`adw:rebase` label-add made via `gh-app.sh` was a
+  # silent no-op fleet-wide, discovered ~5 days into the mandate. Every `sender.type
+  # != 'Bot' && !endsWith(sender.login, '[bot]')` pair below is therefore OR'd with a
+  # narrow allow-list match — `endsWith(sender.login, '[bot]') &&
+  # startsWith(sender.login, 'mnemom-adw-')` — that admits ONLY a bot login matching
+  # the fleet App naming convention (any current or future per-operator installation)
+  # and nothing else: `github-actions[bot]`, `dependabot[bot]`, and any other
+  # automated actor remain blocked exactly as before. A spoofed login would require
+  # already controlling that GitHub App's installation — equivalent to a credential
+  # compromise, not a gap this check can widen or narrow. The downstream MNE-2774
+  # real-permission check in `decide` below gets the matching carve-out: a GitHub
+  # App's bot user is NOT a repo collaborator (confirmed empirically —
+  # `GET /repos/{owner}/{repo}/collaborators/{login}/permission` returns
+  # `"permission": "none"` for it even where the App is installed with write access),
+  # so it 404/none's out of that lookup by construction; trust for this identity comes
+  # from the fleet-controlled App installation's own permission grant, verified here
+  # by the login pattern instead of the collaborator ACL.
   gate:
     runs-on: ubuntu-latest
     # The resume step needs READ access to issues/PRs to verify the resume
@@ -162,13 +231,14 @@ jobs:
          github.event.label.name == 'adw:ship' ||
          github.event.label.name == 'adw:sync' ||
          github.event.label.name == 'adw:rebase') &&
-        github.event.sender.type != 'Bot' &&
-        !endsWith(github.event.sender.login, '[bot]') &&
-        !contains(github.event.issue.labels.*.name, 'adw:freeze') &&
-        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.issue.author_association)) ||
+        ((github.event.sender.type != 'Bot' && !endsWith(github.event.sender.login, '[bot]')) ||
+         (endsWith(github.event.sender.login, '[bot]') && startsWith(github.event.sender.login, 'mnemom-adw-'))) &&
+        !contains(github.event.issue.labels.*.name, 'adw:freeze')) ||
       (github.event_name == 'issue_comment' &&
         github.event.issue.pull_request == null &&
         !contains(github.event.issue.labels.*.name, 'adw:freeze') &&
+        ((github.event.sender.type != 'Bot' && !endsWith(github.event.sender.login, '[bot]')) ||
+         (endsWith(github.event.sender.login, '[bot]') && startsWith(github.event.sender.login, 'mnemom-adw-'))) &&
         !contains(github.event.comment.body, '[ADW-AGENTS]') &&
         (github.event.comment.body == 'adw run' || startsWith(github.event.comment.body, 'adw run ') || startsWith(github.event.comment.body, format('adw run{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw run{0}', fromJSON('"\r\n"'))) ||
          github.event.comment.body == 'adw zte' || startsWith(github.event.comment.body, 'adw zte ') || startsWith(github.event.comment.body, format('adw zte{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw zte{0}', fromJSON('"\r\n"'))) ||
@@ -176,34 +246,33 @@ jobs:
          github.event.comment.body == 'adw retry' || startsWith(github.event.comment.body, 'adw retry ') || startsWith(github.event.comment.body, format('adw retry{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw retry{0}', fromJSON('"\r\n"'))) ||
          github.event.comment.body == 'adw sync' || startsWith(github.event.comment.body, 'adw sync ') || startsWith(github.event.comment.body, format('adw sync{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw sync{0}', fromJSON('"\r\n"'))) ||
          github.event.comment.body == 'adw rebase' || startsWith(github.event.comment.body, 'adw rebase ') || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\r\n"'))) ||
-         github.event.comment.body == 'adw continue' || startsWith(github.event.comment.body, 'adw continue ') || startsWith(github.event.comment.body, format('adw continue{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw continue{0}', fromJSON('"\r\n"')))) &&
-        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)) ||
+         github.event.comment.body == 'adw continue' || startsWith(github.event.comment.body, 'adw continue ') || startsWith(github.event.comment.body, format('adw continue{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw continue{0}', fromJSON('"\r\n"'))))) ||
       (github.event_name == 'pull_request' &&
         github.event.action == 'labeled' &&
         github.event.label.name == 'adw:ship' &&
-        github.event.sender.type != 'Bot' &&
-        !endsWith(github.event.sender.login, '[bot]') &&
-        !contains(github.event.pull_request.labels.*.name, 'adw:freeze') &&
-        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.pull_request.author_association)) ||
+        ((github.event.sender.type != 'Bot' && !endsWith(github.event.sender.login, '[bot]')) ||
+         (endsWith(github.event.sender.login, '[bot]') && startsWith(github.event.sender.login, 'mnemom-adw-'))) &&
+        !contains(github.event.pull_request.labels.*.name, 'adw:freeze')) ||
       (github.event_name == 'issue_comment' &&
         github.event.issue.pull_request != null &&
         !contains(github.event.issue.labels.*.name, 'adw:freeze') &&
-        github.event.sender.type != 'Bot' &&
-        !endsWith(github.event.sender.login, '[bot]') &&
+        ((github.event.sender.type != 'Bot' && !endsWith(github.event.sender.login, '[bot]')) ||
+         (endsWith(github.event.sender.login, '[bot]') && startsWith(github.event.sender.login, 'mnemom-adw-'))) &&
         !contains(github.event.comment.body, '[ADW-AGENTS]') &&
         (github.event.comment.body == 'adw ship' || startsWith(github.event.comment.body, 'adw ship ') || startsWith(github.event.comment.body, format('adw ship{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw ship{0}', fromJSON('"\r\n"'))) ||
          github.event.comment.body == 'adw sync' || startsWith(github.event.comment.body, 'adw sync ') || startsWith(github.event.comment.body, format('adw sync{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw sync{0}', fromJSON('"\r\n"'))) ||
-         github.event.comment.body == 'adw rebase' || startsWith(github.event.comment.body, 'adw rebase ') || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\r\n"')))) &&
-        contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
+         github.event.comment.body == 'adw rebase' || startsWith(github.event.comment.body, 'adw rebase ') || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\r\n"'))) ||
+         github.event.comment.body == 'adw retry' || startsWith(github.event.comment.body, 'adw retry ') || startsWith(github.event.comment.body, format('adw retry{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw retry{0}', fromJSON('"\r\n"')))))
     outputs:
       should_run: ${{ steps.decide.outputs.should_run }}
       resume_issue: ${{ steps.decide.outputs.resume_issue }}
       # PR-rooted trigger (MNE-915): non-empty for an `adw:ship` PR label / `adw ship` PR
       # comment. Drives the PR-scoped concurrency group + the --ship-pr worker invocation.
       pr_number: ${{ steps.decide.outputs.pr_number }}
-      # PR-rooted sync (MNE-1619): "true" ONLY for an `adw sync` / `adw rebase` PR
-      # COMMENT (never for the `adw:ship` PR label or an `adw ship` comment) — routes the
-      # SAME pr_number to `--sync-pr` instead of `--ship-pr`.
+      # PR-rooted sync (MNE-1619): "true" for an `adw sync` / `adw rebase` PR COMMENT
+      # (never for the `adw:ship` PR label or an `adw ship` comment) — routes the SAME
+      # pr_number to `--sync-pr` instead of `--ship-pr`. `adw retry` on a PR (MNE-3341)
+      # also sets this — retry maps onto the same resync-only companion.
       pr_sync: ${{ steps.decide.outputs.pr_sync }}
     steps:
       # The gate's `if:` already vetted every non-resume trigger; a check_suite
@@ -228,14 +297,47 @@ jobs:
           COMMENT_ISSUE_NUMBER: ${{ github.event.issue.number }}
           IS_PR_COMMENT: ${{ github.event.issue.pull_request != null }}
           COMMENT_BODY: ${{ github.event.comment.body }}
+          # Real-permission trust check (MNE-2774): the acting user for every
+          # label/comment-triggered branch is `sender` — who added the label or posted
+          # the comment — never interpolated, read only via env (MNE-311).
+          SENDER_LOGIN: ${{ github.event.sender.login }}
         run: |
+          skip() { { echo "should_run=false"; echo "resume_issue="; echo "pr_number="; echo "pr_sync=false"; } >> "$GITHUB_OUTPUT"; exit 0; }
+          # MNE-2774: verify ACTUAL repo permission instead of author_association, which
+          # cannot see private org membership. Only the three actor-triggered event types
+          # need this; workflow_dispatch/repository_dispatch already require write access
+          # to invoke, and check_suite is a resume of an already-verified run.
+          # MNE-2952: a trusted fleet dispatcher App sender (already matched by the gate
+          # `if:` above against the `mnemom-adw-*[bot]` allow-list) is NOT a repo
+          # collaborator — the collaborators/permission endpoint returns "none" for it
+          # even when the App is installed with write access (confirmed empirically) —
+          # so it must bypass this lookup rather than fail it. Its trust already comes
+          # from the fleet-controlled App installation, verified by login pattern; every
+          # other sender (a human, or any non-fleet bot) still goes through the real
+          # permission check exactly as before.
+          case "$EVENT_NAME" in
+            issues|issue_comment|pull_request)
+              [ -n "$SENDER_LOGIN" ] || skip
+              case "$SENDER_LOGIN" in
+                mnemom-adw-*"[bot]") ;;
+                *)
+                  PERM=$(gh api "repos/$REPO/collaborators/$SENDER_LOGIN/permission" --jq '.permission' 2>/dev/null || echo "none")
+                  case "$PERM" in
+                    admin|write) ;;
+                    *) skip ;;
+                  esac
+                  ;;
+              esac
+              ;;
+          esac
           # PR-rooted (MNE-915): emit the PR number so the heavy job uses the PR-scoped
           # concurrency group + the --ship-pr path. The gate `if:` already vetted the
           # trust / grammar / freeze conditions for these events, so no extra check here.
           # PR-rooted sync (MNE-1619): on a PR COMMENT, `adw sync` / `adw rebase` sets
           # pr_sync=true so the heavy job routes to `--sync-pr` instead of `--ship-pr`
           # (the `pull_request` labeled event is `adw:ship`-only, so pr_sync stays false
-          # there — no PR-label equivalent for sync).
+          # there — no PR-label equivalent for sync). `adw retry` on a PR (MNE-3341) maps
+          # onto the SAME resync-only path — see the header comment above the gate `if:`.
           PR_NUM=""
           PR_SYNC="false"
           if [ "$EVENT_NAME" = "pull_request" ]; then
@@ -244,14 +346,13 @@ jobs:
             PR_NUM="$COMMENT_ISSUE_NUMBER"
             cmd=$(printf '%s' "$COMMENT_BODY" | head -n1 | awk '{print $1, $2}')
             case "$cmd" in
-              "adw sync"|"adw rebase") PR_SYNC="true" ;;
+              "adw sync"|"adw rebase"|"adw retry") PR_SYNC="true" ;;
             esac
           fi
           if [ "$EVENT_NAME" != "check_suite" ]; then
             { echo "should_run=true"; echo "resume_issue="; echo "pr_number=$PR_NUM"; echo "pr_sync=$PR_SYNC"; } >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          skip() { { echo "should_run=false"; echo "resume_issue="; echo "pr_number="; echo "pr_sync=false"; } >> "$GITHUB_OUTPUT"; exit 0; }
           ISSUE=$(expr "$HEAD_BRANCH" : '.*-issue-\([0-9]\{1,\}\)-adw-' || true)
           [ -n "$ISSUE" ] || skip
           STATE=$(gh api "repos/$REPO/issues/$ISSUE" --jq '.state' 2>/dev/null || true)
@@ -263,36 +364,50 @@ jobs:
           [ "${PR_OPEN:-0}" -ge 1 ] || skip
           { echo "should_run=true"; echo "resume_issue=$ISSUE"; echo "pr_number="; echo "pr_sync=false"; } >> "$GITHUB_OUTPUT"
 
-  # Unrecognized-command feedback (MNE-431 part 2): fail LOUDLY instead of silently
-  # ignoring an `adw ` comment that doesn't parse. Before this, a trusted author whose
-  # comment started with `adw ` but matched no command (a typo, a malformed `adw retry`,
-  # an `adw <free instruction>`) got NO run AND no feedback — the operator had to
-  # diagnose the silent drop and re-post. This job fires ONLY when, with the SAME
-  # trust/freeze/bot guards as the gate's comment branch, the body starts with `adw `
-  # but does NOT match any recognized command (the exact NEGATION of the gate's comment
-  # grammar — so the two can never both fire on one comment), and posts a one-line
-  # "unrecognized command" reply listing the recognized verbs. It is read-mostly: the
-  # only mutation is the feedback comment (issues: write), it NEVER runs a pipeline,
-  # NEVER labels, and NEVER weakens a gate — it only converts a silent drop into a
-  # visible error. The `[ADW-AGENTS]` body marks the reply as a bot comment so it
-  # cannot itself re-trigger the gate (loop guard) or this job (its own grammar guard).
+  # Unrecognized-command feedback (MNE-431 part 2; widened to PRs in MNE-3341): fail
+  # LOUDLY instead of silently ignoring an `adw ` comment that doesn't parse. Before
+  # MNE-3341 this job was ISSUE-COMMENT ONLY (`issue.pull_request == null`), while the
+  # gate's PR-comment branch already accepted its own (narrower) verb set — so an
+  # unrecognized `adw ` comment on a PR (e.g. `adw retry` before this same change, or
+  # `adw run` / `adw zte` / `adw continue`, all still out of scope on a PR) fell through
+  # BOTH the gate and this job with zero trace: no run, no reply, no error anywhere.
+  # This job now branches on `issue.pull_request` and carries a SEPARATE, PR-scoped
+  # negation list (ship/sync/rebase/retry) rather than reusing the issue-scoped one —
+  # the two contexts accept different verbs by design (MNE-3341 kept `adw run`/`adw
+  # zte`/`adw continue` OUT of PR scope on purpose; reusing the issue list here would
+  # have silently swallowed those PR-comment rejections again). Fires ONLY when, with
+  # the SAME trust/freeze/bot guards as the gate's matching comment branch, the body
+  # starts with `adw ` but does NOT match any command recognized IN THAT CONTEXT (the
+  # exact negation of the gate's issue OR PR comment grammar — so the gate and this job
+  # can never both fire on one comment), and posts a one-line "unrecognized command"
+  # reply naming the verbs valid in that context. It is read-mostly: the only mutation
+  # is the feedback comment (issues: write — this also covers a PR, since a GitHub PR
+  # IS an issue under the hood and `issues/{n}/comments` posts to either), it NEVER
+  # runs a pipeline, NEVER labels, and NEVER weakens a gate — it only converts a silent
+  # drop into a visible error. The `[ADW-AGENTS]` body marks the reply as a bot comment
+  # so it cannot itself re-trigger the gate (loop guard) or this job (its own grammar
+  # guard) on either an issue or a PR.
   feedback:
     if: >
       github.event_name == 'issue_comment' &&
-      github.event.issue.pull_request == null &&
       !contains(github.event.issue.labels.*.name, 'adw:freeze') &&
-      github.event.sender.type != 'Bot' &&
-      !endsWith(github.event.sender.login, '[bot]') &&
+      ((github.event.sender.type != 'Bot' && !endsWith(github.event.sender.login, '[bot]')) ||
+       (endsWith(github.event.sender.login, '[bot]') && startsWith(github.event.sender.login, 'mnemom-adw-'))) &&
       !contains(github.event.comment.body, '[ADW-AGENTS]') &&
-      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
       startsWith(github.event.comment.body, 'adw ') &&
-      !(github.event.comment.body == 'adw run' || startsWith(github.event.comment.body, 'adw run ') || startsWith(github.event.comment.body, format('adw run{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw run{0}', fromJSON('"\r\n"'))) ||
-        github.event.comment.body == 'adw zte' || startsWith(github.event.comment.body, 'adw zte ') || startsWith(github.event.comment.body, format('adw zte{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw zte{0}', fromJSON('"\r\n"'))) ||
-        github.event.comment.body == 'adw ship' || startsWith(github.event.comment.body, 'adw ship ') || startsWith(github.event.comment.body, format('adw ship{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw ship{0}', fromJSON('"\r\n"'))) ||
-        github.event.comment.body == 'adw retry' || startsWith(github.event.comment.body, 'adw retry ') || startsWith(github.event.comment.body, format('adw retry{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw retry{0}', fromJSON('"\r\n"'))) ||
-        github.event.comment.body == 'adw sync' || startsWith(github.event.comment.body, 'adw sync ') || startsWith(github.event.comment.body, format('adw sync{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw sync{0}', fromJSON('"\r\n"'))) ||
-        github.event.comment.body == 'adw rebase' || startsWith(github.event.comment.body, 'adw rebase ') || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\r\n"'))) ||
-        github.event.comment.body == 'adw continue' || startsWith(github.event.comment.body, 'adw continue ') || startsWith(github.event.comment.body, format('adw continue{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw continue{0}', fromJSON('"\r\n"'))))
+      ((github.event.issue.pull_request == null &&
+        !(github.event.comment.body == 'adw run' || startsWith(github.event.comment.body, 'adw run ') || startsWith(github.event.comment.body, format('adw run{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw run{0}', fromJSON('"\r\n"'))) ||
+          github.event.comment.body == 'adw zte' || startsWith(github.event.comment.body, 'adw zte ') || startsWith(github.event.comment.body, format('adw zte{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw zte{0}', fromJSON('"\r\n"'))) ||
+          github.event.comment.body == 'adw ship' || startsWith(github.event.comment.body, 'adw ship ') || startsWith(github.event.comment.body, format('adw ship{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw ship{0}', fromJSON('"\r\n"'))) ||
+          github.event.comment.body == 'adw retry' || startsWith(github.event.comment.body, 'adw retry ') || startsWith(github.event.comment.body, format('adw retry{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw retry{0}', fromJSON('"\r\n"'))) ||
+          github.event.comment.body == 'adw sync' || startsWith(github.event.comment.body, 'adw sync ') || startsWith(github.event.comment.body, format('adw sync{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw sync{0}', fromJSON('"\r\n"'))) ||
+          github.event.comment.body == 'adw rebase' || startsWith(github.event.comment.body, 'adw rebase ') || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\r\n"'))) ||
+          github.event.comment.body == 'adw continue' || startsWith(github.event.comment.body, 'adw continue ') || startsWith(github.event.comment.body, format('adw continue{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw continue{0}', fromJSON('"\r\n"'))))) ||
+       (github.event.issue.pull_request != null &&
+        !(github.event.comment.body == 'adw ship' || startsWith(github.event.comment.body, 'adw ship ') || startsWith(github.event.comment.body, format('adw ship{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw ship{0}', fromJSON('"\r\n"'))) ||
+          github.event.comment.body == 'adw sync' || startsWith(github.event.comment.body, 'adw sync ') || startsWith(github.event.comment.body, format('adw sync{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw sync{0}', fromJSON('"\r\n"'))) ||
+          github.event.comment.body == 'adw rebase' || startsWith(github.event.comment.body, 'adw rebase ') || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw rebase{0}', fromJSON('"\r\n"'))) ||
+          github.event.comment.body == 'adw retry' || startsWith(github.event.comment.body, 'adw retry ') || startsWith(github.event.comment.body, format('adw retry{0}', fromJSON('"\n"'))) || startsWith(github.event.comment.body, format('adw retry{0}', fromJSON('"\r\n"'))))))
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -303,15 +418,36 @@ jobs:
           REPO: ${{ github.repository }}
           ISSUE: ${{ github.event.issue.number }}
           GH_TOKEN: ${{ github.token }}
+          SENDER_LOGIN: ${{ github.event.sender.login }}
+          # PR vs issue context (MNE-3341), via env (never interpolated — MNE-311):
+          # selects which recognized-verb list the reply names. `ISSUE` above already
+          # works unmodified for a PR comment (a GitHub PR's comments live at the same
+          # `issues/{n}/comments` endpoint as its issue number).
+          IS_PR_COMMENT: ${{ github.event.issue.pull_request != null }}
         run: |
+          # Real-permission trust check (MNE-2774): author_association cannot see
+          # private org membership; verify the commenter's actual repo permission
+          # instead. Untrusted → silent no-op (same as before: no reply, no signal
+          # to a non-collaborator about the trust boundary). Unchanged by MNE-3341 —
+          # this check is identical in strictness for an issue or a PR comment.
+          PERM=$(gh api "repos/$REPO/collaborators/$SENDER_LOGIN/permission" --jq '.permission' 2>/dev/null || echo "none")
+          case "$PERM" in
+            admin|write) ;;
+            *) echo "untrusted actor ($SENDER_LOGIN: $PERM) — no feedback posted"; exit 0 ;;
+          esac
           # No untrusted interpolation in the body (MNE-311): the reply text is a fixed
-          # literal naming the recognized verbs; the issue number reaches gh only as a
-          # quoted shell var. We deliberately do NOT echo the operator's command back
-          # (avoids reflecting attacker-controlled text into the comment).
+          # literal naming the recognized verbs for the triggering context; the issue
+          # number reaches gh only as a quoted shell var. We deliberately do NOT echo
+          # the operator's command back (avoids reflecting attacker-controlled text
+          # into the comment).
           # shellcheck disable=SC2016  # backticks here are literal markdown in the reply
           # text, NOT command substitution; single-quoting is intentional (no expansion).
           # (Strict actionlint repos — e.g. polis — fail the sync PR without this. MNE-1349.)
-          BODY='[ADW-AGENTS] cli: 🤔 Unrecognized `adw` command. Recognized commands (the verb must be the FIRST token of the first line; trailing notes on that line are allowed): `adw run`, `adw zte`, `adw ship`, `adw retry`, `adw sync`, `adw rebase`, `adw continue`. No run was started.'
+          if [ "$IS_PR_COMMENT" = "true" ]; then
+            BODY='[ADW-AGENTS] cli: 🤔 Unrecognized `adw` command on a PR. Recognized commands here (the verb must be the FIRST token of the first line; trailing notes on that line are allowed): `adw ship`, `adw sync`, `adw rebase`, `adw retry`. `adw run` / `adw zte` / `adw continue` are only recognized on the ISSUE, not the PR. No run was started.'
+          else
+            BODY='[ADW-AGENTS] cli: 🤔 Unrecognized `adw` command. Recognized commands (the verb must be the FIRST token of the first line; trailing notes on that line are allowed): `adw run`, `adw zte`, `adw ship`, `adw retry`, `adw sync`, `adw rebase`, `adw continue`. No run was started.'
+          fi
           gh api "repos/$REPO/issues/$ISSUE/comments" -X POST -f "body=$BODY" \
             2>/dev/null || echo "WARN: could not post unrecognized-command feedback"
 
@@ -324,9 +460,12 @@ jobs:
   # worker. The sweep itself NEVER merges or evaluates checks — it only re-launches
   # the worker, which re-reads the COMMIT-LEVEL required-check status and merges only
   # through the full gate chain (never on a pending/red required check). Bounded twice
-  # over: the cron cadence rate-limits re-dispatch, and the worker's cross-run resume
-  # cap (ADW_MAX_SHIP_RESUMES) aborts-to-human after N distinct re-parks, so a genuinely
-  # stuck PR surfaces to a human instead of looping. Frozen issues are skipped. The
+  # over: the cron cadence rate-limits re-dispatch, and the worker's cross-run bounds
+  # abort-to-human — ADW_MAX_SHIP_RESUMES after N DISTINCT parked heads, and
+  # ADW_MAX_SHIP_REPARKS after N re-parks of the SAME unchanged head — so a genuinely
+  # stuck PR surfaces to a human instead of looping. Both are needed: this sweep's own
+  # failure mode is the second one (an unchanged head, re-parked forever, minting no new
+  # head for the distinct-head cap to count). Frozen issues are skipped. The
   # sweep is intentionally a NO-OP on every non-schedule trigger.
   #
   # Second, INDEPENDENT branch (MNE-1618): "no silent auto-approval on silence" — an
@@ -447,6 +586,12 @@ jobs:
       pull-requests: write
       issues: write
       checks: read
+      # packages: read — the worker's unit/build gate runs `npm ci`, and the target repos'
+      # `.npmrc` installs the private `@mnemom/*` scope from npm.pkg.github.com. Without this
+      # scope on the workflow's own GITHUB_TOKEN the install 401s, node_modules is never
+      # created, and every node verb dies with `eslint: not found` (exit 127) — a gate that
+      # reports `Passed: 0` instead of failing. Mirrors what the target repos' own ci.yml does.
+      packages: read
       # statuses: write — the worker publishes its `ADW Review` commit status on the PR
       # head (ship phase `post_commit_status`) so the review-gate verdict survives an
       # ephemeral run for branch protection / a merge queue. Dropping this scope (the
@@ -462,7 +607,8 @@ jobs:
       # collapses to at most one running + one pending run (GitHub supersedes
       # queued runs in the group); redundant resumes are also cheap (green
       # checks return on the first poll; still-pending re-parks after the short
-      # initial wait, bounded by ADW_MAX_SHIP_RESUMES).
+      # initial wait, bounded by ADW_MAX_SHIP_REPARKS — the same-head bound, since
+      # a resume storm is by definition all on ONE head).
       # PR-rooted runs (MNE-915) take a DISTINCT per-PR group `adw-zte-pr-<n>` so a PR
       # ship can never collide with (or be superseded by) the per-issue worker group —
       # the two number spaces overlap but the `pr-` segment keeps them disjoint. Every
@@ -556,9 +702,10 @@ jobs:
           # PR-rooted ship (MNE-915): the PR number the gate resolved (empty on every
           # other trigger). A trusted gate output — still routed via env, not inline.
           PR_NUMBER_CTX: ${{ needs.gate.outputs.pr_number }}
-          # PR-rooted sync (MNE-1619): "true" ONLY for an `adw sync` / `adw rebase` PR
-          # comment (never for `adw:ship` / `adw ship`) — a trusted gate output, routed
-          # via env like PR_NUMBER_CTX.
+          # PR-rooted sync (MNE-1619): "true" for an `adw sync` / `adw rebase` PR comment
+          # (never for `adw:ship` / `adw ship`), and also for `adw retry` on a PR
+          # (MNE-3341, mapped onto the same resync-only companion) — a trusted gate
+          # output, routed via env like PR_NUMBER_CTX.
           PR_SYNC_CTX: ${{ needs.gate.outputs.pr_sync }}
           # Label-derived modes (issues / issue_comment carry the issue's labels).
           HAS_SHIP_LABEL: ${{ contains(github.event.issue.labels.*.name, 'adw:ship') }}
@@ -699,6 +846,20 @@ jobs:
           ADW_IN_CI: "true"
           GH_TOKEN: ${{ steps.app.outputs.token }}
           GITHUB_PAT: ${{ steps.app.outputs.token }}
+          # Package-registry auth for the unit/build gate's `npm ci`. The target repos'
+          # `.npmrc` reads ${GITHUB_TOKEN} for the `@mnemom` scope on npm.pkg.github.com;
+          # this is the WORKFLOW's own token (scoped by `packages: read` above), not the App
+          # token, whose package access is not granted. `gh` is unaffected — it prefers
+          # GH_TOKEN, which stays the App token.
+          GITHUB_TOKEN: ${{ github.token }}
+          # Some repos (mnemom-api) read ${NODE_AUTH_TOKEN} in their `.npmrc` instead. An
+          # undefined secret evaluates to the empty string (the var IS set, just empty), so
+          # in any repo that does not define NPM_TOKEN this is inert — such a repo's `.npmrc`
+          # either does not reference it, or was already unauthenticated before this change.
+          # NB the token is visible to any `npm` lifecycle script the gate runs on PR code,
+          # the same supply-chain surface GH_TOKEN (higher-privilege) already had; scope
+          # NPM_TOKEN read-only where it is provisioned.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           # Token-expiry hardening (MNE-393). The App token above lives ~1h; the
           # worker uses the mint timestamp to checkpoint (commit+push) before the
           # cliff (ADW_TOKEN_CLIFF_MIN, default 50min), and falls back to the
@@ -730,6 +891,14 @@ jobs:
           # after one idle window. The cap is generous for that reason.
           ADW_AGENT_TIMEOUT_SEC_HEAVY: "3600"
           ADW_AGENT_IDLE_TIMEOUT_SEC: "600"
+          # Total wall-clock the worker may spend, mirroring this step's own
+          # timeout-minutes: 80 above. The worker clamps every per-call watchdog to
+          # what is left of this and refuses a call/retry it cannot finish, so the
+          # kill happens INSIDE the process (abort-to-human runs) instead of at the
+          # step boundary (silent runner kill). Keep in sync with timeout-minutes:
+          # the worker carries the same value as a code default, so an out-of-sync
+          # copy only ever makes the guard more conservative, never less.
+          ADW_RUN_BUDGET_SEC: "4800"
           # Per-phase E2E timeout BUDGET (MNE-338): the E2E suite was the most common
           # silent-death site (the run's last comment was "🌐 Running E2E tests…" then
           # nothing). Cap the E2E sub-phase wall-clock so it aborts-to-human cleanly
@@ -747,7 +916,10 @@ jobs:
           # (ADW_EVENT_SHIP_INITIAL_WAIT_MIN, default 3), then parks the run
           # (adw:awaiting-checks label + [ADW-SHIP-PAUSE] comment, clean exit 0);
           # the check_suite trigger above resumes --ship-only when checks finish.
-          # Cross-run resume bound: ADW_MAX_SHIP_RESUMES (worker default 5).
+          # Cross-run resume bounds: ADW_MAX_SHIP_RESUMES (distinct parked heads,
+          # worker default 5) and ADW_MAX_SHIP_REPARKS (re-parks of the SAME
+          # unchanged head, worker default 10; those carry an [ADW-SHIP-REPARK]
+          # comment instead). Both abort-to-human at the bound.
           ADW_EVENT_DRIVEN_SHIP: "true"
           # Realtime session-event tap (observability) — OFF unless both are set.
           # The worker mirrors its streamed SDK messages to the fleet event hub
@@ -807,9 +979,10 @@ jobs:
           # PR-rooted ship (MNE-915): shepherd the PR directly — no issue positional, no
           # other mode flag, always LIVE. SHIP_PR is non-empty ONLY for an `adw:ship` PR
           # label / `adw ship` PR comment (the ctx step gates every other path off it).
-          # PR-rooted sync (MNE-1619): SYNC_PR is non-empty ONLY for an `adw sync` /
-          # `adw rebase` PR comment — the resync-only companion, checked first since
-          # SHIP_PR and SYNC_PR are mutually exclusive by construction.
+          # PR-rooted sync (MNE-1619): SYNC_PR is non-empty for an `adw sync` /
+          # `adw rebase` PR comment, or an `adw retry` PR comment (MNE-3341, mapped onto
+          # this same resync-only companion) — checked first since SHIP_PR and SYNC_PR
+          # are mutually exclusive by construction.
           if [ -n "$SHIP_PR" ]; then
             mnemom-adw --ship-pr "$SHIP_PR" --repo "$GITHUB_REPOSITORY"
           elif [ -n "$SYNC_PR" ]; then
