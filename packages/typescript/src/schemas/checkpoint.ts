@@ -154,4 +154,21 @@ export interface IntegrityCheckpoint {
    * Present when the analysis LLM returned a verdict that doesn't match concern severities.
    */
   cross_validation_warnings?: string[];
+
+  /**
+   * Provenance of this checkpoint's verdict, used to prevent a self-corroborating
+   * escalation cascade. When prior checkpoints re-enter a later analysis as session
+   * context, the analyzer must not treat its OWN earlier verdicts as independent
+   * corroboration for a new flag.
+   *
+   * - "self_generated": produced by AIP's own analysis of a prior turn (the default
+   *   for every checkpoint in this flow). These are provisional assessments, not
+   *   independent evidence.
+   * - "external": confirmed by a source outside AIP's own analysis loop (e.g. a
+   *   human reviewer or an upstream signal). Reserved for future use.
+   *
+   * Absent ⇒ treat as "self_generated" (the cascade-safe default: an unlabeled
+   * prior verdict is never promoted to independent corroboration).
+   */
+  origin?: "self_generated" | "external";
 }

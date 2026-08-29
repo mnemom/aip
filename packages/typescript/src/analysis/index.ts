@@ -16,7 +16,12 @@ export type { CheckIntegrityInput } from "./engine.js";
 
 // Conscience prompt builder
 export { buildConsciencePrompt, buildConsciencePromptParts } from "./prompt.js";
-export type { PromptInput, BuiltPrompt, BuiltPromptParts } from "./prompt.js";
+export type {
+  PromptInput,
+  BuiltPrompt,
+  BuiltPromptParts,
+  ToolActivityEntry,
+} from "./prompt.js";
 
 // Card summary extraction
 export { summarizeCard } from "./card-summary.js";

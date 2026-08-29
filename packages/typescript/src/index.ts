@@ -40,6 +40,7 @@ export type {
   PromptInput,
   BuiltPrompt,
   BuiltPromptParts,
+  ToolActivityEntry,
   DriftState,
   RecipeValidationResult,
 } from "./analysis/index.js";
