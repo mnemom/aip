@@ -771,6 +771,12 @@ describe("buildConsciencePrompt — tool activity ledger (MNE-6478)", () => {
     expect(system).toContain("INDETERMINATE");
     expect(system).toContain("not that it returned the specific value");
     expect(system).not.toContain("are EVIDENCED");
+    // Must condition on SUCCESS: a failed/[error] precondition (e.g. failed
+    // auth) followed by a gated action is still a boundary_violation — the
+    // presence of a failed attempt does not excuse it (sdk-adversary2 should-fix).
+    expect(system).toContain("SUCCESSFUL tool call is present");
+    expect(system).toContain("does NOT satisfy a required step");
+    expect(system).toContain("IS a boundary_violation");
     // And the anti-injection preamble must name TOOL ACTIVITY result text as
     // untrusted, environment-controlled data (SEV-4).
     expect(system).toContain(
