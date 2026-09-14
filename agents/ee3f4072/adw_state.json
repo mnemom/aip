@@ -1,0 +1,28 @@
+{
+  "adw_id": "ee3f4072",
+  "issue_number": "117",
+  "branch_name": "chore-issue-117-adw-ee3f4072-aip-re-verify-zte-onboarding-artifacts-l",
+  "plan_file": "agents/ee3f4072/plan/issue-117-adw-ee3f4072-re-verify-zte-onboarding-artifacts-plan.md",
+  "issue_class": null,
+  "worktree_path": null,
+  "backend_port": null,
+  "frontend_port": null,
+  "e2e_server_port": null,
+  "e2e_client_port": null,
+  "db_path": null,
+  "model_set": "base",
+  "model_set_pinned": null,
+  "all_adws": [],
+  "owned_branches": [
+    "chore-issue-117-adw-ee3f4072-aip-re-verify-zte-onboarding-artifacts-l"
+  ],
+  "implement_session_id": null,
+  "linear_item_id": null,
+  "is_ux_work": null,
+  "ux_signal": null,
+  "ux_block_gate_misconfigured": null,
+  "references_unverified": null,
+  "ux_gate_verdict": null,
+  "ux_a11y_disposition": null,
+  "handoff_reason_code": null
+}
