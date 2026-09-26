@@ -21,3 +21,11 @@ updates:
     groups:
       dependencies:
         patterns: ["*"]
+  # Hash-pinned CI/publish tooling (.github/requirements/*.txt, compiled from *.in).
+  - package-ecosystem: "pip"
+    directory: "/.github/requirements"
+    schedule:
+      interval: "weekly"
+    groups:
+      ci-tooling:
+        patterns: ["*"]
