@@ -1,0 +1,5 @@
+# Build frontend for the PyPI publish job (publish.yml). Hash-pinned for
+# OpenSSF Scorecard Pinned-Dependencies. Regenerate build.txt with:
+#   uv pip compile build.in --universal --python-version 3.12 --generate-hashes -o build.txt
+pip
+build

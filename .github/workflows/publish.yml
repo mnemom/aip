@@ -84,16 +84,19 @@ jobs:
       - name: TypeScript checks
         working-directory: packages/typescript
         run: |
-          npm ci || npm install
+          npm ci
           npm run typecheck
           npm run build
           npm test
+      # Frozen, hash-verified install from packages/python/uv.lock — the same
+      # resolution ci.yml's python job gates on (OpenSSF Scorecard Pinned-Dependencies).
+      - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
       - name: Python checks
         working-directory: packages/python
         run: |
-          pip install -e ".[dev]"
-          mypy src/
-          pytest
+          uv sync --locked --extra dev
+          uv run --locked --extra dev mypy src/
+          uv run --locked --extra dev pytest
 
   publish-pypi:
     name: Publish to PyPI
@@ -112,8 +115,8 @@ jobs:
       - name: Build sdist + wheel
         working-directory: packages/python
         run: |
-          python -m pip install --upgrade pip
-          pip install build
+          # Hash-pinned build frontend (OpenSSF Scorecard Pinned-Dependencies).
+          python -m pip install --require-hashes -r "$GITHUB_WORKSPACE/.github/requirements/build.txt"
           python -m build
       - name: Publish to PyPI (Trusted Publisher)
         uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
@@ -206,8 +209,8 @@ jobs:
         if: steps.check.outputs.skip != 'true'
         working-directory: packages/python
         run: |
-          python -m pip install --upgrade pip
-          pip install build
+          # Hash-pinned build frontend (OpenSSF Scorecard Pinned-Dependencies).
+          python -m pip install --require-hashes -r "$GITHUB_WORKSPACE/.github/requirements/build.txt"
           python -m build
       - name: Publish to PyPI (Trusted Publisher)
         if: steps.check.outputs.skip != 'true'
