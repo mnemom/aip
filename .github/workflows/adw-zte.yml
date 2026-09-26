@@ -573,6 +573,18 @@ jobs:
       issues: read
       pull-requests: read
     steps:
+      # A freshly onboarded repo has this workflow file (added on ZTE onboarding) BEFORE
+      # the three ADW creds (ADW_APP_ID var + ADW_APP_PRIVATE_KEY / ANTHROPIC_API_KEY
+      # secrets) land — those are a separate, admin-gated step. The `schedule` trigger
+      # above fires every 15 minutes regardless, so a fresh onboard with no creds yet
+      # must NOT hard-fail here: an unconditional app-token mint threw "the 'client-id'
+      # ... must be set to a non-empty string" every tick, generating a scheduled-run
+      # failure-email storm (found on reference.mnemom, MNE-onboard-sweep-storm). Gate
+      # the mint (and every step below that consumes its token) on the App ID actually
+      # being configured; the no-op branch just logs and exits clean.
+      - name: No ADW credentials configured yet
+        if: vars.ADW_APP_ID == ''
+        run: echo "ADW_APP_ID is not set on this repo yet (creds land in a separate admin-gated step) — skipping this sweep pass"
       # An App token (same creds as the worker job) so the repository_dispatch lands
       # on this repo. github.token cannot self-dispatch a repository_dispatch event.
       # `client-id` is the current name for the input that used to be `app-id`: the action
@@ -580,6 +592,7 @@ jobs:
       # ID as the JWT `iss`, so this variable's value stays valid under the new key.
       - name: Mint GitHub App token
         id: app
+        if: vars.ADW_APP_ID != ''
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           client-id: ${{ vars.ADW_APP_ID }}
@@ -588,6 +601,7 @@ jobs:
           repositories: |
             ${{ github.event.repository.name }}
       - name: Re-dispatch parked (awaiting-checks) issues
+        if: vars.ADW_APP_ID != ''
         env:
           REPO: ${{ github.repository }}
           GH_TOKEN: ${{ steps.app.outputs.token }}
@@ -624,6 +638,7 @@ jobs:
             fi
           done
       - name: Nudge stale design-gate pauses (MNE-1618)
+        if: vars.ADW_APP_ID != ''
         env:
           REPO: ${{ github.repository }}
           GH_TOKEN: ${{ steps.app.outputs.token }}
@@ -763,7 +778,7 @@ jobs:
           fetch-depth: 0
           token: ${{ steps.app.outputs.token }}
 
-      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
           # Cache uv's wheel/source store across runs: the worker install below
           # re-resolves mnemom-adw@main every run (correct — it must track main),
