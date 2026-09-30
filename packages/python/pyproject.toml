@@ -1,5 +1,17 @@
 [build-system]
-requires = ["hatchling"]
+# Exact-pinned (MNE-7279 / aip#141): `requires` was previously unbounded, so every
+# `python -m build` / `uv build` resolves the build backend fresh in an isolated
+# env (PEP 517) — this is NOT influenced by .github/requirements/build.txt, which
+# only pins the outer build *frontend* (build/pip/packaging/pyproject-hooks), not
+# packages listed here. hatchling 1.30.0+ started emitting `Metadata-Version: 2.5`
+# (hatchling 1.32.0 made 2.5 the default); 1.32.4 is the version verified locally
+# to build this package with `Metadata-Version: 2.5` and pass `twine check --strict`
+# against the exact `twine`/`packaging` versions pinned by
+# pypa/gh-action-pypi-publish@v1.14.2 in publish.yml. Bumping this pin later is
+# fine, but re-verify (build + `twine check --strict`) first — an unbounded
+# `requires` is what let a hatchling release silently regress this in the first
+# place.
+requires = ["hatchling==1.32.4"]
 build-backend = "hatchling.build"
 
 [project]
