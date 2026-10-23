@@ -1,0 +1,34 @@
+{
+  "typ": "AAP-ConductRecord/v1",
+  "signing_key_id": "aap-test-record-2026-10",
+  "issued_at": "2026-10-23T18:30:00.000Z",
+  "prev_digest": "b9e85d204759eaa2102df6651fd1afba07dd7aa45acfd0c50d5d01ca2a0e8268",
+  "unit_kind": "pull_request",
+  "conversation_id": "conv_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "goal": {
+    "mode": "sealed",
+    "contract_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "canon_node_id": "node_bbbbbbbbbbbbbbbb",
+    "seal_version": 1
+  },
+  "cost": {
+    "model_cost_millimu": 530000,
+    "mu_millimu": 21200,
+    "mu_rate_bps": 400,
+    "currency_fixed_at": "2026-10-23T18:00:00.000Z"
+  },
+  "messages_from_person": {
+    "count": 3,
+    "classifier": "claude-code"
+  },
+  "compactions": 1,
+  "checkpoints": [
+    {
+      "checkpoint_id": "cp_bound",
+      "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+      "combined_commitment": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+      "commitment_signature": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+    }
+  ],
+  "signature": "zij7KjZXLYUahY88A6WYW7KLDIDy6zFQXPqDUp-nlY1C4IruZ94khA3Z0q2I0GP5LH6vmXkU1_uNU5yMJNtzAA"
+}
