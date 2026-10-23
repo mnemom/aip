@@ -1,0 +1,25 @@
+{
+  "typ": "AAP-ShareCard/v1",
+  "signing_key_id": "aap-test-record-2026-10",
+  "issued_at": "2026-10-30T20:00:00.000Z",
+  "source_digest": "b4db5cda267b1492861200664a41239b0c8a47563d26fe104762e4ced63d83ea",
+  "lines": [
+    {
+      "class": "measured",
+      "text": "3 of 4 commits from recorded sessions"
+    },
+    {
+      "class": "verdict",
+      "text": "On goal in 5 of 6 judged turns",
+      "coverage": {
+        "judged": 6,
+        "total": 12
+      }
+    },
+    {
+      "class": "outcome",
+      "text": "Accepted, no revert in 7 days"
+    }
+  ],
+  "signature": "wLe1aE12G5vKBEfJmIKd0LmNg0YVJ28vSrfOhNNPY-5c7H_yqbBzk0WPs6mrgBRZS_CPcTqZU0xdbmZKLDREDA"
+}

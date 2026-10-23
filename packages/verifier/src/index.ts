@@ -15,6 +15,12 @@
 
 export { verifyCertificate } from "./verify.js";
 
+// Record statements (AAP-ConductRecord/v1, AAP-PRRecord/v1, AAP-Outcome/v1,
+// AAP-ShareCard/v1) and their bundle, verified against the published JWKS.
+export { verify, verifyStatement, statementCommitment, statementDigest } from "./verify-record.js";
+export { canonicalJson } from "./canonical.js";
+export { STATEMENT_TYPES, BUNDLE_TYP, CARD_LINE_CLASSES, REASONS, FLAGS } from "./statements.js";
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -37,3 +43,24 @@ export type {
   VerificationEndpoints,
   CheckResult,
 } from "./types.js";
+
+export type {
+  RecordJwk,
+  RecordJwks,
+  StatementTyp,
+  SignedStatementBase,
+  SignedStatement,
+  ConductRecordStatement,
+  PRRecordStatement,
+  OutcomeStatement,
+  ShareCardStatement,
+  ShareCardLine,
+  CardLineClass,
+  CheckpointCitation,
+  RecordBundle,
+  Reason,
+  Flag,
+  StatementFlag,
+  StatementVerificationResult,
+  RecordVerificationResult,
+} from "./statements.js";

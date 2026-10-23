@@ -29,7 +29,8 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "lint": "tsc --noEmit",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "fixtures": "RECORD_FIXTURES=write vitest run test/record-fixtures.test.ts"
   },
   "engines": {
     "node": ">=18.0.0"
