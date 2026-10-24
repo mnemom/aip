@@ -37,3 +37,22 @@ export type {
   VerificationEndpoints,
   CheckResult,
 } from "./types.js";
+
+// ---------------------------------------------------------------------------
+// AAP-ShareCard/v1 (MNE-9022)
+// ---------------------------------------------------------------------------
+
+export {
+  SHARE_CARD_TYP,
+  canonicalJson,
+  shareCardSigningInput,
+  validateShareCardShape,
+  verifyShareCard,
+} from "./sharecard.js";
+export type {
+  ShareCard,
+  ShareCardLine,
+  ShareCardLineKind,
+  ShareCardStatementRef,
+  ShareCardVerification,
+} from "./sharecard.js";

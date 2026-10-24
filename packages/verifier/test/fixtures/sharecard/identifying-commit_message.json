@@ -1,0 +1,38 @@
+{
+  "typ": "AAP-ShareCard/v1",
+  "card_id": "card-identifying-commit_message",
+  "period": {
+    "start": "2026-10-01",
+    "end": "2026-10-07"
+  },
+  "issued_at": "2026-10-08T00:00:00.000Z",
+  "signing_key_id": "test-sharecard-key-1",
+  "statements": [
+    {
+      "typ": "AAP-Statement/v1",
+      "hash": "1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "typ": "AAP-Statement/v1",
+      "hash": "2222222222222222222222222222222222222222222222222222222222222222"
+    }
+  ],
+  "lines": [
+    {
+      "id": "l1",
+      "kind": "count",
+      "label": "Changes reviewed",
+      "value": 42,
+      "statement_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+      "commit_message": "wip: patch for customer X"
+    },
+    {
+      "id": "l2",
+      "kind": "count",
+      "label": "Checks passed",
+      "value": 40,
+      "statement_hash": "2222222222222222222222222222222222222222222222222222222222222222"
+    }
+  ],
+  "signature": "KO1qe3wvVgUz976iV4lh6k9MowGmHvbYSeHk_h_rdjk4o-7w5yMw8vptOmPpk8KZJR7SMeThQQdmV7P62m8JCw"
+}

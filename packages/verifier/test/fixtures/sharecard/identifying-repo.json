@@ -1,0 +1,38 @@
+{
+  "typ": "AAP-ShareCard/v1",
+  "card_id": "card-identifying-repo",
+  "period": {
+    "start": "2026-10-01",
+    "end": "2026-10-07"
+  },
+  "issued_at": "2026-10-08T00:00:00.000Z",
+  "signing_key_id": "test-sharecard-key-1",
+  "statements": [
+    {
+      "typ": "AAP-Statement/v1",
+      "hash": "1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "typ": "AAP-Statement/v1",
+      "hash": "2222222222222222222222222222222222222222222222222222222222222222"
+    }
+  ],
+  "lines": [
+    {
+      "id": "l1",
+      "kind": "count",
+      "label": "Changes reviewed",
+      "value": 42,
+      "statement_hash": "1111111111111111111111111111111111111111111111111111111111111111",
+      "repo": "mnemom/secret-repo"
+    },
+    {
+      "id": "l2",
+      "kind": "count",
+      "label": "Checks passed",
+      "value": 40,
+      "statement_hash": "2222222222222222222222222222222222222222222222222222222222222222"
+    }
+  ],
+  "signature": "ZGFTYqzwRUaoE71n6yju_ZgwAwNtq2w1A3g77-gAQNMOOU7t2ir5iWDCxApvJdhTWIXaKILGYRxKyCxQpRj1DQ"
+}
