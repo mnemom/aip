@@ -1,0 +1,77 @@
+name: Results report
+
+# Rebuild each committed D90 results report from its signed outcomes and diff
+# it byte for byte against the committed file; any difference fails (MNE-9041).
+# Cases live in packages/results-report/fixtures/<case>/ as outcomes.json,
+# jwks.json and report.md. The builder verifies every outcome signature and
+# runs claim-lint over the report, so unsigned or hand-edited data cannot
+# produce a passing report. Read-only: it never deploys or writes back.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  rebuild:
+    permissions:
+      contents: read
+    name: Rebuild report byte for byte
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: |
+            packages/verifier/package-lock.json
+            packages/results-report/package-lock.json
+
+      # The builder depends on the verifier by file: path, so build it first.
+      - name: Build @mnemom/aip-verifier
+        working-directory: packages/verifier
+        run: |
+          npm ci
+          npm run build
+
+      - name: Install builder dependencies
+        working-directory: packages/results-report
+        run: npm ci
+
+      - name: Typecheck and test
+        working-directory: packages/results-report
+        run: |
+          npm run typecheck
+          npm test
+
+      - name: Build report CLI
+        working-directory: packages/results-report
+        run: npm run build
+
+      - name: Rebuild every report and diff byte for byte
+        working-directory: packages/results-report
+        run: |
+          set -eu
+          out="$(mktemp -d)"
+          n=0
+          for dir in fixtures/*/; do
+            case="$(basename "$dir")"
+            node dist/cli.js build \
+              --outcomes "$dir/outcomes.json" \
+              --jwks "$dir/jwks.json" \
+              --out "$out/$case.md"
+            cmp "$out/$case.md" "$dir/report.md" || {
+              echo "::error::report for '$case' differs from a rebuild of its signed outcomes"
+              diff -u "$dir/report.md" "$out/$case.md" || true
+              exit 1
+            }
+            echo "rebuilt $case: byte-identical"
+            n=$((n + 1))
+          done
+          test "$n" -gt 0

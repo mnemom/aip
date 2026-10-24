@@ -1,0 +1,30 @@
+[
+  {
+    "typ": "AAP-Outcome/v1",
+    "signing_key_id": "aap-test-record-2026-10",
+    "built_at": "2026-11-30T19:00:00.000Z",
+    "unit_kind": "pull_request",
+    "window_days": 7,
+    "pr_record_digest": "6666666666666666666666666666666666666666666666666666666666666666",
+    "merge_sha": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "outcome": "accepted_no_revert",
+    "team_id": "team_alpha",
+    "arm": "treatment",
+    "merged_by": "automation",
+    "signature": "7TLT4KlDniUktKuvtLWFyNrNMIo9jW5duE4a3cNxPrwRRkZseQrVNooz61OTO3bLiazudxFaz6_T4jy3Y1yOCg"
+  },
+  {
+    "typ": "AAP-Outcome/v1",
+    "signing_key_id": "aap-test-record-2026-10",
+    "built_at": "2026-11-30T19:00:00.000Z",
+    "unit_kind": "pull_request",
+    "window_days": 7,
+    "pr_record_digest": "7777777777777777777777777777777777777777777777777777777777777777",
+    "merge_sha": "9999999999999999999999999999999999999999999999999999999999999999",
+    "outcome": "reverted",
+    "team_id": "team_alpha",
+    "arm": "treatment",
+    "merged_by": "automation",
+    "signature": "aann0IOJ8Qq98EvHSYbA8W08Qvgjk9m2xvyuURzELXv07B8bugo8_SVaF51kY-HWLBi0nAG7LCp6kZ09hSlODA"
+  }
+]
