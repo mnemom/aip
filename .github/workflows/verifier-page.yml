@@ -13,8 +13,9 @@ name: Verifier page
 on:
   push:
     branches: [main]
+  # No branch filter on pull_request: lane PRs are stacked on other lane
+  # branches before they retarget to main, and K4.2 needs a run URL there.
   pull_request:
-    branches: [main]
   workflow_dispatch:
 
 permissions: {}
