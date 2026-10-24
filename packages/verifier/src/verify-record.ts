@@ -124,7 +124,7 @@ function shareCardReasons(lines: unknown): Reason[] {
 }
 
 function digestFieldsOf(statement: Record<string, unknown>): string[] {
-  const out: unknown[] = [statement.prev_digest, statement.pr_record_digest, statement.source_digest];
+  const out: unknown[] = [statement.previous_digest, statement.pr_record_digest, statement.source_digest];
   if (Array.isArray(statement.conduct_digests)) out.push(...statement.conduct_digests);
   return out.filter((d): d is string => typeof d === "string");
 }
@@ -209,7 +209,7 @@ export async function verifyStatement(
 
 /** Which statement types a link field may point at. */
 const LINK_TARGETS: Record<string, readonly StatementTyp[] | "same"> = {
-  prev_digest: "same",
+  previous_digest: "same",
   conduct_digests: ["AAP-ConductRecord/v1"],
   pr_record_digest: ["AAP-PRRecord/v1"],
   source_digest: ["AAP-ConductRecord/v1", "AAP-PRRecord/v1", "AAP-Outcome/v1"],

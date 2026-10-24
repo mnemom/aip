@@ -62,7 +62,7 @@ describe("verify: golden fixtures", () => {
   it("links statements by digest: the PR record names the last conduct build", () => {
     const bundle = fixture<{ statements: Record<string, unknown>[] }>("golden-bundle");
     const [c1, c2, pr, outcome, card] = bundle.statements;
-    expect(c2.prev_digest).toBe(statementDigest(c1));
+    expect(c2.previous_digest).toBe(statementDigest(c1));
     expect(pr.conduct_digests).toEqual([statementDigest(c2)]);
     expect(outcome.pr_record_digest).toBe(statementDigest(pr));
     expect(card.source_digest).toBe(statementDigest(pr));
