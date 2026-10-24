@@ -1,0 +1,11 @@
+{
+  "typ": "AAP-Outcome/v1",
+  "signing_key_id": "aap-test-record-2026-10",
+  "built_at": "2026-10-30T19:00:00.000Z",
+  "unit_kind": "pull_request",
+  "pr_record_digest": "870ecc1d33ff05f86405e32e4206e32ccb2d705cfa07b7e3220ec187327225d0",
+  "merge_sha": "0000000000000000000000000000000000000000",
+  "outcome": "accepted_no_revert",
+  "window_days": 7,
+  "signature": "1j4IAaS_ys7lM0-VOw7KOcZXduLjiuS53-wku-R6JJuQ1kjRjY1zEl7_nmTvCq9KkQMg6mVIbmpAmINbGUnCDA"
+}

@@ -1,0 +1,21 @@
+{
+  "typ": "AAP-PRRecord/v1",
+  "signing_key_id": "aap-test-record-2026-10",
+  "built_at": "2026-10-23T19:00:00.000Z",
+  "previous_digest": null,
+  "unit_kind": "pull_request",
+  "conduct_digests": [
+    "1dbda1e10b76c9ed3cebc2bb1813f11a6cefa1891cad99999ef7cf7b603ec3bd"
+  ],
+  "head_sha": "ffffffffffffffffffffffffffffffffffffffff",
+  "commits": {
+    "bound": 3,
+    "total": 4
+  },
+  "cost": {
+    "model_cost_millimu": 530000,
+    "mu_millimu": 21200,
+    "mu_rate_bps": 400
+  },
+  "signature": "yUOK40z9M0DjP5zdaDkjTUi9rhvjgTKIr2guSAkT5SnQJeQY-sRrjaPzausRY0z9zsPr3PTpYcTcrJb2VZxzBg"
+}

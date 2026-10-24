@@ -1,0 +1,22 @@
+{
+  "bundle": {
+    "valid": true,
+    "flags": [
+      {
+        "flag": "card hash not recorded",
+        "subject": "cp_no_card_hash"
+      },
+      {
+        "flag": "card not bound",
+        "subject": "cp_unbound"
+      }
+    ]
+  },
+  "digests": {
+    "conduct1": "1b158a699d78ff6b7f91c408cdc33a49a9a48d1891e1267fa83244fd958b625f",
+    "conduct2": "1dbda1e10b76c9ed3cebc2bb1813f11a6cefa1891cad99999ef7cf7b603ec3bd",
+    "pr": "870ecc1d33ff05f86405e32e4206e32ccb2d705cfa07b7e3220ec187327225d0",
+    "outcome": "6528167211bb0ea32d5b51b223a9d74fe8c61469a4aae74b93f1f5d0053190ab",
+    "card": "5ee7b6b1d5292a87a1093ce67fd9d5be714de8105d7116e4dfbf4728383b86ee"
+  }
+}
