@@ -21,7 +21,12 @@
 export const CLAIM_CLASSES = ["measured", "verdict", "estimate", "benchmark", "outcome"] as const;
 export type ClaimClass = (typeof CLAIM_CLASSES)[number];
 
-/** Where a rendering is shown. Cards are the share card and the period card. */
+/**
+ * Where a rendering is shown. Cards are the share card and the period card.
+ * `share_card` is the `AAP-ShareCard/v1` record statement's lines
+ * (`RecordShareCardLine`, statements.ts: `{class, text, coverage}`), the shape
+ * `verify` checks; not the MNE-9022 numeric card (sharecard.ts `ShareCardLine`).
+ */
 export const SURFACES = ["record_page", "check_summary", "pr_comment", "share_card", "period_card"] as const;
 export type Surface = (typeof SURFACES)[number];
 
