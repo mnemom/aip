@@ -33,6 +33,9 @@
  *   card_class_not_allowed      a card carries measured, outcome and verdict lines only
  *   period_card_without_revert  a period card renders its reverts
  *   field_not_on_surface        the field is not shown on this surface
+ *   provisional_mu_on_card      a provisional μ amount ("≈ N μ (pending)", A-S-001) never appears on a card:
+ *                               cards keep K1.17 and read "μ pending" at most
+ *   provisional_mu_off_cost_line a provisional μ amount appears on the μ cost line and nowhere else
  */
 
 import {
@@ -95,6 +98,8 @@ export const LINT_RULES = {
   card_class_not_allowed: "card_class_not_allowed",
   period_card_without_revert: "period_card_without_revert",
   field_not_on_surface: "field_not_on_surface",
+  provisional_mu_on_card: "provisional_mu_on_card",
+  provisional_mu_off_cost_line: "provisional_mu_off_cost_line",
   unknown_surface: "unknown_surface",
 } as const;
 
@@ -120,6 +125,15 @@ const TRUST_CLAIM =
   /\b(minutes?|seconds?|hours?)\s+to\s+trust\b|\btrust(ed)?\s+in\s+(under\s+|about\s+)?\d+\s*(minutes?|seconds?|hours?|min|s|h)\b|\breview[- ]time\b|\btime\s+to\s+review\b|\bwithout\s+re-?check(ing)?\b|\bno\s+need\s+to\s+(re-?check|review)\b|\btrust(ed)?\s+without\b/i;
 const SAVINGS_PERCENTAGE = /\d+(?:\.\d+)?\s?%[^.\n]*\b(sav(e[sd]?|ings?)|cheaper|less|reduction|reduced)\b|\b(sav(e[sd]?|ings?)|cheaper|reduction|reduced)\b[^.\n]*\d+(?:\.\d+)?\s?%/i;
 const REVERT = /\brevert(s|ed)?\b/i;
+/**
+ * A provisional μ amount (A-S-001): an approximate figure with a pending marker,
+ * "≈ 50000 mmu (pending)" or "≈ 50 μ (pending)". A bare "μ pending" (K1.4) carries no
+ * amount and is not provisional. Either half alone is enough to count: a "≈" before a
+ * figure, or a figure with "pending" beside it, so a renderer cannot shed one marker to
+ * slip the amount onto a card.
+ */
+const PROVISIONAL_MU =
+  /(?:≈|~|\bapprox(?:\.|imately)?\b|\babout\b)\s*\d[\d,]*(?:\.\d+)?\s*(?:mmu\b|mu\b|μ|µ)|\d[\d,]*(?:\.\d+)?\s*(?:mmu\b|mu\b|μ|µ)[^.\n]*\bpending\b|\bpending\b[^.\n]*\d[\d,]*(?:\.\d+)?\s*(?:mmu\b|mu\b|μ|µ)/i;
 const NOT_CHECKED = /^not checked$/i;
 /** Coverage written into a verdict line's words by the builder: "4 of 12 turns judged". */
 const COVERAGE_IN_TEXT = /\b(\d+)\s+of\s+(\d+)\s+turns\s+judged\b/i;
@@ -254,6 +268,12 @@ function lintLine(surface: Surface, line: RenderedLine, index: number, out: Lint
     }
   }
   if (argumentsAppear(text, line.tool_arguments)) push(LINT_RULES.tool_arguments_shown);
+
+  // A-S-001: a provisional μ amount lives on the μ cost line and never on a card (K1.17).
+  if (PROVISIONAL_MU.test(text)) {
+    if (onCard) push(LINT_RULES.provisional_mu_on_card);
+    if (field !== "mu_cost") push(LINT_RULES.provisional_mu_off_cost_line);
+  }
 
   if (TRUST_CLAIM.test(text)) push(LINT_RULES.trust_claim);
   if (SAVINGS_PERCENTAGE.test(text)) push(LINT_RULES.savings_percentage);

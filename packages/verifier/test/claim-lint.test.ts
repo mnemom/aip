@@ -264,6 +264,34 @@ describe("lintRendering: each rule rejects", () => {
     const r = rules(base({ class: cls, text: "x" }, "share_card"));
     expect(r).toContain(LINT_RULES.card_class_not_allowed);
   });
+  it("provisional_mu_on_card: a provisional μ amount never reaches a share or period card (A-S-001, K1.17)", () => {
+    for (const surface of ["share_card", "period_card"] as const) {
+      for (const text of ["≈ 50000 mmu (pending)", "≈ 50 μ (pending)", "µ 50000 mmu pending", "about 50000 mmu"]) {
+        const r = rules(base({ key: "cost.mu", class: "measured", text }, surface));
+        expect(r, `${surface}: ${text}`).toContain(LINT_RULES.provisional_mu_on_card);
+        expect(r).not.toContain(LINT_RULES.provisional_mu_off_cost_line);
+      }
+    }
+  });
+  it("provisional_mu allowed on the μ cost line off-card, and plain μ pending allowed everywhere (K1.4)", () => {
+    for (const surface of ["record_page", "check_summary", "pr_comment"] as const) {
+      expect(rules(base({ key: "cost.mu", class: "measured", text: "≈ 50000 mmu (pending)" }, surface))).toEqual([]);
+    }
+    for (const surface of SURFACES) {
+      for (const text of ["µ pending", "not charged", "µ 50000 mmu"]) {
+        const r = rules(base({ key: "cost.mu", class: "measured", text }, surface)).filter((x) => x.startsWith("provisional_mu"));
+        expect(r, `${surface}: ${text}`).toEqual([]);
+      }
+    }
+  });
+  it("provisional_mu_off_cost_line: a provisional μ amount on any other line", () => {
+    const r = rules(base({ field: "model_cost", class: "measured", text: "model cost ≈ 1250000 mmu (pending)" }));
+    expect(r).toContain(LINT_RULES.provisional_mu_off_cost_line);
+    expect(r).not.toContain(LINT_RULES.provisional_mu_on_card);
+    expect(rules(base({ field: "outcome", class: "outcome", text: "merged, ≈ 50 μ pending" }, "share_card"))).toEqual(
+      expect.arrayContaining([LINT_RULES.provisional_mu_on_card, LINT_RULES.provisional_mu_off_cost_line]),
+    );
+  });
   it("period_card_without_revert", () => {
     const r = lintRendering({ surface: "period_card", lines: [{ field: "commits_recorded", class: "measured", text: "212 commits" }] });
     expect(r.violations).toEqual([{ rule: LINT_RULES.period_card_without_revert, line: -1, text: "" }]);
