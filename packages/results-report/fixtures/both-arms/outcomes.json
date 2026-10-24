@@ -1,0 +1,99 @@
+[
+  {
+    "typ": "AAP-Outcome/v1",
+    "signing_key_id": "aap-test-record-2026-10",
+    "built_at": "2026-11-30T19:00:00.000Z",
+    "unit_kind": "pull_request",
+    "window_days": 7,
+    "pr_record_digest": "1111111111111111111111111111111111111111111111111111111111111111",
+    "merge_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "outcome": "accepted_no_revert",
+    "team_id": "team_alpha",
+    "arm": "treatment",
+    "merged_by": "human",
+    "estimate": {
+      "method": "lower_bound",
+      "counting_floor_tokens": 200000,
+      "net_of_mu": true,
+      "reports_loss": true,
+      "net_lower_bound": 1200
+    },
+    "signature": "eQdFpEqUoer1NF-5o73C7Y9dQAh5eQB7XGWnnGHWLG3m_eOBnIQj8o_XtQZimNm2Hf4_cs9xqZJhFsDeFPeFBg"
+  },
+  {
+    "typ": "AAP-Outcome/v1",
+    "signing_key_id": "aap-test-record-2026-10",
+    "built_at": "2026-11-30T19:00:00.000Z",
+    "unit_kind": "pull_request",
+    "window_days": 7,
+    "pr_record_digest": "2222222222222222222222222222222222222222222222222222222222222222",
+    "merge_sha": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "outcome": "accepted_no_revert",
+    "team_id": "team_alpha",
+    "arm": "treatment",
+    "merged_by": "automation",
+    "estimate": {
+      "method": "lower_bound",
+      "counting_floor_tokens": 200000,
+      "net_of_mu": true,
+      "reports_loss": true,
+      "net_lower_bound": 300
+    },
+    "signature": "DJq8IC6UQKK1Ac2suuwgH4okyHuA9n957pf3PDClxX93QQWCxxwoC1AcXUY4XnbZtdCSK3dIMNXnsRsalXh-BQ"
+  },
+  {
+    "typ": "AAP-Outcome/v1",
+    "signing_key_id": "aap-test-record-2026-10",
+    "built_at": "2026-11-30T19:00:00.000Z",
+    "unit_kind": "pull_request",
+    "window_days": 7,
+    "pr_record_digest": "3333333333333333333333333333333333333333333333333333333333333333",
+    "merge_sha": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "outcome": "reverted",
+    "team_id": "team_beta",
+    "arm": "treatment",
+    "merged_by": "human",
+    "signature": "p-x9zfjMdc3BJlsz8V_0F4umz0nL3hKC5BOPDr6Ha68coRW8mzU7exlDV0-rRIR6KzDzdjNDqWxBQMWrDBbcCQ"
+  },
+  {
+    "typ": "AAP-Outcome/v1",
+    "signing_key_id": "aap-test-record-2026-10",
+    "built_at": "2026-11-30T19:00:00.000Z",
+    "unit_kind": "pull_request",
+    "window_days": 7,
+    "pr_record_digest": "4444444444444444444444444444444444444444444444444444444444444444",
+    "merge_sha": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "outcome": "accepted_no_revert",
+    "team_id": "team_beta",
+    "arm": "control",
+    "merged_by": "automation",
+    "estimate": {
+      "method": "median",
+      "counting_floor_tokens": 60000,
+      "net_of_mu": false,
+      "reports_loss": false
+    },
+    "signature": "XnJ5s5WP_g65Aa6rou62qmX3KilvBrFUfyp9aklUbzx3qpsArtkm7rP1LcMkyJmUYSlBdKzyiTQIbsRBrnADAQ"
+  },
+  {
+    "typ": "AAP-Outcome/v1",
+    "signing_key_id": "aap-test-record-2026-10",
+    "built_at": "2026-11-30T19:00:00.000Z",
+    "unit_kind": "pull_request",
+    "window_days": 7,
+    "pr_record_digest": "5555555555555555555555555555555555555555555555555555555555555555",
+    "merge_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "outcome": "accepted_no_revert",
+    "team_id": "team_alpha",
+    "arm": "control",
+    "merged_by": "human",
+    "estimate": {
+      "method": "lower_bound",
+      "counting_floor_tokens": 200000,
+      "net_of_mu": true,
+      "reports_loss": true,
+      "net_lower_bound": 0
+    },
+    "signature": "IXshvkqvzKUHoeJ-fY0Ht-DVfYG1sAXVFFLkWvI5hh1Z8wl7rODgcEzcA8v_hFUPgu_9jOEipbAn7pHt5wg2CA"
+  }
+]

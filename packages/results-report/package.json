@@ -1,0 +1,29 @@
+{
+  "name": "@mnemom/aip-results-report",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Rebuilds the D90 results report from signed outcomes, byte for byte",
+  "type": "module",
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "fixtures": "RESULTS_FIXTURES=write vitest run test/fixtures.test.ts"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@mnemom/aip-verifier": "file:../verifier"
+  },
+  "devDependencies": {
+    "@types/node": "^25.2.2",
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^4.1.11"
+  },
+  "overrides": {
+    "esbuild": "^0.28.1"
+  }
+}
