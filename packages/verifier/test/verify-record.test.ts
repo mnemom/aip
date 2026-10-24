@@ -134,6 +134,45 @@ describe("verifyStatement: order of checks", () => {
     expect(res.reasons).toEqual([REASONS.digest_malformed]);
   });
 
+  it("names a mis-typed bundle rather than treating it as one unknown statement", async () => {
+    const res = await verify({ typ: "AAP-RecordBundle/v2", statements: [] }, jwks);
+    expect(res.reasons).toEqual([REASONS.bundle_unknown_typ]);
+    expect(res.statements).toEqual([]);
+    // A bare statement with an unknown typ and no `statements` is still a statement.
+    const one = await verify({ typ: "AAP-RecordBundle/v2" }, jwks);
+    expect(one.reasons).toEqual([`0:${REASONS.unknown_typ}`]);
+  });
+
+  it("reports a non-string digest reference instead of skipping it", async () => {
+    const digests = ["a".repeat(64), 7];
+    const s = await signStatement({
+      typ: "AAP-PRRecord/v1",
+      signing_key_id: TEST_KID,
+      conduct_digests: digests,
+    });
+    expect((await verifyStatement(s, jwks)).reasons).toEqual([REASONS.digest_malformed]);
+    const notArray = await signStatement({
+      typ: "AAP-PRRecord/v1",
+      signing_key_id: TEST_KID,
+      conduct_digests: "a".repeat(64),
+    });
+    expect((await verifyStatement(notArray, jwks)).reasons).toEqual([REASONS.digest_malformed]);
+    const nullSource = await signStatement({
+      typ: "AAP-ShareCard/v1",
+      signing_key_id: TEST_KID,
+      source_digest: null,
+      lines: [],
+    });
+    expect((await verifyStatement(nullSource, jwks)).reasons).toEqual([REASONS.digest_malformed]);
+    // `previous_digest: null` is the first build and stays valid.
+    const first = await signStatement({
+      typ: "AAP-ConductRecord/v1",
+      signing_key_id: TEST_KID,
+      previous_digest: null,
+    });
+    expect((await verifyStatement(first, jwks)).valid).toBe(true);
+  });
+
   it("a checkpoint with card hash and signed commitment carries no flag", async () => {
     const s = fixture<{ checkpoints: unknown[] }>("golden-conduct");
     expect(s.checkpoints).toHaveLength(1);
