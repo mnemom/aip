@@ -1,0 +1,84 @@
+/**
+ * The claim table (design decision T5): one table mapping record fields to
+ * the claim class they may be rendered as and, for goal and protection lines,
+ * the verb each mode produces. Every renderer and the verifier read this
+ * table; copy is never written per renderer.
+ *
+ * Rules the table encodes (design "Claim classes and verbs", "Cost",
+ * "Share cards"):
+ * - A line is exactly one class. "Safe", "correct" and "prevented" never appear.
+ * - No protection or goal line carries a dollar figure.
+ * - An implicit goal line never says "sealed"; goals off read "not checked".
+ * - The verb comes from the area's mode at the time of the act. Enforce shows
+ *   the tool name and never its arguments; on a card, no tool name at all.
+ * - Cards carry measured, outcome and covered verdict lines only. Estimates
+ *   and savings never appear on a card or a PR comment (T8).
+ * - No benchmark line ships until the head-to-head is published with its
+ *   losing arms; no savings percentage appears anywhere until then.
+ */
+
+export const CLAIM_CLASSES = ["measured", "verdict", "estimate", "benchmark", "outcome"] as const;
+export type ClaimClass = (typeof CLAIM_CLASSES)[number];
+
+/** Where a rendering is shown. Cards are the share card and the period card. */
+export const SURFACES = ["record_page", "check_summary", "pr_comment", "share_card", "period_card"] as const;
+export type Surface = (typeof SURFACES)[number];
+
+export const CARD_SURFACES: readonly Surface[] = ["share_card", "period_card"];
+
+/** Surfaces that never show the savings estimate, even once it qualifies (T8). */
+export const ESTIMATE_FORBIDDEN_SURFACES: readonly Surface[] = ["pr_comment", "share_card", "period_card"];
+
+/** Protection and goal area modes, as stored at the act. */
+export const MODES = ["off", "observe", "nudge", "enforce"] as const;
+export type Mode = (typeof MODES)[number];
+
+/** The verb each mode produces. `off` produces no line, or "not checked". */
+export const MODE_VERBS: Record<Mode, string> = {
+  off: "not checked",
+  observe: "flagged",
+  nudge: "flagged, agent nudged",
+  enforce: "stopped",
+};
+
+/** How the goal was set. An implicit goal is never read as sealed (T16). */
+export const GOAL_MODES = ["sealed", "implicit", "off"] as const;
+export type GoalMode = (typeof GOAL_MODES)[number];
+
+export interface ClaimTableEntry {
+  class: ClaimClass;
+  /** True for the goal and protection areas: the verb comes from the mode. */
+  verb_by_mode: boolean;
+  /** True when the line may carry a money figure (model cost and μ only). */
+  money_allowed: boolean;
+  /** Surfaces this field may appear on; absent means every surface. */
+  surfaces?: readonly Surface[];
+}
+
+export const CLAIM_TABLE = {
+  commits_recorded: { class: "measured", verb_by_mode: false, money_allowed: false },
+  messages_from_person: { class: "measured", verb_by_mode: false, money_allowed: false },
+  compactions: { class: "measured", verb_by_mode: false, money_allowed: false },
+  tokens_sent_vs_reaching: { class: "measured", verb_by_mode: false, money_allowed: false },
+  peak_context: { class: "measured", verb_by_mode: false, money_allowed: false },
+  model_cost: { class: "measured", verb_by_mode: false, money_allowed: true },
+  mu_cost: { class: "measured", verb_by_mode: false, money_allowed: true },
+  approval: { class: "measured", verb_by_mode: false, money_allowed: false },
+  goal: { class: "verdict", verb_by_mode: true, money_allowed: false },
+  protection: { class: "verdict", verb_by_mode: true, money_allowed: false },
+  autonomy: { class: "measured", verb_by_mode: false, money_allowed: false },
+  savings_estimate: {
+    class: "estimate",
+    verb_by_mode: false,
+    money_allowed: true,
+    surfaces: ["record_page", "check_summary"],
+  },
+  benchmark: { class: "benchmark", verb_by_mode: false, money_allowed: false },
+  outcome: { class: "outcome", verb_by_mode: false, money_allowed: false },
+} as const satisfies Record<string, ClaimTableEntry>;
+
+export type ClaimField = keyof typeof CLAIM_TABLE;
+
+export function isClaimField(field: unknown): field is ClaimField {
+  return typeof field === "string" && Object.prototype.hasOwnProperty.call(CLAIM_TABLE, field);
+}

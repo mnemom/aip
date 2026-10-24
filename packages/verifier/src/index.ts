@@ -20,6 +20,27 @@ export { verifyCertificate } from "./verify.js";
 export { verify, verifyStatement, statementCommitment, statementDigest } from "./verify-record.js";
 export { STATEMENT_TYPES, BUNDLE_TYP, CARD_LINE_CLASSES, REASONS, FLAGS } from "./statements.js";
 
+// Claim table (T5), claim-lint (K1.17) and the render-estimate rule (T8).
+export {
+  CLAIM_CLASSES,
+  CLAIM_TABLE,
+  SURFACES,
+  CARD_SURFACES,
+  ESTIMATE_FORBIDDEN_SURFACES,
+  MODES,
+  MODE_VERBS,
+  GOAL_MODES,
+  isClaimField,
+} from "./claim-table.js";
+export { lintRendering, lintRenderings, LINT_RULES } from "./claim-lint.js";
+export {
+  estimateQualifies,
+  shouldRenderEstimate,
+  ESTIMATE_COUNTING_FLOOR_TOKENS,
+  ESTIMATE_DISQUALIFIERS,
+  RENDER_ESTIMATE_REASONS,
+} from "./render-estimate.js";
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -82,3 +103,12 @@ export type {
   StatementVerificationResult,
   RecordVerificationResult,
 } from "./statements.js";
+
+export type { ClaimClass, ClaimField, ClaimTableEntry, Surface, Mode, GoalMode } from "./claim-table.js";
+export type { RenderedLine, Rendering, LintRule, LintViolation, LintResult } from "./claim-lint.js";
+export type {
+  EstimateDescription,
+  EstimateDisqualifier,
+  EstimateQualification,
+  RenderEstimateDecision,
+} from "./render-estimate.js";
