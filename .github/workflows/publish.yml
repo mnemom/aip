@@ -135,6 +135,97 @@ jobs:
       npm-directory: packages/typescript
       tag: latest
 
+  # ── Release-triggered: @mnemom/aip-verifier → dist-tag `next` ONLY (MNE-9044) ──
+  #
+  # The verifier is pre-GA. It publishes with `--tag next` and never `latest`;
+  # promoting to `latest` is a separate, human `npm dist-tag add`. Three layers:
+  #   1. verifier-guard refuses any tag but `next` (script + its test) and is the
+  #      ONLY source of the tag handed to the reusable publish below.
+  #   2. verifier-test re-runs the verifier CI gates (ci.yml `verifier` job) and
+  #      a `npm publish --dry-run --tag next` before anything is published.
+  #   3. verify-verifier-dist-tag fails the run if `latest` points at the
+  #      version just published.
+  # Not wired into workflow_dispatch: dispatch-publish-npm stays typescript-only.
+
+  verifier-guard:
+    permissions:
+      contents: read
+    if: github.event_name == 'release'
+    name: Verifier dist-tag guard
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.guard.outputs.tag }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+      - name: Guard script self-test
+        run: .github/scripts/check-npm-dist-tag.test.sh
+      - name: Refuse any dist-tag but next
+        id: guard
+        env:
+          VERIFIER_NPM_TAG: next
+        run: |
+          .github/scripts/check-npm-dist-tag.sh "$VERIFIER_NPM_TAG"
+          echo "tag=$VERIFIER_NPM_TAG" >> "$GITHUB_OUTPUT"
+
+  verifier-test:
+    permissions:
+      contents: read
+    if: github.event_name == 'release'
+    name: Verifier CI gates + publish dry-run
+    needs: [verifier-guard]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/verifier
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v6
+        with:
+          node-version: "24"
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm test
+      - name: Publish dry-run (tag next)
+        env:
+          NPM_TAG: ${{ needs.verifier-guard.outputs.tag }}
+        run: npm publish --dry-run --access public --tag "$NPM_TAG"
+
+  publish-npm-verifier:
+    name: Publish @mnemom/aip-verifier (next)
+    needs: [verifier-guard, verifier-test]
+    if: github.event_name == 'release'
+    permissions:
+      contents: write   # for SBOM attach to GitHub Release
+      id-token: write   # for npm OIDC Trusted Publisher + provenance
+    # Same reusable + pin as publish-npm above (ADR-020). aip is a PUBLIC repo,
+    # so provenance (default true in the reusable) is accepted by npm.
+    uses: mnemom/.github/.github/workflows/npm-publish.yml@3b60e34e88113070235f2d55248a3455295be153
+    with:
+      npm-directory: packages/verifier
+      tag: ${{ needs.verifier-guard.outputs.tag }}
+      provenance: true
+
+  verify-verifier-dist-tag:
+    permissions:
+      contents: read
+    name: Verify verifier is not on latest
+    needs: [publish-npm-verifier]
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+      - name: Fail if latest points at the published verifier version
+        run: |
+          PKG_NAME=$(node -p "require('./packages/verifier/package.json').name")
+          PKG_VERSION=$(node -p "require('./packages/verifier/package.json').version")
+          LATEST=$(npm view "$PKG_NAME" dist-tags.latest 2>/dev/null || echo "")
+          echo "$PKG_NAME dist-tags.latest='${LATEST}' (this release: $PKG_VERSION)"
+          if [ "$LATEST" = "$PKG_VERSION" ]; then
+            echo "ERROR: $PKG_NAME@$PKG_VERSION is tagged latest; verifier must be next-only" >&2
+            exit 1
+          fi
+
   # ── Orchestrator dispatch publishing ──
   #
   # Both jobs fire in parallel on every main push. Each one's skip-on-existing
