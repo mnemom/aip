@@ -498,10 +498,10 @@ describe("builder line shape (M6, M7)", () => {
     expect(lines.map((l) => l.text)).toEqual(sealedLines.map((l) => l.text));
     expect(lines[2]).toMatchObject({ key: "goal.mode", goal_mode: "sealed" });
     expect(lines[3]).toMatchObject({ key: "goal.verdict", goal_mode: "sealed" });
-    expect(lines[3].mode).toBeUndefined();
+    expect(lines[3]!.mode).toBeUndefined();
     expect(lines[4]).toMatchObject({ mode: "enforce", verdict: "block", tool_name: "Bash" });
     expect(lines[5]).toMatchObject({ mode: "observe", verdict: "warn" });
-    expect(lines[5].tool_name).toBeUndefined();
+    expect(lines[5]!.tool_name).toBeUndefined();
     expect(lines[6]).toMatchObject({ key: "protection.act.2", mode: "enforce", verdict: "warn", tool_name: "Write" });
     expect(lines[7]).toMatchObject({ key: "protection.act.3", mode: "nudge", verdict: "warn", tool_name: "Edit" });
     expect(lines[8]).toMatchObject({ key: "protection.act.5", mode: "enforce", verdict: "quarantine", tool_name: "Bash" });

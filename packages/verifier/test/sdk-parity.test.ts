@@ -133,7 +133,7 @@ afterEach(() => {
 
 describe("K4.5 parity with @mnemom/sdk: key material", () => {
   it("the golden JWKS is a JWKS the SDK accepts without translation", () => {
-    // vitest does not typecheck test files; the runtime shape check below is what holds.
+    // Type-level parity: `npm run typecheck` compiles this file (tsconfig.test.json); the checks below are the runtime half.
     const keys: Jwk[] = jwks.keys;
     expect(keys).toHaveLength(1);
     expect(keys[0]).toMatchObject({ kty: "OKP", crv: "Ed25519", alg: "EdDSA", kid: TEST_KID });
