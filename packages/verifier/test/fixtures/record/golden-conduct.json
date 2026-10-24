@@ -1,10 +1,10 @@
 {
   "typ": "AAP-ConductRecord/v1",
   "signing_key_id": "aap-test-record-2026-10",
-  "issued_at": "2026-10-23T18:30:00.000Z",
-  "prev_digest": "b9e85d204759eaa2102df6651fd1afba07dd7aa45acfd0c50d5d01ca2a0e8268",
+  "built_at": "2026-10-23T18:30:00.000Z",
+  "previous_digest": "1b158a699d78ff6b7f91c408cdc33a49a9a48d1891e1267fa83244fd958b625f",
   "unit_kind": "pull_request",
-  "conversation_id": "conv_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "lineage_key": "conv_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   "goal": {
     "mode": "sealed",
     "contract_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
@@ -27,8 +27,9 @@
       "checkpoint_id": "cp_bound",
       "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
       "combined_commitment": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
-      "commitment_signature": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      "commitment_signature": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "commitment_key_id": "aap-prod-2026-05-23"
     }
   ],
-  "signature": "zij7KjZXLYUahY88A6WYW7KLDIDy6zFQXPqDUp-nlY1C4IruZ94khA3Z0q2I0GP5LH6vmXkU1_uNU5yMJNtzAA"
+  "signature": "1sBROjG_4iI4zXtNnRbfSK0G-iW73WmkYZx93AnfdTtSJf4ZJZ2PSYW0caAwE_LEz2XnCCoMp68M8d4PSwUEBw"
 }

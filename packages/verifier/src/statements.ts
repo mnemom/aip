@@ -8,7 +8,7 @@
  *   `kid` of an Ed25519 key in the published JWKS) and a detached `signature`:
  *   base64url Ed25519 over `canonicalJson(statement minus signature)`.
  * - Statements link by digest. A statement's digest is the lowercase sha256
- *   hex of that same canonical commitment. `prev_digest` points at the
+ *   hex of that same canonical commitment. `previous_digest` points at the
  *   previous build of the same record; a PR record lists the conduct records
  *   it rolls up; an outcome and a share card name the statement they derive
  *   from.
@@ -65,9 +65,11 @@ export interface SignedStatementBase {
   /** Optional, must equal `EdDSA` when present. */
   alg?: string;
   /** ISO 8601 time the statement was built. */
-  issued_at?: string;
+  built_at?: string;
   /** Digest of the previous build of this record, or null for the first build (T2). */
-  prev_digest?: string | null;
+  previous_digest?: string | null;
+  /** `kid` of the key that made `commitment_signature`, or null when the attestation failed open. */
+  commitment_key_id?: string | null;
   /** Generic unit the statement is about, e.g. `pull_request`. */
   unit_kind?: string;
   [k: string]: unknown;
@@ -87,8 +89,8 @@ export interface CheckpointCitation {
 
 export interface ConductRecordStatement extends SignedStatementBase {
   typ: "AAP-ConductRecord/v1";
-  /** Conversation lineage the record is keyed on (T1). */
-  conversation_id?: string;
+  /** Lineage the record is keyed on (T1), e.g. a conversation id. */
+  lineage_key?: string;
   checkpoints?: CheckpointCitation[];
 }
 

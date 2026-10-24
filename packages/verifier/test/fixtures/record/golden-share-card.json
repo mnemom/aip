@@ -1,8 +1,8 @@
 {
   "typ": "AAP-ShareCard/v1",
   "signing_key_id": "aap-test-record-2026-10",
-  "issued_at": "2026-10-30T20:00:00.000Z",
-  "source_digest": "b4db5cda267b1492861200664a41239b0c8a47563d26fe104762e4ced63d83ea",
+  "built_at": "2026-10-30T20:00:00.000Z",
+  "source_digest": "870ecc1d33ff05f86405e32e4206e32ccb2d705cfa07b7e3220ec187327225d0",
   "lines": [
     {
       "class": "measured",
@@ -21,5 +21,5 @@
       "text": "Accepted, no revert in 7 days"
     }
   ],
-  "signature": "wLe1aE12G5vKBEfJmIKd0LmNg0YVJ28vSrfOhNNPY-5c7H_yqbBzk0WPs6mrgBRZS_CPcTqZU0xdbmZKLDREDA"
+  "signature": "NUsOxHTh--gbOcz-FkMPlIxbKHbhkqSkipmkXSSRqEYf7oW0b30XCDnFTreM4QlFhpkYuvCIlKac_UAY63HDDw"
 }

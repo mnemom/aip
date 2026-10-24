@@ -32,10 +32,10 @@ export async function buildFixtures(): Promise<Record<string, unknown>> {
   const conduct1 = await signStatement({
     typ: "AAP-ConductRecord/v1",
     signing_key_id: TEST_KID,
-    issued_at: ISSUED,
-    prev_digest: null,
+    built_at: ISSUED,
+    previous_digest: null,
     unit_kind: "pull_request",
-    conversation_id: "conv_" + "a".repeat(32),
+    lineage_key: "conv_" + "a".repeat(32),
     goal: { mode: "sealed", contract_sha256: H("1"), canon_node_id: "node_" + "b".repeat(16), seal_version: 1 },
     cost: { model_cost_millimu: 412000, mu_millimu: 16480, mu_rate_bps: 400, currency_fixed_at: ISSUED },
     messages_from_person: { count: 3, classifier: "claude-code" },
@@ -46,16 +46,17 @@ export async function buildFixtures(): Promise<Record<string, unknown>> {
         card_hash: H("c"),
         combined_commitment: H("d"),
         commitment_signature: "e".repeat(86),
+        commitment_key_id: "aap-prod-2026-05-23",
       },
-      { checkpoint_id: "cp_no_card_hash", card_hash: null, combined_commitment: H("d"), commitment_signature: "e".repeat(86) },
-      { checkpoint_id: "cp_unbound", card_hash: H("c"), combined_commitment: null, commitment_signature: null },
+      { checkpoint_id: "cp_no_card_hash", card_hash: null, combined_commitment: H("d"), commitment_signature: "e".repeat(86), commitment_key_id: "aap-prod-2026-05-23" },
+      { checkpoint_id: "cp_unbound", card_hash: H("c"), combined_commitment: null, commitment_signature: null, commitment_key_id: null },
     ],
   });
 
   const conduct2 = await signStatement({
     ...conduct1,
-    prev_digest: statementDigest(conduct1),
-    issued_at: "2026-10-23T18:30:00.000Z",
+    previous_digest: statementDigest(conduct1),
+    built_at: "2026-10-23T18:30:00.000Z",
     cost: { model_cost_millimu: 530000, mu_millimu: 21200, mu_rate_bps: 400, currency_fixed_at: ISSUED },
     checkpoints: conduct1.checkpoints.slice(0, 1),
   });
@@ -63,8 +64,8 @@ export async function buildFixtures(): Promise<Record<string, unknown>> {
   const pr = await signStatement({
     typ: "AAP-PRRecord/v1",
     signing_key_id: TEST_KID,
-    issued_at: "2026-10-23T19:00:00.000Z",
-    prev_digest: null,
+    built_at: "2026-10-23T19:00:00.000Z",
+    previous_digest: null,
     unit_kind: "pull_request",
     conduct_digests: [statementDigest(conduct2)],
     head_sha: "f".repeat(40),
@@ -75,7 +76,7 @@ export async function buildFixtures(): Promise<Record<string, unknown>> {
   const outcome = await signStatement({
     typ: "AAP-Outcome/v1",
     signing_key_id: TEST_KID,
-    issued_at: "2026-10-30T19:00:00.000Z",
+    built_at: "2026-10-30T19:00:00.000Z",
     unit_kind: "pull_request",
     pr_record_digest: statementDigest(pr),
     merge_sha: "0".repeat(40),
@@ -86,7 +87,7 @@ export async function buildFixtures(): Promise<Record<string, unknown>> {
   const card = await signStatement({
     typ: "AAP-ShareCard/v1",
     signing_key_id: TEST_KID,
-    issued_at: "2026-10-30T20:00:00.000Z",
+    built_at: "2026-10-30T20:00:00.000Z",
     source_digest: statementDigest(pr),
     lines: [
       { class: "measured", text: "3 of 4 commits from recorded sessions" },
