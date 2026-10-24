@@ -29,6 +29,8 @@ export {
   ESTIMATE_FORBIDDEN_SURFACES,
   MODES,
   MODE_VERBS,
+  PROTECTION_VERDICTS,
+  protectionVerb,
   GOAL_MODES,
   isClaimField,
   LINE_KEY_FIELDS,
@@ -106,7 +108,7 @@ export type {
   RecordVerificationResult,
 } from "./statements.js";
 
-export type { ClaimClass, ClaimField, ClaimTableEntry, Surface, Mode, GoalMode } from "./claim-table.js";
+export type { ClaimClass, ClaimField, ClaimTableEntry, Surface, Mode, GoalMode, ProtectionVerdict } from "./claim-table.js";
 export type {
   RenderedLine,
   Rendering,

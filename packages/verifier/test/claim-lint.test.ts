@@ -1,4 +1,7 @@
 import { describe, it, expect } from "vitest";
+import { REASONS } from "../src/statements.js";
+import { verifyStatement } from "../src/verify-record.js";
+import { TEST_KID, signStatement, testJwks } from "./helpers/sign.js";
 import {
   lintRendering,
   lintRenderings,
@@ -8,7 +11,7 @@ import {
   type RenderedLine,
   type StatementLine,
 } from "../src/claim-lint.js";
-import { CLAIM_TABLE, CLAIM_CLASSES, SURFACES, MODE_VERBS, isClaimField, fieldForLineKey } from "../src/claim-table.js";
+import { CLAIM_TABLE, CLAIM_CLASSES, SURFACES, MODE_VERBS, MODES, PROTECTION_VERDICTS, isClaimField, fieldForLineKey, protectionVerb } from "../src/claim-table.js";
 
 const cov = { judged: 12, total: 12 };
 
@@ -37,6 +40,7 @@ function cleanRecordPage(): Rendering {
         class: "verdict",
         text: "protection: stopped Bash, 12 of 12 judged",
         mode: "enforce",
+        verdict: "block",
         tool_name: "Bash",
         tool_arguments: { command: "rm -rf /tmp/x" },
         coverage: cov,
@@ -65,6 +69,15 @@ describe("claim table", () => {
     expect(CLAIM_TABLE.protection.verb_by_mode).toBe(true);
     expect(MODE_VERBS).toEqual({ off: "not checked", observe: "flagged", nudge: "flagged, agent nudged", enforce: "stopped" });
   });
+  it("derives a protection act's verb from its mode and verdict, as mnemom-api protectionVerb does", () => {
+    const table = Object.fromEntries(MODES.map((m) => [m, Object.fromEntries(PROTECTION_VERDICTS.map((v) => [v, protectionVerb(m, v)]))]));
+    expect(table).toEqual({
+      off: { pass: null, warn: null, nudge: null, quarantine: null, block: null },
+      observe: { pass: null, warn: "flagged", nudge: "flagged", quarantine: "flagged", block: "flagged" },
+      nudge: { pass: null, warn: "flagged", nudge: "flagged, agent nudged", quarantine: "flagged", block: "flagged" },
+      enforce: { pass: null, warn: "flagged", nudge: "flagged", quarantine: "stopped", block: "stopped" },
+    });
+  });
   it("keeps the estimate off cards and PR comments", () => {
     expect(CLAIM_TABLE.savings_estimate.surfaces).toEqual(["record_page", "check_summary"]);
   });
@@ -86,7 +99,7 @@ describe("lintRendering: clean renderings pass", () => {
       surface: "share_card",
       lines: [
         { field: "commits_recorded", class: "measured", text: "14 commits recorded" },
-        { field: "protection", class: "verdict", text: "protection: stopped 1, 12 of 12 judged", mode: "enforce", tool_name: "Bash", coverage: cov },
+        { field: "protection", class: "verdict", text: "protection: stopped 1, 12 of 12 judged", mode: "enforce", verdict: "block", tool_name: "Bash", coverage: cov },
         { field: "outcome", class: "outcome", text: "merged, not reverted" },
       ],
     };
@@ -151,7 +164,7 @@ describe("lintRendering: each rule rejects", () => {
     ["protection", "protection: stopped Bash (12 USD)", undefined],
   ])("money_on_goal_or_protection: %s %s", (field, text, goal_mode) => {
     const r = rules(
-      base({ field, class: "verdict", text, mode: field === "goal" ? "observe" : "enforce", goal_mode, tool_name: "Bash", coverage: cov }),
+      base({ field, class: "verdict", text, mode: field === "goal" ? "observe" : "enforce", verdict: field === "goal" ? undefined : "block", goal_mode, tool_name: "Bash", coverage: cov }),
     );
     expect(r).toContain(LINT_RULES.money_on_goal_or_protection);
   });
@@ -182,14 +195,27 @@ describe("lintRendering: each rule rejects", () => {
     }
   });
   it.each([
-    ["observe", "protection: stopped Bash"],
-    ["nudge", "protection: flagged"],
-    ["nudge", "protection: stopped"],
-    ["enforce", "protection: flagged Bash"],
-    ["enforce", "protection: flagged, agent nudged"],
-    ["off", "protection: flagged"],
-  ] as const)("verb_mismatch: mode %s text %s", (mode, text) => {
-    const r = rules(base({ field: "protection", class: "verdict", text, mode, tool_name: "Bash", coverage: cov }));
+    ["observe", "warn", "protection: stopped Bash"],
+    ["observe", undefined, "protection: flagged, agent nudged"],
+    ["nudge", "nudge", "protection: flagged"],
+    ["nudge", "warn", "protection: flagged, agent nudged"],
+    ["nudge", "block", "protection: stopped"],
+    ["enforce", "block", "protection: flagged"],
+    ["enforce", "quarantine", "protection: flagged, agent nudged"],
+    ["enforce", "warn", "protection: stopped Bash"],
+    ["enforce", "nudge", "protection: flagged, agent nudged"],
+    // A tool name follows "stopped" only.
+    ["enforce", "warn", "protection: flagged Bash"],
+    ["nudge", "warn", "protection: flagged Bash"],
+    // nudge and enforce each have two verbs, so the verdict decides; without it the line cannot pass.
+    ["enforce", undefined, "protection: stopped Bash"],
+    ["nudge", undefined, "protection: flagged, agent nudged"],
+    // A pass produces no line, and an unknown verdict no verb.
+    ["enforce", "pass", "protection: flagged"],
+    ["enforce", "allow", "protection: flagged"],
+    ["off", undefined, "protection: flagged"],
+  ] as const)("verb_mismatch: mode %s verdict %s text %s", (mode, verdict, text) => {
+    const r = rules(base({ field: "protection", class: "verdict", text, mode, verdict: verdict as never, tool_name: "Bash", coverage: cov }));
     expect(r).toContain(LINT_RULES.verb_mismatch);
   });
   it("verb_mismatch: unknown mode", () => {
@@ -198,28 +224,39 @@ describe("lintRendering: each rule rejects", () => {
   });
   it("verb accepted when it matches the mode", () => {
     const cases = [
-      ["observe", "protection: flagged 2 of 12 judged"],
-      ["nudge", "protection: flagged, agent nudged; 12 of 12 judged"],
-      ["enforce", "protection: stopped Bash; 12 of 12 judged"],
+      ["observe", undefined, "protection: flagged 2 of 12 judged"],
+      ["observe", "block", "protection: flagged"],
+      ["nudge", "nudge", "protection: flagged, agent nudged; 12 of 12 judged"],
+      ["nudge", "warn", "protection: flagged"],
+      ["nudge", "block", "protection: flagged"],
+      ["enforce", "block", "protection: stopped Bash; 12 of 12 judged"],
+      ["enforce", "quarantine", "protection: stopped Bash"],
+      ["enforce", "warn", "protection: flagged"],
+      ["enforce", "nudge", "protection: flagged"],
     ] as const;
-    for (const [mode, text] of cases) {
-      expect(rules(base({ field: "protection", class: "verdict", text, mode, tool_name: "Bash", coverage: cov }))).not.toContain(
-        LINT_RULES.verb_mismatch,
-      );
+    for (const [mode, verdict, text] of cases) {
+      expect(rules(base({ field: "protection", class: "verdict", text, mode, verdict, tool_name: "Bash", coverage: cov }))).toEqual([]);
     }
   });
   it("enforce_without_tool_name off-card", () => {
-    const r = rules(base({ field: "protection", class: "verdict", text: "protection: stopped 1", mode: "enforce", tool_name: "Bash", coverage: cov }));
+    const r = rules(base({ field: "protection", class: "verdict", text: "protection: stopped 1", mode: "enforce", verdict: "block", tool_name: "Bash", coverage: cov }));
     expect(r).toContain(LINT_RULES.enforce_without_tool_name);
-    const none = rules(base({ field: "protection", class: "verdict", text: "protection: stopped 1", mode: "enforce", coverage: cov }));
+    const none = rules(base({ field: "protection", class: "verdict", text: "protection: stopped 1", mode: "enforce", verdict: "block", coverage: cov }));
     expect(none).toContain(LINT_RULES.enforce_without_tool_name);
+    // An enforce act that only warned reads "flagged" and names no tool.
+    const warned = rules(base({ field: "protection", class: "verdict", text: "flagged", mode: "enforce", verdict: "warn", tool_name: "Bash", coverage: cov }));
+    expect(warned).toEqual([]);
   });
   it("tool_name_on_card", () => {
     const r = rules(
-      base({ field: "protection", class: "verdict", text: "protection: stopped Bash", mode: "enforce", tool_name: "Bash", coverage: cov }, "share_card"),
+      base({ field: "protection", class: "verdict", text: "protection: stopped Bash", mode: "enforce", verdict: "block", tool_name: "Bash", coverage: cov }, "share_card"),
     );
     expect(r).toContain(LINT_RULES.tool_name_on_card);
     expect(r).not.toContain(LINT_RULES.enforce_without_tool_name);
+    const flagged = rules(
+      base({ field: "protection", class: "verdict", text: "flagged Edit", mode: "nudge", verdict: "warn", tool_name: "Edit", coverage: cov }, "share_card"),
+    );
+    expect(flagged).toEqual([LINT_RULES.tool_name_on_card]);
   });
   it("tool_arguments_shown", () => {
     const r = rules(
@@ -228,6 +265,7 @@ describe("lintRendering: each rule rejects", () => {
         class: "verdict",
         text: "protection: stopped Bash rm -rf /tmp/x",
         mode: "enforce",
+        verdict: "block",
         tool_name: "Bash",
         tool_arguments: { command: "rm -rf /tmp/x" },
         coverage: cov,
@@ -259,6 +297,15 @@ describe("lintRendering: each rule rejects", () => {
     expect(r).toContain(LINT_RULES.verdict_without_coverage);
     const bad = rules(base({ field: "goal", class: "verdict", text: "goal: flagged 0", mode: "observe", goal_mode: "sealed", coverage: { judged: 13, total: 12 } }));
     expect(bad).toContain(LINT_RULES.verdict_without_coverage);
+  });
+  it.each(["share_card", "period_card"] as const)("verdict_without_coverage: a card verdict line needs the coverage object (%s)", (surface) => {
+    // The builder's words are not enough on a card: `verify` reads the object only.
+    const words = rules(base({ class: "verdict", key: "goal.verdict", text: "3 of 4 judged turns on goal, 4 of 12 turns judged", goal_mode: "sealed" }, surface));
+    expect(words).toContain(LINT_RULES.verdict_without_coverage);
+    const act = rules(base({ class: "verdict", key: "protection.act.0", text: "flagged", mode: "observe", verdict: "warn" }, surface));
+    expect(act).toContain(LINT_RULES.verdict_without_coverage);
+    const covered = rules(base({ class: "verdict", key: "protection.act.0", text: "flagged", mode: "observe", verdict: "warn", coverage: cov }, surface));
+    expect(covered).not.toContain(LINT_RULES.verdict_without_coverage);
   });
   it.each(["estimate", "benchmark"] as const)("card_class_not_allowed: %s on a share card", (cls) => {
     const r = rules(base({ class: cls, text: "x" }, "share_card"));
@@ -390,14 +437,23 @@ describe("builder line shape (M6, M7)", () => {
     { class: "verdict", key: "goal.verdict", text: "3 of 4 judged turns on goal, 4 of 12 turns judged" },
     { class: "verdict", key: "protection.act.0", text: "stopped Bash" },
     { class: "verdict", key: "protection.act.1", text: "flagged" },
+    // mnemom-api protectionActLine: enforce + warn and nudge + warn read "flagged" with no tool
+    // name; act 4 passed and has no line; enforce + quarantine "stopped" names the tool.
+    { class: "verdict", key: "protection.act.2", text: "flagged" },
+    { class: "verdict", key: "protection.act.3", text: "flagged" },
+    { class: "verdict", key: "protection.act.5", text: "stopped Bash" },
     { class: "measured", key: "people.messages", text: "5 messages from a person" },
     { class: "measured", key: "context.compactions", text: "1 compactions" },
   ];
   const sealedGoal = { mode: "sealed" as const };
   const sealedProtection = {
     acts: [
-      { mode: "enforce" as const, tool_name: "Bash", verdict: "block" },
-      { mode: "observe" as const, tool_name: null, verdict: "warn" },
+      { mode: "enforce" as const, tool_name: "Bash", verdict: "block" as const },
+      { mode: "observe" as const, tool_name: null, verdict: "warn" as const },
+      { mode: "enforce" as const, tool_name: "Write", verdict: "warn" as const },
+      { mode: "nudge" as const, tool_name: "Edit", verdict: "warn" as const },
+      { mode: "enforce" as const, tool_name: "Read", verdict: "pass" as const },
+      { mode: "enforce" as const, tool_name: "Bash", verdict: "quarantine" as const },
     ],
   };
   const nudgeLines: StatementLine[] = [
@@ -437,34 +493,62 @@ describe("builder line shape (M6, M7)", () => {
     expect(CLAIM_TABLE.protection_mode.class).toBe("measured");
     expect(CLAIM_TABLE.goal.class).toBe("verdict");
   });
-  it("attachLineContext adds goal_mode, mode and tool_name without touching the text", () => {
+  it("attachLineContext adds goal_mode, mode, verdict and tool_name without touching the text", () => {
     const lines = attachLineContext(sealedLines, sealedGoal, sealedProtection);
     expect(lines.map((l) => l.text)).toEqual(sealedLines.map((l) => l.text));
     expect(lines[2]).toMatchObject({ key: "goal.mode", goal_mode: "sealed" });
     expect(lines[3]).toMatchObject({ key: "goal.verdict", goal_mode: "sealed" });
     expect(lines[3].mode).toBeUndefined();
-    expect(lines[4]).toMatchObject({ mode: "enforce", tool_name: "Bash" });
-    expect(lines[5]).toMatchObject({ mode: "observe" });
+    expect(lines[4]).toMatchObject({ mode: "enforce", verdict: "block", tool_name: "Bash" });
+    expect(lines[5]).toMatchObject({ mode: "observe", verdict: "warn" });
     expect(lines[5].tool_name).toBeUndefined();
-    const off = attachLineContext(offLines, { mode: "off" }, { acts: [{ mode: "off", tool_name: null }] });
+    expect(lines[6]).toMatchObject({ key: "protection.act.2", mode: "enforce", verdict: "warn", tool_name: "Write" });
+    expect(lines[7]).toMatchObject({ key: "protection.act.3", mode: "nudge", verdict: "warn", tool_name: "Edit" });
+    expect(lines[8]).toMatchObject({ key: "protection.act.5", mode: "enforce", verdict: "quarantine", tool_name: "Bash" });
+    const off = attachLineContext(offLines, { mode: "off" }, { acts: [{ mode: "off", verdict: "pass", tool_name: null }] });
     expect(off[2]).toMatchObject({ goal_mode: "off" });
     expect(off[3]).toMatchObject({ mode: "off" });
   });
   it.each([
     ["sealed, enforce, final µ", sealedLines, sealedGoal, sealedProtection],
-    ["implicit, nudge, pending µ", nudgeLines, { mode: "implicit" as const }, { acts: [{ mode: "nudge" as const, tool_name: "Edit" }] }],
-    ["off, not charged", offLines, { mode: "off" as const }, { acts: [{ mode: "off" as const, tool_name: null }] }],
+    ["implicit, nudge, pending µ", nudgeLines, { mode: "implicit" as const }, { acts: [{ mode: "nudge" as const, verdict: "nudge" as const, tool_name: "Edit" }] }],
+    ["off, not charged", offLines, { mode: "off" as const }, { acts: [{ mode: "off" as const, verdict: "pass" as const, tool_name: null }] }],
   ])("the builder's fixture lines pass on the record page: %s", (_name, lines, goal, protection) => {
     const r = lintRendering({ surface: "record_page", lines: attachLineContext(lines, goal, protection) });
     expect(r.violations).toEqual([]);
   });
-  it("the builder's card lines pass on a share card with the tool name dropped", () => {
-    const lines = attachLineContext(sealedLines, sealedGoal, sealedProtection).map((l) =>
-      l.key === "protection.act.0" ? { ...l, text: "stopped" } : l,
+  // A card renderer drops tool names (nameTools=false) and attaches each verdict line's coverage object.
+  const cardLines = (): RenderedLine[] =>
+    attachLineContext(sealedLines, sealedGoal, sealedProtection).map((l) => {
+      const text = l.text.startsWith("stopped ") ? "stopped" : l.text;
+      return l.class === "verdict" ? { ...l, text, coverage: { judged: 4, total: 12 } } : { ...l, text };
+    });
+  it("the builder's card lines pass on a share card with the tool name dropped and coverage attached", () => {
+    expect(lintRendering({ surface: "share_card", lines: cardLines() }).violations).toEqual([]);
+    const withName = attachLineContext(sealedLines, sealedGoal, sealedProtection).map((l) =>
+      l.class === "verdict" ? { ...l, coverage: { judged: 4, total: 12 } } : l,
     );
-    expect(lintRendering({ surface: "share_card", lines }).violations).toEqual([]);
-    const withName = attachLineContext(sealedLines, sealedGoal, sealedProtection);
     expect(rules({ surface: "share_card", lines: withName })).toContain(LINT_RULES.tool_name_on_card);
+    const uncovered = attachLineContext(sealedLines, sealedGoal, sealedProtection).map((l) =>
+      l.text.startsWith("stopped ") ? { ...l, text: "stopped" } : l,
+    );
+    expect(rules({ surface: "share_card", lines: uncovered })).toContain(LINT_RULES.verdict_without_coverage);
+  });
+  it("a share card the lint passes is one verify accepts, and a card it fails on coverage verify rejects", async () => {
+    const jwks = await testJwks();
+    const uncovered = cardLines().map((l) => (l.key === "protection.act.1" ? { ...l, coverage: undefined } : l));
+    const textOnly = cardLines().map((l) => (l.key === "goal.verdict" ? { ...l, coverage: undefined } : l));
+    for (const lines of [cardLines(), uncovered, textOnly]) {
+      const lintRules = rules({ surface: "share_card", lines });
+      const signed = await signStatement({
+        typ: "AAP-ShareCard/v1",
+        signing_key_id: TEST_KID,
+        lines: JSON.parse(JSON.stringify(lines)) as unknown[],
+      });
+      const res = await verifyStatement(signed, jwks);
+      expect(lintRules.includes(LINT_RULES.verdict_without_coverage)).toBe(res.reasons.includes(REASONS.card_verdict_without_coverage));
+      expect(lintRules.length === 0).toBe(res.valid);
+    }
   });
   it("reads a verdict's coverage from the builder's words, and still demands it", () => {
     const ok = rules(base({ class: "verdict", key: "goal.verdict", text: "3 of 4 judged turns on goal, 4 of 12 turns judged", goal_mode: "sealed" }));
@@ -475,8 +559,8 @@ describe("builder line shape (M6, M7)", () => {
     expect(inverted).toContain(LINT_RULES.verdict_without_coverage);
     const nulled = rules(base({ class: "verdict", key: "goal.verdict", text: "4 of 12 turns judged", goal_mode: "sealed", coverage: null }));
     expect(nulled).toContain(LINT_RULES.verdict_without_coverage);
-    // A protection act is one recorded decision; it has no coverage to show.
-    expect(rules(base({ class: "verdict", key: "protection.act.0", text: "flagged", mode: "observe" }))).toEqual([]);
+    // Off a card a protection act is one recorded decision; it has no coverage to show.
+    expect(rules(base({ class: "verdict", key: "protection.act.0", text: "flagged", mode: "observe", verdict: "warn" }))).toEqual([]);
     // A verdict line with no field at all still has to show it.
     expect(rules(base({ class: "verdict", text: "held" }))).toContain(LINT_RULES.verdict_without_coverage);
   });
@@ -487,7 +571,9 @@ describe("builder line shape (M6, M7)", () => {
     expect(rules(base({ class: "measured", key: "context.compactions", text: "$1 compactions" }))).toContain(LINT_RULES.one_class_per_line);
     expect(rules(base({ class: "measured", key: "goal.mode", text: "sealed contract", goal_mode: "implicit" }))).toContain(LINT_RULES.implicit_goal_sealed);
     expect(rules(base({ class: "measured", key: "goal.mode", text: "implicit goal", goal_mode: "off" }))).toContain(LINT_RULES.goal_off_not_checked);
-    expect(rules(base({ class: "verdict", key: "protection.act.0", text: "flagged", mode: "enforce" }))).toContain(LINT_RULES.verb_mismatch);
+    expect(rules(base({ class: "verdict", key: "protection.act.0", text: "flagged", mode: "enforce", verdict: "block" }))).toContain(LINT_RULES.verb_mismatch);
+    expect(rules(base({ class: "verdict", key: "protection.act.0", text: "flagged", mode: "enforce", verdict: "warn" }))).toEqual([]);
+    expect(rules(base({ class: "verdict", key: "protection.act.0", text: "flagged", mode: "nudge", verdict: "warn" }))).toEqual([]);
   });
   it("an explicit field wins over the key", () => {
     const r = rules(base({ field: "compactions", class: "measured", key: "goal.mode", text: "1 compactions" }));

@@ -9,8 +9,9 @@
  * - A line is exactly one class. "Safe", "correct" and "prevented" never appear.
  * - No protection or goal line carries a dollar figure.
  * - An implicit goal line never says "sealed"; goals off read "not checked".
- * - The verb comes from the area's mode at the time of the act. Enforce shows
- *   the tool name and never its arguments; on a card, no tool name at all.
+ * - The verb comes from the area's mode at the time of the act and, for a
+ *   protection act, its verdict. "Stopped" shows the tool name and never its
+ *   arguments; on a card, no tool name at all.
  * - Cards carry measured, outcome and covered verdict lines only. Estimates
  *   and savings never appear on a card or a PR comment (T8).
  * - No benchmark line ships until the head-to-head is published with its
@@ -33,13 +34,35 @@ export const ESTIMATE_FORBIDDEN_SURFACES: readonly Surface[] = ["pr_comment", "s
 export const MODES = ["off", "observe", "nudge", "enforce"] as const;
 export type Mode = (typeof MODES)[number];
 
-/** The verb each mode produces. `off` produces no line, or "not checked". */
+/**
+ * The verb each mode produces at its strongest verdict. `off` produces no line, or
+ * "not checked". A protection act's verb also depends on its verdict: see
+ * `protectionVerb`.
+ */
 export const MODE_VERBS: Record<Mode, string> = {
   off: "not checked",
   observe: "flagged",
   nudge: "flagged, agent nudged",
   enforce: "stopped",
 };
+
+/** A protection act's verdict, as stored at the act (mnemom-api `ProtectionVerdict`). */
+export const PROTECTION_VERDICTS = ["pass", "warn", "nudge", "quarantine", "block"] as const;
+export type ProtectionVerdict = (typeof PROTECTION_VERDICTS)[number];
+
+/**
+ * The verb one protection act produces, from the mode and verdict stored at the act; null
+ * means the act has no line (mode off, or a pass). Mirrors mnemom-api
+ * `src/record/claims.ts` `protectionVerb`: under enforce only a block or quarantine
+ * "stopped" anything and anything else is "flagged"; under nudge only a nudge verdict
+ * reads "flagged, agent nudged".
+ */
+export function protectionVerb(mode: Mode, verdict: ProtectionVerdict): string | null {
+  if (mode === "off" || verdict === "pass") return null;
+  if (mode === "observe") return MODE_VERBS.observe;
+  if (mode === "nudge") return verdict === "nudge" ? MODE_VERBS.nudge : MODE_VERBS.observe;
+  return verdict === "block" || verdict === "quarantine" ? MODE_VERBS.enforce : MODE_VERBS.observe;
+}
 
 /** How the goal was set. An implicit goal is never read as sealed (T16). */
 export const GOAL_MODES = ["sealed", "implicit", "off"] as const;
