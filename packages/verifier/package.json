@@ -1,7 +1,7 @@
 {
   "name": "@mnemom/aip-verifier",
   "version": "0.5.0",
-  "description": "Offline verification of AIP integrity certificates — Ed25519 signatures, chain hashes, and Merkle proofs",
+  "description": "Offline verification of AIP integrity certificates \u2014 Ed25519 signatures, chain hashes, and Merkle proofs",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -15,6 +15,16 @@
       "require": {
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
+      }
+    },
+    "./render-lines": {
+      "import": {
+        "types": "./dist/render-lines.d.ts",
+        "default": "./dist/render-lines.js"
+      },
+      "require": {
+        "types": "./dist/render-lines.d.cts",
+        "default": "./dist/render-lines.cjs"
       }
     }
   },
