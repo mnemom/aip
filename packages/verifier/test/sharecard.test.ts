@@ -126,3 +126,74 @@ describe("typ pinning", () => {
     expect(b64url(new Uint8Array([251, 255]))).toBe("-_8");
   });
 });
+
+describe("hardening (MNE-9022 review findings 1-4)", () => {
+  const verifySigned = async (mutate: (c: any) => void) => {
+    const c: any = baseCard();
+    mutate(c);
+    return verifyShareCard(await signWithTestKey(c), { publicKey: await testPublicKeyHex() });
+  };
+  const rejects = async (mutate: (c: any) => void, needle: string) => {
+    const r = await verifySigned(mutate);
+    expect(r.valid).toBe(false);
+    expect(r.lines).toEqual([]);
+    expect(r.errors.join("\n")).toContain(needle);
+  };
+
+  it("rejects non-opaque card_id and line ids", async () => {
+    await rejects((c) => (c.card_id = "feat/internal-thing"), "card_id");
+    await rejects((c) => (c.card_id = "Card-UPPER"), "card_id");
+    await rejects((c) => (c.card_id = "a".repeat(65)), "card_id");
+    await rejects((c) => (c.lines[0].id = "mnemom/secret"), "lines[0].id");
+    await rejects((c) => (c.lines[0].id = ""), "lines[0].id");
+  });
+  it("rejects labels that carry repo paths, '#', URLs or are too long", async () => {
+    await rejects((c) => (c.lines[0].label = "mnemom/secret-repo PR: Fix customer X outage"), "label");
+    await rejects((c) => (c.lines[0].label = "Issue #1234"), "label");
+    await rejects((c) => (c.lines[0].label = "see https://example.com"), "label");
+    await rejects((c) => (c.lines[0].label = "www.example.com"), "label");
+    await rejects((c) => (c.lines[0].label = "a".repeat(41)), "label");
+    await rejects((c) => (c.lines[0].label = ""), "label");
+  });
+  it("rejects a non-canonical or wrong-length signature", async () => {
+    const pk = await testPublicKeyHex();
+    const valid = read("valid.json");
+    expect(valid.signature).toHaveLength(86);
+    // Last char flipped to another char with the same decoded bytes (trailing bits ignored by atob).
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+    const last = valid.signature.slice(-1);
+    const idx = alphabet.indexOf(last);
+    const sibling = alphabet[idx ^ 1]!; // differs only in the low (unused) bit
+    expect(sibling).not.toBe(last);
+    const r = await verifyShareCard({ ...valid, signature: valid.signature.slice(0, -1) + sibling }, { publicKey: pk });
+    expect(r.valid).toBe(false);
+    expect(r.errors.join("\n")).toContain("signature");
+    for (const bad of [valid.signature.slice(0, -1), valid.signature + "A", valid.signature + "=="]) {
+      expect((await verifyShareCard({ ...valid, signature: bad }, { publicKey: pk })).valid).toBe(false);
+    }
+  });
+  it("rejects a non-strict issued_at", async () => {
+    for (const bad of ["1", "October 5", "2026-10-08", "2026-10-08T00:00:00", "2026-13-08T00:00:00Z", "2026-02-30T00:00:00Z", "2026-10-08T24:00:00Z", "2026-10-08 00:00:00Z"]) {
+      await rejects((c) => (c.issued_at = bad), "issued_at");
+    }
+  });
+  it("accepts RFC 3339 issued_at with offset", async () => {
+    expect((await verifySigned((c) => (c.issued_at = "2026-10-08T01:02:03+05:30"))).valid).toBe(true);
+  });
+  it("rejects impossible period dates and start > end", async () => {
+    await rejects((c) => (c.period.start = "2026-13-45"), "period.start");
+    await rejects((c) => (c.period.end = "2026-02-30"), "period.end");
+    await rejects((c) => (c.period = { start: "2026-10-07", end: "2026-10-01" }), "start must be <= end");
+    expect((await verifySigned((c) => (c.period = { start: "2026-10-07", end: "2026-10-07" }))).valid).toBe(true);
+  });
+  it("rejects unknown statement typ", async () => {
+    await rejects((c) => (c.statements[0].typ = "anything"), "statements[0].typ");
+    await rejects((c) => (c.statements[0].typ = "mnemom/secret-repo"), "statements[0].typ");
+  });
+  it("rejects a statement no line references", async () => {
+    await rejects((c) => c.statements.push({ typ: "AAP-Statement/v1", hash: "9".repeat(64) }), "not referenced by any line");
+  });
+  it("rejects duplicate line ids", async () => {
+    await rejects((c) => (c.lines[1].id = c.lines[0].id), "duplicate line id");
+  });
+});
