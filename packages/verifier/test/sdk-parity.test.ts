@@ -13,9 +13,11 @@
  *      the SDK's `JwksClient`, and a token signed with the golden test key
  *      verifies there, so the public key the verifier trusts is the one the
  *      SDK trusts (same kid, same `x`, same Ed25519-only gate).
- *   2. Digests. For every golden statement, the `content_hash` the SDK
- *      attests is the digest this verifier computes, byte for byte, and both
- *      equal the committed golden verdict.
+ *   2. Digests. For every golden statement the verifier computes the
+ *      committed golden digest offline, and the SDK verifies an attestation
+ *      carrying that digest under the golden key. The SDK never computes or
+ *      checks `content_hash` itself, so digest equality is pinned against the
+ *      committed golden verdicts, not against the SDK.
  *   3. Rejections. Every tampered golden case that lives on the signature
  *      path (wrong alg, unknown key, bad or malformed or missing signature)
  *      is rejected by both, with the verifier's reason being the committed
@@ -131,7 +133,8 @@ afterEach(() => {
 
 describe("K4.5 parity with @mnemom/sdk: key material", () => {
   it("the golden JWKS is a JWKS the SDK accepts without translation", () => {
-    const keys: Jwk[] = jwks.keys; // compiles only if the shapes agree
+    // vitest does not typecheck test files; the runtime shape check below is what holds.
+    const keys: Jwk[] = jwks.keys;
     expect(keys).toHaveLength(1);
     expect(keys[0]).toMatchObject({ kty: "OKP", crv: "Ed25519", alg: "EdDSA", kid: TEST_KID });
   });
@@ -147,7 +150,7 @@ describe("K4.5 parity with @mnemom/sdk: key material", () => {
 
 describe("K4.5 parity with @mnemom/sdk: golden digests", () => {
   for (const [name, key] of GOLDEN) {
-    it(`${name}: SDK content_hash == verifier digest == golden verdict`, async () => {
+    it(`${name}: verifier digest == golden verdict, and the SDK verifies an attestation over it`, async () => {
       const statement = fixture<Record<string, unknown>>(name);
       const expected = verdicts.digests[key];
       expect(expected).toMatch(/^[0-9a-f]{64}$/);
@@ -158,30 +161,21 @@ describe("K4.5 parity with @mnemom/sdk: golden digests", () => {
       expect(res.valid).toBe(true);
       expect(res.statements[0]?.digest).toBe(expected);
 
-      // SDK side: the same key verifies an attestation over that digest.
+      // SDK side: the golden key verifies an attestation carrying that digest.
       const { client } = sdkClient();
-      const token = await attest(statement);
-      const [, payloadB64] = token.split(".");
-      const payload = JSON.parse(Buffer.from(payloadB64!, "base64url").toString("utf8")) as {
-        content_hash: string;
-      };
-      expect(payload.content_hash).toBe(expected);
-      expect(await client.verify(token)).toEqual({ ok: true, keyId: TEST_KID });
+      expect(await client.verify(await attest(statement))).toEqual({ ok: true, keyId: TEST_KID });
     });
   }
 
-  it("the golden bundle's statements carry the digests the SDK would attest, in order", async () => {
+  it("the golden bundle's statements carry the golden digests in order, and each attests in the SDK", async () => {
     const bundle = fixture<{ statements: Record<string, unknown>[] }>("golden-bundle");
     const res = await verify(bundle, jwks);
     expect(res.valid).toBe(true);
     const expected = ["conduct1", "conduct2", "pr", "outcome", "card"].map((k) => verdicts.digests[k]);
     expect(res.statements.map((s) => s.digest)).toEqual(expected);
-    for (const [i, statement] of bundle.statements.entries()) {
-      const [, p] = (await attest(statement)).split(".");
-      const { content_hash } = JSON.parse(Buffer.from(p!, "base64url").toString("utf8")) as {
-        content_hash: string;
-      };
-      expect(content_hash).toBe(expected[i]);
+    const { client } = sdkClient();
+    for (const statement of bundle.statements) {
+      expect(await client.verify(await attest(statement))).toEqual({ ok: true, keyId: TEST_KID });
     }
   });
 });
