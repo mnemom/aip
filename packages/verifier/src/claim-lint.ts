@@ -79,7 +79,7 @@ export interface RenderedLine {
   tool_name?: string;
   /** Never rendered; present here only so the lint can prove it is absent from the text. */
   tool_arguments?: unknown;
-  /** "N of M judged"; required on a verdict line. */
+  /** "N of M judged". Required on every verdict line on a card; off a card a goal verdict may say it in words instead. */
   coverage?: { judged: number; total: number } | null;
   [k: string]: unknown;
 }
