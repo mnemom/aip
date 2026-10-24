@@ -1,0 +1,48 @@
+{
+  "typ": "AAP-ShareCard/v1",
+  "card_id": "card-period-0001",
+  "period": {
+    "start": "2026-10-01",
+    "end": "2026-10-07"
+  },
+  "issued_at": "2026-10-08T00:00:00.000Z",
+  "signing_key_id": "test-sharecard-key-1",
+  "statements": [
+    {
+      "typ": "AAP-Statement/v1",
+      "hash": "1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "typ": "AAP-Statement/v1",
+      "hash": "2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    {
+      "typ": "AAP-Statement/v1",
+      "hash": "3333333333333333333333333333333333333333333333333333333333333333"
+    }
+  ],
+  "lines": [
+    {
+      "id": "l1",
+      "kind": "count",
+      "label": "Changes reviewed",
+      "value": 42,
+      "statement_hash": "1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "id": "l2",
+      "kind": "count",
+      "label": "Checks passed",
+      "value": 40,
+      "statement_hash": "2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    {
+      "id": "l3",
+      "kind": "revert",
+      "label": "Changes reverted",
+      "value": 2,
+      "statement_hash": "3333333333333333333333333333333333333333333333333333333333333333"
+    }
+  ],
+  "signature": "OQf-4xgUQbIxOef_BsJeTehfpqLPPR2GTv8_y6EbxPX9UkFp2PpE2pnETh2VqcwDfV1U_4bSR8Pwrpsch3DwCw"
+}
