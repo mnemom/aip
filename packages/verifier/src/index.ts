@@ -31,8 +31,10 @@ export {
   MODE_VERBS,
   GOAL_MODES,
   isClaimField,
+  LINE_KEY_FIELDS,
+  fieldForLineKey,
 } from "./claim-table.js";
-export { lintRendering, lintRenderings, LINT_RULES } from "./claim-lint.js";
+export { lintRendering, lintRenderings, attachLineContext, LINT_RULES } from "./claim-lint.js";
 export {
   estimateQualifies,
   shouldRenderEstimate,
@@ -105,7 +107,16 @@ export type {
 } from "./statements.js";
 
 export type { ClaimClass, ClaimField, ClaimTableEntry, Surface, Mode, GoalMode } from "./claim-table.js";
-export type { RenderedLine, Rendering, LintRule, LintViolation, LintResult } from "./claim-lint.js";
+export type {
+  RenderedLine,
+  Rendering,
+  LintRule,
+  LintViolation,
+  LintResult,
+  StatementLine,
+  StatementGoalBlock,
+  StatementProtectionAct,
+} from "./claim-lint.js";
 export type {
   EstimateDescription,
   EstimateDisqualifier,

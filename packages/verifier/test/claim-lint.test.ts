@@ -1,6 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { lintRendering, lintRenderings, LINT_RULES, type Rendering, type RenderedLine } from "../src/claim-lint.js";
-import { CLAIM_TABLE, CLAIM_CLASSES, SURFACES, MODE_VERBS, isClaimField } from "../src/claim-table.js";
+import {
+  lintRendering,
+  lintRenderings,
+  attachLineContext,
+  LINT_RULES,
+  type Rendering,
+  type RenderedLine,
+  type StatementLine,
+} from "../src/claim-lint.js";
+import { CLAIM_TABLE, CLAIM_CLASSES, SURFACES, MODE_VERBS, isClaimField, fieldForLineKey } from "../src/claim-table.js";
 
 const cov = { judged: 12, total: 12 };
 
@@ -290,5 +298,124 @@ describe("lintRendering: each rule rejects", () => {
       const expected = surface === "period_card" ? [LINT_RULES.period_card_without_revert] : [];
       expect(r.violations.map((v) => v.rule)).toEqual(expected);
     }
+  });
+});
+
+// Cross-lane picks M6 and M7: lines as the builder (mnemom-api src/record/claims.ts)
+// signs them, `{class, key, text}`, with the words its three fixtures carry.
+describe("builder line shape (M6, M7)", () => {
+  const base = (line: Partial<RenderedLine>, surface: Rendering["surface"] = "record_page"): Rendering => ({
+    surface,
+    lines: [{ class: "measured", text: "x", ...line } as RenderedLine],
+  });
+  const sealedLines: StatementLine[] = [
+    { class: "measured", key: "cost.model", text: "model cost 1250000 mmu" },
+    { class: "measured", key: "cost.mu", text: "µ 50000 mmu" },
+    { class: "measured", key: "goal.mode", text: "sealed contract" },
+    { class: "verdict", key: "goal.verdict", text: "3 of 4 judged turns on goal, 4 of 12 turns judged" },
+    { class: "verdict", key: "protection.act.0", text: "stopped Bash" },
+    { class: "verdict", key: "protection.act.1", text: "flagged" },
+    { class: "measured", key: "people.messages", text: "5 messages from a person" },
+    { class: "measured", key: "context.compactions", text: "1 compactions" },
+  ];
+  const sealedGoal = { mode: "sealed" as const };
+  const sealedProtection = {
+    acts: [
+      { mode: "enforce" as const, tool_name: "Bash", verdict: "block" },
+      { mode: "observe" as const, tool_name: null, verdict: "warn" },
+    ],
+  };
+  const nudgeLines: StatementLine[] = [
+    { class: "measured", key: "cost.model", text: "model cost 1250000 mmu" },
+    { class: "measured", key: "cost.mu", text: "µ pending" },
+    { class: "measured", key: "goal.mode", text: "implicit goal" },
+    { class: "verdict", key: "goal.verdict", text: "1 of 2 judged turns on goal, 2 of 6 turns judged" },
+    { class: "verdict", key: "protection.act.0", text: "flagged, agent nudged" },
+    { class: "measured", key: "people.messages", text: "messages from a person: unclassified" },
+    { class: "measured", key: "context.compactions", text: "0 compactions" },
+  ];
+  const offLines: StatementLine[] = [
+    { class: "measured", key: "cost.model", text: "model cost 0 mmu" },
+    { class: "measured", key: "cost.mu", text: "not charged" },
+    { class: "measured", key: "goal.mode", text: "not checked" },
+    { class: "measured", key: "protection.mode", text: "not checked" },
+    { class: "measured", key: "people.messages", text: "0 messages from a person" },
+    { class: "measured", key: "context.compactions", text: "0 compactions" },
+  ];
+
+  it("maps every builder key to a claim-table field", () => {
+    expect(fieldForLineKey("cost.model")).toBe("model_cost");
+    expect(fieldForLineKey("cost.mu")).toBe("mu_cost");
+    expect(fieldForLineKey("goal.mode")).toBe("goal_mode");
+    expect(fieldForLineKey("goal.verdict")).toBe("goal");
+    expect(fieldForLineKey("protection.act.0")).toBe("protection");
+    expect(fieldForLineKey("protection.act.17")).toBe("protection");
+    expect(fieldForLineKey("protection.mode")).toBe("protection_mode");
+    expect(fieldForLineKey("people.messages")).toBe("messages_from_person");
+    expect(fieldForLineKey("context.compactions")).toBe("compactions");
+    expect(fieldForLineKey("protection.act.x")).toBeUndefined();
+    expect(fieldForLineKey("toString")).toBeUndefined();
+    expect(fieldForLineKey(3)).toBeUndefined();
+  });
+  it("keeps goal_mode and protection_mode as measured fields (M7)", () => {
+    expect(CLAIM_TABLE.goal_mode.class).toBe("measured");
+    expect(CLAIM_TABLE.protection_mode.class).toBe("measured");
+    expect(CLAIM_TABLE.goal.class).toBe("verdict");
+  });
+  it("attachLineContext adds goal_mode, mode and tool_name without touching the text", () => {
+    const lines = attachLineContext(sealedLines, sealedGoal, sealedProtection);
+    expect(lines.map((l) => l.text)).toEqual(sealedLines.map((l) => l.text));
+    expect(lines[2]).toMatchObject({ key: "goal.mode", goal_mode: "sealed" });
+    expect(lines[3]).toMatchObject({ key: "goal.verdict", goal_mode: "sealed" });
+    expect(lines[3].mode).toBeUndefined();
+    expect(lines[4]).toMatchObject({ mode: "enforce", tool_name: "Bash" });
+    expect(lines[5]).toMatchObject({ mode: "observe" });
+    expect(lines[5].tool_name).toBeUndefined();
+    const off = attachLineContext(offLines, { mode: "off" }, { acts: [{ mode: "off", tool_name: null }] });
+    expect(off[2]).toMatchObject({ goal_mode: "off" });
+    expect(off[3]).toMatchObject({ mode: "off" });
+  });
+  it.each([
+    ["sealed, enforce, final µ", sealedLines, sealedGoal, sealedProtection],
+    ["implicit, nudge, pending µ", nudgeLines, { mode: "implicit" as const }, { acts: [{ mode: "nudge" as const, tool_name: "Edit" }] }],
+    ["off, not charged", offLines, { mode: "off" as const }, { acts: [{ mode: "off" as const, tool_name: null }] }],
+  ])("the builder's fixture lines pass on the record page: %s", (_name, lines, goal, protection) => {
+    const r = lintRendering({ surface: "record_page", lines: attachLineContext(lines, goal, protection) });
+    expect(r.violations).toEqual([]);
+  });
+  it("the builder's card lines pass on a share card with the tool name dropped", () => {
+    const lines = attachLineContext(sealedLines, sealedGoal, sealedProtection).map((l) =>
+      l.key === "protection.act.0" ? { ...l, text: "stopped" } : l,
+    );
+    expect(lintRendering({ surface: "share_card", lines }).violations).toEqual([]);
+    const withName = attachLineContext(sealedLines, sealedGoal, sealedProtection);
+    expect(rules({ surface: "share_card", lines: withName })).toContain(LINT_RULES.tool_name_on_card);
+  });
+  it("reads a verdict's coverage from the builder's words, and still demands it", () => {
+    const ok = rules(base({ class: "verdict", key: "goal.verdict", text: "3 of 4 judged turns on goal, 4 of 12 turns judged", goal_mode: "sealed" }));
+    expect(ok).not.toContain(LINT_RULES.verdict_without_coverage);
+    const missing = rules(base({ class: "verdict", key: "goal.verdict", text: "3 of 4 judged turns on goal", goal_mode: "sealed" }));
+    expect(missing).toContain(LINT_RULES.verdict_without_coverage);
+    const inverted = rules(base({ class: "verdict", key: "goal.verdict", text: "13 of 12 turns judged", goal_mode: "sealed" }));
+    expect(inverted).toContain(LINT_RULES.verdict_without_coverage);
+    const nulled = rules(base({ class: "verdict", key: "goal.verdict", text: "4 of 12 turns judged", goal_mode: "sealed", coverage: null }));
+    expect(nulled).toContain(LINT_RULES.verdict_without_coverage);
+    // A protection act is one recorded decision; it has no coverage to show.
+    expect(rules(base({ class: "verdict", key: "protection.act.0", text: "flagged", mode: "observe" }))).toEqual([]);
+    // A verdict line with no field at all still has to show it.
+    expect(rules(base({ class: "verdict", text: "held" }))).toContain(LINT_RULES.verdict_without_coverage);
+  });
+  it("a key resolves the field, so class and money checks fire on builder lines", () => {
+    expect(rules(base({ class: "verdict", key: "goal.mode", text: "sealed contract", goal_mode: "sealed" }))).toContain(LINT_RULES.one_class_per_line);
+    expect(rules(base({ class: "measured", key: "goal.verdict", text: "4 of 12 turns judged", goal_mode: "sealed" }))).toContain(LINT_RULES.one_class_per_line);
+    expect(rules(base({ class: "measured", key: "goal.mode", text: "sealed contract $3", goal_mode: "sealed" }))).toContain(LINT_RULES.money_on_goal_or_protection);
+    expect(rules(base({ class: "measured", key: "context.compactions", text: "$1 compactions" }))).toContain(LINT_RULES.one_class_per_line);
+    expect(rules(base({ class: "measured", key: "goal.mode", text: "sealed contract", goal_mode: "implicit" }))).toContain(LINT_RULES.implicit_goal_sealed);
+    expect(rules(base({ class: "measured", key: "goal.mode", text: "implicit goal", goal_mode: "off" }))).toContain(LINT_RULES.goal_off_not_checked);
+    expect(rules(base({ class: "verdict", key: "protection.act.0", text: "flagged", mode: "enforce" }))).toContain(LINT_RULES.verb_mismatch);
+  });
+  it("an explicit field wins over the key", () => {
+    const r = rules(base({ field: "compactions", class: "measured", key: "goal.mode", text: "1 compactions" }));
+    expect(r).toEqual([]);
   });
 });

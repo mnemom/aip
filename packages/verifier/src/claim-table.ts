@@ -64,7 +64,11 @@ export const CLAIM_TABLE = {
   model_cost: { class: "measured", verb_by_mode: false, money_allowed: true },
   mu_cost: { class: "measured", verb_by_mode: false, money_allowed: true },
   approval: { class: "measured", verb_by_mode: false, money_allowed: false },
+  /** How the goal was set: "sealed contract", "implicit goal" or "not checked" (M7: its own measured line). */
+  goal_mode: { class: "measured", verb_by_mode: false, money_allowed: false },
   goal: { class: "verdict", verb_by_mode: true, money_allowed: false },
+  /** The protection area's mode when no act is shown: "not checked" under off. */
+  protection_mode: { class: "measured", verb_by_mode: false, money_allowed: false },
   protection: { class: "verdict", verb_by_mode: true, money_allowed: false },
   autonomy: { class: "measured", verb_by_mode: false, money_allowed: false },
   savings_estimate: {
@@ -81,4 +85,28 @@ export type ClaimField = keyof typeof CLAIM_TABLE;
 
 export function isClaimField(field: unknown): field is ClaimField {
   return typeof field === "string" && Object.prototype.hasOwnProperty.call(CLAIM_TABLE, field);
+}
+
+/**
+ * Line keys the builder (mnemom-api `src/record/claims.ts`) writes on a
+ * statement's `lines[]`, mapped to the claim-table field each one renders
+ * (cross-lane pick M6). `protection.act.<n>` maps to `protection` for any n.
+ */
+export const LINE_KEY_FIELDS: Readonly<Record<string, ClaimField>> = {
+  "cost.model": "model_cost",
+  "cost.mu": "mu_cost",
+  "goal.mode": "goal_mode",
+  "goal.verdict": "goal",
+  "protection.mode": "protection_mode",
+  "people.messages": "messages_from_person",
+  "context.compactions": "compactions",
+};
+
+const PROTECTION_ACT_KEY = /^protection\.act\.\d+$/;
+
+/** The claim-table field a statement line key renders, or undefined for a key the table does not know. */
+export function fieldForLineKey(key: unknown): ClaimField | undefined {
+  if (typeof key !== "string") return undefined;
+  if (PROTECTION_ACT_KEY.test(key)) return "protection";
+  return Object.prototype.hasOwnProperty.call(LINE_KEY_FIELDS, key) ? LINE_KEY_FIELDS[key] : undefined;
 }

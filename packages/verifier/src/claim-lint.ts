@@ -6,6 +6,14 @@
  * at the act. The lint returns every violation with a stable rule name; it
  * never rewrites a line.
  *
+ * Line shape (cross-lane pick M6): a signed statement carries
+ * `{class, key, text}` per line, with the builder's keys (`cost.model`,
+ * `goal.verdict`, `protection.act.0`, ...). The renderer attaches `mode`,
+ * `goal_mode`, `tool_name` and `coverage` from the statement's `goal` and
+ * `protection` blocks before linting. The lint resolves `field` from `key`
+ * when `field` is absent, and reads a verdict line's coverage from the
+ * "<n> of <m> turns judged" words when no `coverage` object is attached.
+ *
  * Rules, each from the claim table (T5) and the design's claim rules:
  *   one_class_per_line          class is one of the five, and matches the field's class
  *   forbidden_word              "safe", "correct", "prevented" never appear
@@ -20,7 +28,8 @@
  *   trust_claim                 no minutes-to-trust, review-time or re-checking claim
  *   savings_percentage          no savings percentage anywhere until the board exists
  *   benchmark_not_published     no benchmark line ships yet
- *   verdict_without_coverage    coverage is always shown on a verdict line
+ *   verdict_without_coverage    a goal verdict always shows its coverage ("N of M turns judged");
+ *                               a protection act is one recorded decision and carries none
  *   card_class_not_allowed      a card carries measured, outcome and verdict lines only
  *   period_card_without_revert  a period card renders its reverts
  *   field_not_on_surface        the field is not shown on this surface
@@ -33,6 +42,7 @@ import {
   ESTIMATE_FORBIDDEN_SURFACES,
   MODES,
   SURFACES,
+  fieldForLineKey,
   isClaimField,
   type ClaimClass,
   type ClaimTableEntry,
@@ -44,6 +54,8 @@ import {
 export interface RenderedLine {
   /** Record field the line renders; when present its class must match the claim table. */
   field?: string;
+  /** Builder line key (`cost.model`, `goal.verdict`, `protection.act.0`, ...); resolves `field` when that is absent. */
+  key?: string;
   class: string;
   text: string;
   /** Mode stored at the act, for goal and protection lines. */
@@ -109,6 +121,8 @@ const TRUST_CLAIM =
 const SAVINGS_PERCENTAGE = /\d+(?:\.\d+)?\s?%[^.\n]*\b(sav(e[sd]?|ings?)|cheaper|less|reduction|reduced)\b|\b(sav(e[sd]?|ings?)|cheaper|reduction|reduced)\b[^.\n]*\d+(?:\.\d+)?\s?%/i;
 const REVERT = /\brevert(s|ed)?\b/i;
 const NOT_CHECKED = /^not checked$/i;
+/** Coverage written into a verdict line's words by the builder: "4 of 12 turns judged". */
+const COVERAGE_IN_TEXT = /\b(\d+)\s+of\s+(\d+)\s+turns\s+judged\b/i;
 
 const MODE_VERB_REGEX: Record<Mode, RegExp> = {
   off: NOT_CHECKED,
@@ -131,13 +145,17 @@ function isObject(v: unknown): v is Record<string, unknown> {
 
 function coverageShown(line: RenderedLine): boolean {
   const cov = line.coverage;
-  return (
-    isObject(cov) &&
-    Number.isInteger(cov.judged) &&
-    Number.isInteger(cov.total) &&
-    (cov.judged as number) >= 0 &&
-    (cov.total as number) >= (cov.judged as number)
-  );
+  if (isObject(cov)) {
+    return (
+      Number.isInteger(cov.judged) &&
+      Number.isInteger(cov.total) &&
+      (cov.judged as number) >= 0 &&
+      (cov.total as number) >= (cov.judged as number)
+    );
+  }
+  if (cov !== undefined) return false;
+  const m = COVERAGE_IN_TEXT.exec(line.text);
+  return m !== null && Number(m[2]) >= Number(m[1]);
 }
 
 function escapeRegExp(s: string): string {
@@ -178,16 +196,18 @@ function lintLine(surface: Surface, line: RenderedLine, index: number, out: Lint
   }
   const text = line.text;
   const onCard = CARD_SURFACES.includes(surface);
+  // The field named on the line wins; a builder key resolves it otherwise (M6).
+  const field = line.field !== undefined ? line.field : fieldForLineKey(line.key);
 
   // one class per line: a known class, and the field's class when the field is named.
   const cls = line.class as ClaimClass;
   if (!(CLAIM_CLASSES as readonly string[]).includes(cls)) {
     push(LINT_RULES.one_class_per_line);
-  } else if (line.field !== undefined) {
-    if (!isClaimField(line.field)) {
+  } else if (field !== undefined) {
+    if (!isClaimField(field)) {
       push(LINT_RULES.one_class_per_line);
     } else {
-      const entry: ClaimTableEntry = CLAIM_TABLE[line.field];
+      const entry: ClaimTableEntry = CLAIM_TABLE[field];
       if (entry.class !== cls) push(LINT_RULES.one_class_per_line);
       if (entry.surfaces && !(entry.surfaces as readonly Surface[]).includes(surface)) {
         push(LINT_RULES.field_not_on_surface);
@@ -199,10 +219,10 @@ function lintLine(surface: Surface, line: RenderedLine, index: number, out: Lint
 
   if (FORBIDDEN_WORD.test(text)) push(LINT_RULES.forbidden_word);
 
-  const isGoal = line.field === "goal";
-  const isProtection = line.field === "protection";
+  const isGoal = field === "goal" || field === "goal_mode";
+  const isProtection = field === "protection" || field === "protection_mode";
   if ((isGoal || isProtection) && MONEY.test(text)) push(LINT_RULES.money_on_goal_or_protection);
-  if (line.field !== undefined && isClaimField(line.field) && !CLAIM_TABLE[line.field].money_allowed) {
+  if (field !== undefined && isClaimField(field) && !CLAIM_TABLE[field].money_allowed) {
     if (!isGoal && !isProtection && MONEY.test(text)) push(LINT_RULES.one_class_per_line);
   }
 
@@ -238,7 +258,7 @@ function lintLine(surface: Surface, line: RenderedLine, index: number, out: Lint
   if (TRUST_CLAIM.test(text)) push(LINT_RULES.trust_claim);
   if (SAVINGS_PERCENTAGE.test(text)) push(LINT_RULES.savings_percentage);
   if (cls === "benchmark") push(LINT_RULES.benchmark_not_published);
-  if (cls === "verdict" && !coverageShown(line)) push(LINT_RULES.verdict_without_coverage);
+  if (cls === "verdict" && field !== "protection" && !coverageShown(line)) push(LINT_RULES.verdict_without_coverage);
   if (onCard && cls !== "measured" && cls !== "verdict" && cls !== "outcome") push(LINT_RULES.card_class_not_allowed);
 }
 
@@ -268,4 +288,53 @@ export function lintRendering(rendering: unknown): LintResult {
 /** Lint several renderings and keep each result keyed by its position. */
 export function lintRenderings(renderings: unknown[]): LintResult[] {
   return renderings.map(lintRendering);
+}
+
+/** The `goal` block a conduct record statement carries (mnemom-api `src/record/builder.ts`). */
+export interface StatementGoalBlock {
+  mode: GoalMode;
+  [k: string]: unknown;
+}
+
+/** One entry of a conduct record statement's `protection.acts[]`. */
+export interface StatementProtectionAct {
+  mode: Mode;
+  tool_name: string | null;
+  [k: string]: unknown;
+}
+
+/** A statement line as the builder signs it: one class, a stable key, the words shown. */
+export interface StatementLine {
+  class: string;
+  key: string;
+  text: string;
+}
+
+/**
+ * Attach the lint context a signed statement's lines leave out (cross-lane
+ * pick M6). The statement carries `{class, key, text}` only; this returns the
+ * same lines with `goal_mode` on `goal.*` lines, and `mode` plus `tool_name`
+ * on `protection.*` lines, read from the statement's `goal` and
+ * `protection.acts` blocks. Coverage stays in the verdict line's words. The
+ * text is never changed.
+ */
+export function attachLineContext(
+  lines: readonly StatementLine[],
+  goal: StatementGoalBlock | null | undefined,
+  protection: { acts: readonly StatementProtectionAct[] } | null | undefined,
+): RenderedLine[] {
+  return lines.map((line) => {
+    const out: RenderedLine = { class: line.class, key: line.key, text: line.text };
+    if (line.key.startsWith("goal.") && goal) out.goal_mode = goal.mode;
+    if (line.key === "protection.mode") out.mode = "off";
+    const act = /^protection\.act\.(\d+)$/.exec(line.key);
+    if (act && protection) {
+      const entry = protection.acts[Number(act[1])];
+      if (entry) {
+        out.mode = entry.mode;
+        if (entry.tool_name) out.tool_name = entry.tool_name;
+      }
+    }
+    return out;
+  });
 }
