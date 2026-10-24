@@ -15,6 +15,12 @@
  * coverage from the "<n> of <m> turns judged" words when no `coverage` object
  * is attached.
  *
+ * On `share_card` the lines are the record share card statement's lines
+ * (`RecordShareCardLine`, statements.ts `{class, text, coverage}`), the ones
+ * `verify` checks in `shareCardReasons`. The MNE-9022 card (sharecard.ts,
+ * `{id, kind, label, value, statement_hash}`) carries no `class` and is not a
+ * `Rendering`; linting its lines as-is reports `one_class_per_line` on each.
+ *
  * Rules, each from the claim table (T5) and the design's claim rules:
  *   one_class_per_line          class is one of the five, and matches the field's class
  *   forbidden_word              "safe", "correct", "prevented" never appear
