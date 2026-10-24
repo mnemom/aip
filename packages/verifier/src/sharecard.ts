@@ -14,6 +14,7 @@
 import { verifyAsync } from "@noble/ed25519";
 import { utf8ToBytes } from "@noble/hashes/utils.js";
 
+import { canonicalJson } from "./canonical.js";
 import { hexToUint8 } from "./crypto.js";
 
 export const SHARE_CARD_TYP = "AAP-ShareCard/v1";
@@ -66,20 +67,8 @@ const LINE_KEYS = ["id", "kind", "label", "value", "statement_hash"];
 const HEX64 = /^[0-9a-f]{64}$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-/** Sorted-key, whitespace-free JSON; identical to mnemom-api canonicalJson. */
-export function canonicalJson(value: unknown): string {
-  if (value === null || typeof value !== "object") {
-    return JSON.stringify(value);
-  }
-  if (Array.isArray(value)) {
-    return `[${value.map(canonicalJson).join(",")}]`;
-  }
-  const obj = value as Record<string, unknown>;
-  return `{${Object.keys(obj)
-    .sort()
-    .map((k) => `${JSON.stringify(k)}:${canonicalJson(obj[k])}`)
-    .join(",")}}`;
-}
+/** Sorted-key, whitespace-free JSON; identical to mnemom-api canonicalJson. One implementation for every signed statement (canonical.ts). */
+export { canonicalJson };
 
 /** The exact string that is signed: canonical JSON of the card minus `signature`. */
 export function shareCardSigningInput(card: Record<string, unknown>): string {
