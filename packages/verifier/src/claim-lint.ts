@@ -122,8 +122,9 @@ export interface LintResult {
  * single left-to-right pass so the cost stays linear in the line's length; a regex bridge
  * such as `\d+%[^.\n]*\bword\b` re-scans the clause from every start (CodeQL
  * js/polynomial-redos). `tokens` is global; its named groups are the tokens, `brk` (a
- * full stop or newline outside a number) ends the clause, and an unnamed arm consumes a
- * number that is not a wanted token whole so no number is re-read from inside its run.
+ * full stop or newline outside a number) ends the clause. A number is one token: its digit
+ * run always matches and its tail ("%", "mmu") is an optional named group, so no match can
+ * fail after reading digits and no number is re-read from inside its run.
  */
 interface ClauseRule {
   tokens: RegExp;
@@ -162,7 +163,7 @@ const TRUST_CLAIM =
 /** A savings percentage: a percent and a saving word in one clause, either order ("less" only after). */
 const SAVINGS_PERCENTAGE: ClauseRule = {
   tokens:
-    /(?<percent>\d+(?:\.\d+)?\s?%)|\d+|\b(?<less>less)\b|\b(?<saving>sav(?:e[sd]?|ings?)|cheaper|reduction|reduced)\b|(?<brk>[.\n])/gi,
+    /\d+(?<percent>(?:\.\d+)?\s?%)?|\b(?<less>less)\b|\b(?<saving>sav(?:e[sd]?|ings?)|cheaper|reduction|reduced)\b|(?<brk>[.\n])/gi,
   pairs: [
     ["percent", "saving"],
     ["percent", "less"],
@@ -179,7 +180,7 @@ const REVERT = /\brevert(s|ed)?\b/i;
  */
 const PROVISIONAL_MU: ClauseRule = {
   tokens:
-    /(?<approx>(?:≈|~|\bapprox(?:\.|imately)?\b|\babout\b)\s*\d[\d,]*(?:\.\d+)?\s*(?:mmu\b|mu\b|μ|µ))|(?<amount>\d[\d,]*(?:\.\d+)?\s*(?:mmu\b|mu\b|μ|µ))|\d[\d,]*|\b(?<pending>pending)\b|(?<brk>[.\n])/gi,
+    /(?<approx>(?:≈|~|\bapprox(?:\.|imately)?\b|\babout\b)\s*\d[\d,]*(?:\.\d+)?\s*(?:mmu\b|mu\b|μ|µ))|\d[\d,]*(?<amount>(?:\.\d+)?\s*(?:mmu\b|mu\b|μ|µ))?|\b(?<pending>pending)\b|(?<brk>[.\n])/gi,
   alone: ["approx"],
   pairs: [
     ["amount", "pending"],
