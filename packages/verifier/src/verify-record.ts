@@ -123,10 +123,27 @@ function shareCardReasons(lines: unknown): Reason[] {
   return [...new Set(reasons)];
 }
 
-function digestFieldsOf(statement: Record<string, unknown>): string[] {
-  const out: unknown[] = [statement.previous_digest, statement.pr_record_digest, statement.source_digest];
-  if (Array.isArray(statement.conduct_digests)) out.push(...statement.conduct_digests);
-  return out.filter((d): d is string => typeof d === "string");
+/**
+ * Every digest reference a statement carries, as written. An absent field
+ * is skipped, and `previous_digest: null` is the first build (T2); anything
+ * else that is not a 64-hex string is reported as `digest_malformed` rather
+ * than dropped, so a non-string entry in `conduct_digests` cannot pass
+ * unnoticed.
+ */
+function digestFieldsOf(statement: Record<string, unknown>): unknown[] {
+  const out: unknown[] = [];
+  if (statement.previous_digest !== undefined && statement.previous_digest !== null) {
+    out.push(statement.previous_digest);
+  }
+  if (statement.pr_record_digest !== undefined) out.push(statement.pr_record_digest);
+  if (statement.source_digest !== undefined) out.push(statement.source_digest);
+  if (statement.conduct_digests !== undefined) {
+    // `conduct_digests` is a list; anything else is malformed even when it
+    // happens to look like one digest.
+    if (Array.isArray(statement.conduct_digests)) out.push(...statement.conduct_digests);
+    else out.push(null);
+  }
+  return out;
 }
 
 /**
@@ -188,7 +205,7 @@ export async function verifyStatement(
 
   const reasons: Reason[] = [];
   for (const d of digestFieldsOf(statement)) {
-    if (!DIGEST_RE.test(d)) {
+    if (typeof d !== "string" || !DIGEST_RE.test(d)) {
       reasons.push(REASONS.digest_malformed);
       break;
     }
@@ -237,6 +254,17 @@ export async function verify(
   ): RecordVerificationResult => ({ valid, reasons, flags, statements, verified_at });
 
   if (!isObject(input)) return result(false, [REASONS.bundle_not_an_object], [], []);
+
+  // Something shaped like a bundle (it carries `statements`) under a typ
+  // that is neither the bundle typ nor a statement typ: say so, instead of
+  // reporting it as one unknown statement.
+  if (
+    input.typ !== BUNDLE_TYP &&
+    Array.isArray(input.statements) &&
+    !(STATEMENT_TYPES as readonly string[]).includes(input.typ as string)
+  ) {
+    return result(false, [REASONS.bundle_unknown_typ], [], []);
+  }
 
   // A bare statement.
   if (input.typ !== BUNDLE_TYP) {

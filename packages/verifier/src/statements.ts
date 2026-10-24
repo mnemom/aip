@@ -24,13 +24,17 @@
 // JWKS
 // ---------------------------------------------------------------------------
 
-/** One key from the published JWKS. Only Ed25519 OKP keys with `alg: EdDSA` are used. */
+/**
+ * One key from the published JWKS. Only Ed25519 OKP keys with `alg: EdDSA`
+ * are used: a key whose `alg` is absent or anything else is refused with
+ * `key_not_ed25519`, so the field is required here as it is at runtime.
+ */
 export interface RecordJwk {
   kty: string;
   crv?: string;
   x?: string;
   kid?: string;
-  alg?: string;
+  alg: string;
   use?: string;
   [k: string]: unknown;
 }
