@@ -198,13 +198,13 @@ jobs:
     permissions:
       contents: write   # for SBOM attach to GitHub Release
       id-token: write   # for npm OIDC Trusted Publisher + provenance
-    # Same reusable + pin as publish-npm above (ADR-020). aip is a PUBLIC repo,
-    # so provenance (default true in the reusable) is accepted by npm.
+    # Same reusable + pin as publish-npm above (ADR-020). That pin hard-codes
+    # `npm publish --provenance` (no `provenance` input exists at this SHA); aip
+    # is a PUBLIC repo, so npm accepts it.
     uses: mnemom/.github/.github/workflows/npm-publish.yml@3b60e34e88113070235f2d55248a3455295be153
     with:
       npm-directory: packages/verifier
       tag: ${{ needs.verifier-guard.outputs.tag }}
-      provenance: true
 
   verify-verifier-dist-tag:
     permissions:
