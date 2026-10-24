@@ -329,6 +329,53 @@ describe("lintRendering: each rule rejects", () => {
   });
 });
 
+// CodeQL js/polynomial-redos (alert 25): the clause rules and the money figure must read a
+// line in time linear in its length, and keep the clause semantics they had as regexes.
+describe("lintRendering: clause rules", () => {
+  const line = (text: string, field = "commits_recorded"): Rendering => ({
+    surface: "record_page",
+    lines: [{ field, class: "measured", text } as RenderedLine],
+  });
+  it.each([
+    ["saved 1.2.3%", false],
+    ["1.2.3% saved", true],
+    ["saved money. 38% of acts", false],
+    ["38% of acts, less churn", true],
+    ["less churn, 38% of acts", false],
+    ["savings of 12.5\n% overall", true],
+  ] as const)("savings_percentage: %j is %s", (text, hit) => {
+    expect(rules(line(text)).includes(LINT_RULES.savings_percentage)).toBe(hit);
+  });
+  it.each([
+    ["≈ 1,200.5 mmu", true],
+    ["about 50 μ", true],
+    ["50 mu, pending", true],
+    ["pending: 50 mu", true],
+    ["pending 1.5,5 mu", false],
+    ["50 mu charged. pending review", false],
+    ["µ pending", false],
+  ] as const)("provisional μ: %j is %s", (text, hit) => {
+    expect(rules(line(text)).includes(LINT_RULES.provisional_mu_off_cost_line)).toBe(hit);
+  });
+  it.each([
+    ["goal: flagged, 1,500 USD", true],
+    ["goal: flagged, ,5 dollars", true],
+    ["goal: flagged, 1.5.5 cents", true],
+    ["goal: flagged, 9,9 apples", false],
+  ] as const)("money on a goal line: %j is %s", (text, hit) => {
+    expect(rules(line(text, "goal")).includes(LINT_RULES.money_on_goal_or_protection)).toBe(hit);
+  });
+  it.each(["9", "0", "9,", ",,9", "9.", "1%", "~9", "saved ", "9 mu ", "pending 9"])(
+    "lints a 50k-character run of %j in linear time",
+    (unit) => {
+      const text = unit.repeat(Math.ceil(50_000 / unit.length));
+      const start = performance.now();
+      lintRendering(line(text, "goal"));
+      expect(performance.now() - start).toBeLessThan(1000);
+    },
+  );
+});
+
 // Cross-lane picks M6 and M7: lines as the builder (mnemom-api src/record/claims.ts)
 // signs them, `{class, key, text}`, with the words its three fixtures carry.
 describe("builder line shape (M6, M7)", () => {

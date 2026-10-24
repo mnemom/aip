@@ -117,13 +117,58 @@ export interface LintResult {
   violations: LintViolation[];
 }
 
+/**
+ * A rule about two things in one clause ("38% … cheaper", "50 mmu … pending"), read in a
+ * single left-to-right pass so the cost stays linear in the line's length; a regex bridge
+ * such as `\d+%[^.\n]*\bword\b` re-scans the clause from every start (CodeQL
+ * js/polynomial-redos). `tokens` is global; its named groups are the tokens, `brk` (a
+ * full stop or newline outside a number) ends the clause, and an unnamed arm consumes a
+ * number that is not a wanted token whole so no number is re-read from inside its run.
+ */
+interface ClauseRule {
+  tokens: RegExp;
+  /** [first, then]: the rule holds when `then` follows `first` in one clause. */
+  pairs: ReadonlyArray<readonly [string, string]>;
+  /** Tokens that make the rule hold on their own. */
+  alone?: readonly string[];
+}
+
+function clauseHas(text: string, rule: ClauseRule): boolean {
+  const seen = new Set<string>();
+  for (const m of text.matchAll(rule.tokens)) {
+    const kind = Object.entries(m.groups ?? {}).find(([, v]) => v !== undefined)?.[0];
+    if (kind === undefined) continue;
+    if (kind === "brk") {
+      seen.clear();
+      continue;
+    }
+    if (rule.alone?.includes(kind)) return true;
+    if (rule.pairs.some(([first, then]) => then === kind && seen.has(first))) return true;
+    seen.add(kind);
+  }
+  return false;
+}
+
 const FORBIDDEN_WORD = /\b(safe|safely|unsafe|correct|correctly|incorrect|prevent|prevents|prevented|preventing|prevention)\b/i;
-const MONEY = /(?:\$|€|£|¥)\s?\d|\b\d[\d,]*(?:\.\d+)?\s?(?:USD|EUR|GBP|dollars?|cents?)\b/i;
+/**
+ * A currency figure. A spelled-out amount is read from the first digit of its run only
+ * (`(?<!\d,+)`), so a long "9,9,9,…" is scanned once rather than from every digit.
+ */
+const MONEY = /(?:\$|€|£|¥)\s?\d|\b(?<!\d,+)\d[\d,]*(?:\.\d+)?\s?(?:USD|EUR|GBP|dollars?|cents?)\b/i;
 const SEALED = /\bsealed\b/i;
 const ESTIMATE_WORDS = /\b(estimate[ds]?|estimation|saving|savings|saved|would have cost|counterfactual)\b/i;
 const TRUST_CLAIM =
   /\b(minutes?|seconds?|hours?)\s+to\s+trust\b|\btrust(ed)?\s+in\s+(under\s+|about\s+)?\d+\s*(minutes?|seconds?|hours?|min|s|h)\b|\breview[- ]time\b|\btime\s+to\s+review\b|\bwithout\s+re-?check(ing)?\b|\bno\s+need\s+to\s+(re-?check|review)\b|\btrust(ed)?\s+without\b/i;
-const SAVINGS_PERCENTAGE = /\d+(?:\.\d+)?\s?%[^.\n]*\b(sav(e[sd]?|ings?)|cheaper|less|reduction|reduced)\b|\b(sav(e[sd]?|ings?)|cheaper|reduction|reduced)\b[^.\n]*\d+(?:\.\d+)?\s?%/i;
+/** A savings percentage: a percent and a saving word in one clause, either order ("less" only after). */
+const SAVINGS_PERCENTAGE: ClauseRule = {
+  tokens:
+    /(?<percent>\d+(?:\.\d+)?\s?%)|\d+|\b(?<less>less)\b|\b(?<saving>sav(?:e[sd]?|ings?)|cheaper|reduction|reduced)\b|(?<brk>[.\n])/gi,
+  pairs: [
+    ["percent", "saving"],
+    ["percent", "less"],
+    ["saving", "percent"],
+  ],
+};
 const REVERT = /\brevert(s|ed)?\b/i;
 /**
  * A provisional μ amount (A-S-001): an approximate figure with a pending marker,
@@ -132,8 +177,15 @@ const REVERT = /\brevert(s|ed)?\b/i;
  * figure, or a figure with "pending" beside it, so a renderer cannot shed one marker to
  * slip the amount onto a card.
  */
-const PROVISIONAL_MU =
-  /(?:≈|~|\bapprox(?:\.|imately)?\b|\babout\b)\s*\d[\d,]*(?:\.\d+)?\s*(?:mmu\b|mu\b|μ|µ)|\d[\d,]*(?:\.\d+)?\s*(?:mmu\b|mu\b|μ|µ)[^.\n]*\bpending\b|\bpending\b[^.\n]*\d[\d,]*(?:\.\d+)?\s*(?:mmu\b|mu\b|μ|µ)/i;
+const PROVISIONAL_MU: ClauseRule = {
+  tokens:
+    /(?<approx>(?:≈|~|\bapprox(?:\.|imately)?\b|\babout\b)\s*\d[\d,]*(?:\.\d+)?\s*(?:mmu\b|mu\b|μ|µ))|(?<amount>\d[\d,]*(?:\.\d+)?\s*(?:mmu\b|mu\b|μ|µ))|\d[\d,]*|\b(?<pending>pending)\b|(?<brk>[.\n])/gi,
+  alone: ["approx"],
+  pairs: [
+    ["amount", "pending"],
+    ["pending", "amount"],
+  ],
+};
 const NOT_CHECKED = /^not checked$/i;
 /** Coverage written into a verdict line's words by the builder: "4 of 12 turns judged". */
 const COVERAGE_IN_TEXT = /\b(\d+)\s+of\s+(\d+)\s+turns\s+judged\b/i;
@@ -270,13 +322,13 @@ function lintLine(surface: Surface, line: RenderedLine, index: number, out: Lint
   if (argumentsAppear(text, line.tool_arguments)) push(LINT_RULES.tool_arguments_shown);
 
   // A-S-001: a provisional μ amount lives on the μ cost line and never on a card (K1.17).
-  if (PROVISIONAL_MU.test(text)) {
+  if (clauseHas(text, PROVISIONAL_MU)) {
     if (onCard) push(LINT_RULES.provisional_mu_on_card);
     if (field !== "mu_cost") push(LINT_RULES.provisional_mu_off_cost_line);
   }
 
   if (TRUST_CLAIM.test(text)) push(LINT_RULES.trust_claim);
-  if (SAVINGS_PERCENTAGE.test(text)) push(LINT_RULES.savings_percentage);
+  if (clauseHas(text, SAVINGS_PERCENTAGE)) push(LINT_RULES.savings_percentage);
   if (cls === "benchmark") push(LINT_RULES.benchmark_not_published);
   if (cls === "verdict" && field !== "protection" && !coverageShown(line)) push(LINT_RULES.verdict_without_coverage);
   if (onCard && cls !== "measured" && cls !== "verdict" && cls !== "outcome") push(LINT_RULES.card_class_not_allowed);
