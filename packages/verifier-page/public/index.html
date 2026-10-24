@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<title>AIP record verifier</title>
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<main>
+  <h1>AIP record verifier</h1>
+  <p class="lede">Checks a signed record statement or a record bundle against Mnemom's published Ed25519 keys. Everything runs in this page. It sends nothing anywhere, so it works offline.</p>
+
+  <section id="drop" class="drop">
+    <label for="input">Statement or bundle (JSON)</label>
+    <textarea id="input" rows="14" spellcheck="false" placeholder='{"typ": "AAP-RecordBundle/v1", "statements": [ ... ]}'></textarea>
+    <p class="hint">Paste JSON, drop a file on this box, or <label class="file-label" for="file">choose a file</label>.<input id="file" type="file" accept="application/json,.json"></p>
+  </section>
+
+  <section>
+    <label for="jwks">Key set (JWKS)</label>
+    <textarea id="jwks" rows="8" spellcheck="false"></textarea>
+    <p class="hint" id="keys-note"></p>
+  </section>
+
+  <p><button id="verify" type="button">Verify</button></p>
+
+  <section id="result" class="result" aria-live="polite"></section>
+
+  <footer>
+    <p>Built on <code>@mnemom/aip-verifier</code>. Source: <code>github.com/mnemom/aip</code>, Apache-2.0.</p>
+  </footer>
+</main>
+<script src="./app.js"></script>
+</body>
+</html>

@@ -1,0 +1,91 @@
+name: Verifier page
+
+# Build the static verifier page (packages/verifier-page) on top of
+# @mnemom/aip-verifier and prove it verifies a record bundle offline: the
+# Playwright test opens dist/index.html from file:// in an offline browser
+# context, aborts and counts every non-file request, and asserts zero.
+#
+# Record criterion that turns green here: K4.2 (verifier page verifies a
+# bundle with the network blocked). Runs on every PR and push to main with
+# no path filter, so it can be made a required check. Uploads dist/ as the
+# `verifier-page` artifact; it never deploys.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  page:
+    permissions:
+      contents: read
+    name: Verifier page (offline)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: |
+            packages/verifier/package-lock.json
+            packages/verifier-page/package-lock.json
+
+      # The page depends on the verifier by file: path, so build it first.
+      - name: Build @mnemom/aip-verifier
+        working-directory: packages/verifier
+        run: |
+          npm ci
+          npm run build
+
+      - name: Install page dependencies
+        working-directory: packages/verifier-page
+        run: npm ci
+
+      - name: Install Chromium
+        working-directory: packages/verifier-page
+        run: npx playwright install --with-deps chromium
+
+      - name: Typecheck
+        working-directory: packages/verifier-page
+        run: npm run typecheck
+
+      - name: Build page
+        working-directory: packages/verifier-page
+        run: npm run build
+
+      - name: Bundle makes no network call
+        working-directory: packages/verifier-page
+        run: |
+          if grep -nE "fetch\(|XMLHttpRequest|sendBeacon|WebSocket\(|import\(" dist/app.js; then
+            echo "::error::dist/app.js contains a network or dynamic-import call"; exit 1
+          fi
+          grep -q "connect-src 'none'" dist/index.html
+
+      - name: Offline verification test (K4.2)
+        working-directory: packages/verifier-page
+        env:
+          CI: "1"
+        run: npm test
+
+      - name: Upload page
+        if: always()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: verifier-page
+          path: packages/verifier-page/dist
+          if-no-files-found: error
+
+      - name: Upload Playwright traces on failure
+        if: failure()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: verifier-page-traces
+          path: packages/verifier-page/test-results
+          if-no-files-found: ignore
