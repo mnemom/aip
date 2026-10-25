@@ -179,7 +179,8 @@ async function renderFromStatements(input: Record<string, unknown>, surface: Ren
       } else if (l.coverage !== undefined && l.coverage !== null) {
         errors.push(`${R.identifying_field}:${where}.coverage`);
       }
-      if (l.class === "outcome" && /\brevert(s|ed)?\b/i.test(l.text)) out.revert = true;
+      // `revert` is never inferred from display text ("Accepted, no revert in 7 days" is a clean outcome);
+      // it is set only on the line derived from signed AAP-Outcome/v1 values below, or a numeric `revert` kind.
       lines.push(out);
     });
   });
