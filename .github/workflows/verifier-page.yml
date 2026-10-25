@@ -49,6 +49,16 @@ jobs:
         working-directory: packages/verifier-page
         run: npm ci
 
+      # The browser build is pinned by the @playwright/test version in the
+      # page lockfile, so key the cache on it. On a hit, `playwright install`
+      # finds the browser and skips the cdn.playwright.dev download; it still
+      # installs the OS packages (--with-deps), which the cache does not hold.
+      - name: Cache Playwright browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('packages/verifier-page/package-lock.json') }}
+
       - name: Install Chromium
         working-directory: packages/verifier-page
         run: npx playwright install --with-deps chromium
