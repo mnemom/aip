@@ -60,6 +60,27 @@ describe("renders only signed lines", () => {
     expect(r.lines[1]!.coverage).toEqual({ judged: 6, total: 12 });
     expect(lintRendering({ surface: "share_card", lines: r.lines }).ok).toBe(true);
   });
+  it("a clean outcome line mentioning 'revert' is not marked as a revert (text is never parsed)", async () => {
+    const jwks = await testJwks();
+    for (const surface of ["share_card"] as const) {
+      const r = await renderLines(rec("golden-share-card.json"), { ...ON, jwks, surface });
+      expect(r.ok).toBe(true);
+      expect(r.lines.find((l) => l.text === "Accepted, no revert in 7 days")?.revert).toBeUndefined();
+      expect(r.lines.some((l) => l.revert)).toBe(false);
+    }
+    // Flag off: nothing at all.
+    expect((await renderLines(rec("golden-share-card.json"), { jwks })).lines).toEqual([]);
+  });
+  it("only signed outcome values mark the revert line, in both outcomes", async () => {
+    const jwks = await testJwks();
+    const c = await cardStmt(GOOD_LINES);
+    for (const [outs, text] of [[["reverted"], "1 of 1 changes reverted"], [["accepted_no_revert"], "0 of 1 changes reverted"]] as const) {
+      const r = await renderLines({ typ: BUNDLE_TYP, statements: [c, ...(await Promise.all(outs.map(outcomeStmt)))] }, { ...ON, jwks, surface: "period_card" });
+      expect(r.ok).toBe(true);
+      expect(r.lines.filter((l) => l.revert).map((l) => l.text)).toEqual([text]);
+      expect(r.lines.find((l) => l.text === "Accepted, no revert in 7 days")?.revert).toBeUndefined();
+    }
+  });
   it("a bundle renders the card statement's lines", async () => {
     const r = await renderLines(rec("golden-bundle.json"), { ...ON, jwks: await testJwks() });
     expect(r.ok).toBe(true);
