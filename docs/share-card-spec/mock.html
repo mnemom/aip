@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Share card mock states (MNE-9118)</title>
+<style>
+/* Tokens copied from mnemom-website client/global.css (light and dark). Static mock: no script, no network. */
+:root{--bg:#fafafa;--surface:#fff;--surface2:#f4f4f5;--text:#09090b;--muted:#52525b;--border:#e4e4e7;--ok:#0f766e;--warn:#d97706;--warn-sub:#fcf4eb;--warn-fg:#7c2d12;--bad:#b91c1c}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#09090b;--surface:#18181b;--surface2:#27272a;--text:#fafafa;--muted:#a1a1aa;--border:#27272a;--ok:#2dd4bf;--warn:#f59e0b;--warn-sub:#332819;--warn-fg:#fcd34d;--bad:#fb8a8a}}
+:root[data-theme=dark]{--bg:#09090b;--surface:#18181b;--surface2:#27272a;--text:#fafafa;--muted:#a1a1aa;--border:#27272a;--ok:#2dd4bf;--warn:#f59e0b;--warn-sub:#332819;--warn-fg:#fcd34d;--bad:#fb8a8a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.4 system-ui,sans-serif;padding:24px 16px}
+main{max-width:640px;margin:0 auto}.state{margin:0 0 48px}.label{font:12px/1 ui-monospace,monospace;color:var(--muted);margin:0 0 8px}
+article{background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:24px}
+h1{font-size:20px;margin:0}.period{margin:4px 0 0;font-size:14px;color:var(--muted)}
+.chip{display:inline-flex;gap:8px;align-items:center;margin:12px 0 0;padding:4px 12px;border:1px solid var(--ok);border-radius:999px;font-size:14px;font-weight:500}
+.chip svg{color:var(--ok)}.chip.neutral{border-color:var(--muted)}
+ul.lines{list-style:none;margin:24px 0 0;padding:0}ul.lines li{padding:12px 12px 12px 16px;border-left:4px solid transparent;border-top:1px solid var(--border)}ul.lines li:first-child{border-top:0}
+li.revert{border-left-color:var(--warn);background:var(--warn-sub)}
+.rev{display:flex;gap:4px;align-items:center;margin:0;font-size:14px;font-weight:600;color:var(--warn-fg)}
+.v{margin:0;font-size:24px;font-weight:600;font-variant-numeric:tabular-nums}.cov{margin:0;font-size:14px;color:var(--muted)}
+.empty{margin:24px 0 0;font-size:18px}
+.dnp{margin-top:24px;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:16px}.dnp h2{font-size:16px;margin:0}.dnp ul{margin:8px 0 0;padding-left:20px;font-size:14px}
+footer{margin-top:24px;display:flex;flex-wrap:wrap;gap:8px 24px;font-size:14px;color:var(--muted)}footer a{color:var(--text);min-height:44px;display:inline-flex;align-items:center}
+.invalid{border:2px solid var(--bad);border-radius:4px;background:var(--surface);padding:24px}.invalid h1{display:flex;gap:8px;align-items:flex-start}.invalid svg{color:var(--bad);flex:none;margin-top:3px}
+.invalid ul{margin:12px 0 0;padding-left:20px;font-size:14px}.invalid p{margin:12px 0 0;font-size:14px;color:var(--muted)}
+a:focus-visible{outline:2px solid var(--text);outline-offset:2px}
+</style></head><body><main>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="ck" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10" fill="none" stroke="currentColor" stroke-width="2.5"/></symbol><symbol id="bk" viewBox="0 0 24 24"><path d="M19 12H5m6-6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.5"/></symbol><symbol id="x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.5"/></symbol></svg>
+
+<section class="state" id="valid"><p class="label">1 valid share card (renderLines output, statement fixture)</p>
+<article aria-labelledby="h-valid"><header><h1 id="h-valid">Signed work record</h1><p class="period">1 Oct - 7 Oct 2026</p><p role="status" class="chip"><svg width="16" height="16" aria-hidden="true"><use href="#ck"/></svg><span>Verified offline</span></p></header>
+<ul class="lines" aria-label="Recorded work">
+<li><p class="v">3 of 4 commits from recorded sessions</p></li>
+<li><p class="v">On goal in 5 of 6 judged turns</p><p class="cov">6 of 12 turns judged</p></li>
+<li><p class="v">Accepted, no revert in 7 days</p></li></ul>
+<section class="dnp" aria-labelledby="d1"><h2 id="d1">What this card does not prove</h2><ul><li>It does not show the quality or correctness of any code.</li><li>It does not say which repository, branch or change the work was in; those are never on a card.</li><li>It does not show the work was good, only that it was recorded and signed.</li><li>It does not cover anything after the end of the period.</li></ul></section>
+<footer><span>Signing key: demo-key-1</span><span>Card: demo-card-001</span><a href="#valid">Verify yourself</a></footer></article></section>
+
+<section class="state" id="period"><p class="label">2 period card with revert (numeric fixture period-revert.json)</p>
+<article aria-labelledby="h-period"><header><h1 id="h-period">Signed work record</h1><p class="period">1 Oct - 7 Oct 2026</p><p role="status" class="chip"><svg width="16" height="16" aria-hidden="true"><use href="#ck"/></svg><span>Verified offline</span></p></header>
+<ul class="lines" aria-label="Recorded work">
+<li class="revert"><p class="rev"><svg width="16" height="16" aria-hidden="true"><use href="#bk"/></svg><span>Reverted</span></p><p class="v">Changes reverted: 2</p></li>
+<li><p class="v">Changes reviewed: 42</p></li>
+<li><p class="v">Checks passed: 40</p></li></ul>
+<section class="dnp" aria-labelledby="d2"><h2 id="d2">What this card does not prove</h2><ul><li>It does not show the quality or correctness of any code.</li><li>It does not say which repository, branch or change the work was in; those are never on a card.</li><li>It does not show the work was good, only that it was recorded and signed.</li><li>It does not cover anything after the end of the period.</li></ul></section>
+<footer><span>Signing key: demo-key-1</span><span>Card: demo-card-002</span><a href="#period">Verify yourself</a></footer></article></section>
+
+<section class="state" id="empty"><p class="label">3 empty (verified, no lines: reasons = ["no_lines"]; no "Verified" chip until verifier says verified)</p>
+<article aria-labelledby="h-empty"><header><h1 id="h-empty">Signed work record</h1><p class="period">1 Oct - 7 Oct 2026</p></header>
+<p class="empty">No recorded work in this period</p>
+<section class="dnp" aria-labelledby="d3"><h2 id="d3">What this card does not prove</h2><ul><li>It does not show the quality or correctness of any code.</li><li>It does not say which repository, branch or change the work was in; those are never on a card.</li><li>It does not show the work was good, only that it was recorded and signed.</li><li>It does not cover anything after the end of the period.</li></ul></section></article></section>
+
+<section class="state" id="invalid"><p class="label">4 invalid / tampered (reasons = ["not_verifiable","0:signature_invalid"]; no lines, no numbers, no period)</p>
+<div class="invalid" role="alert"><h1><svg width="20" height="20" aria-hidden="true"><use href="#x"/></svg><span>This card could not be verified. Nothing on it can be trusted.</span></h1>
+<ul><li>The signature does not match the card, so it may have been changed.</li></ul><p>Signing key: demo-key-1</p></div></section>
+
+<section class="state" id="offline"><p class="label">5 offline (same as 1; no request is made on render, so airplane mode shows state 1 unchanged)</p>
+<article aria-labelledby="h-off"><header><h1 id="h-off">Signed work record</h1><p class="period">1 Oct - 7 Oct 2026</p><p role="status" class="chip"><svg width="16" height="16" aria-hidden="true"><use href="#ck"/></svg><span>Verified offline</span></p></header>
+<ul class="lines" aria-label="Recorded work"><li><p class="v">Changes reviewed: 42</p></li></ul>
+<footer><span>Signing key: demo-key-1</span><a href="#offline">Verify yourself</a></footer></article></section>
+</main></body></html>
