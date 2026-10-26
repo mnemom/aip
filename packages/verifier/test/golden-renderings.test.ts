@@ -16,7 +16,8 @@ import { lintRendering, LINT_RULES, type Rendering } from "../src/claim-lint.js"
 const SOURCE = {
   repo: "mnemom/mnemom-api",
   pr: 4096,
-  commit: "b82269b0810a79e174caaca91d8671bd5202de2a",
+  // Merge commit of #4096 on mnemom-api main.
+  commit: "691d155c680cd7095d681821610514666682f3d2",
   path: "src/__tests__/fixtures/record-claims/golden-renderings.json",
   sha256: "d60c3824aef2981f75fed256856d564306e67d33a6641cd58c6f87fc3969b21b",
 } as const;
