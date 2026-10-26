@@ -1,0 +1,473 @@
+{
+  "source": "mnemom-api src/record/claims.ts and src/record/builder.ts",
+  "renderings": [
+    {
+      "id": "table.cost.final",
+      "surface": "record_page",
+      "lines": [
+        {
+          "class": "measured",
+          "key": "cost.model",
+          "text": "model cost 1250000 mmu"
+        },
+        {
+          "class": "measured",
+          "key": "cost.mu",
+          "text": "µ 50000 mmu"
+        }
+      ]
+    },
+    {
+      "id": "table.cost.pending",
+      "surface": "record_page",
+      "lines": [
+        {
+          "class": "measured",
+          "key": "cost.model",
+          "text": "model cost 1250000 mmu"
+        },
+        {
+          "class": "measured",
+          "key": "cost.mu",
+          "text": "≈ 48000 mmu (pending)"
+        }
+      ]
+    },
+    {
+      "id": "table.cost.none",
+      "surface": "record_page",
+      "lines": [
+        {
+          "class": "measured",
+          "key": "cost.model",
+          "text": "model cost 1250000 mmu"
+        },
+        {
+          "class": "measured",
+          "key": "cost.mu",
+          "text": "not charged"
+        }
+      ]
+    },
+    {
+      "id": "table.goal.mode",
+      "surface": "record_page",
+      "lines": [
+        {
+          "class": "measured",
+          "key": "goal.mode",
+          "text": "not checked",
+          "goal_mode": "off"
+        },
+        {
+          "class": "measured",
+          "key": "goal.mode",
+          "text": "implicit goal",
+          "goal_mode": "implicit"
+        },
+        {
+          "class": "measured",
+          "key": "goal.mode",
+          "text": "sealed contract",
+          "goal_mode": "sealed"
+        }
+      ]
+    },
+    {
+      "id": "table.goal.node",
+      "surface": "record_page",
+      "lines": [
+        {
+          "class": "measured",
+          "key": "goal.node",
+          "text": "Canon node cn_8f2a1c",
+          "goal_mode": "sealed"
+        },
+        {
+          "class": "measured",
+          "key": "goal.node",
+          "text": "Canon node pending",
+          "goal_mode": "sealed"
+        }
+      ]
+    },
+    {
+      "id": "table.goal.verdict",
+      "surface": "record_page",
+      "lines": [
+        {
+          "class": "verdict",
+          "key": "goal.verdict",
+          "text": "3 of 4 judged turns on goal, 4 of 12 turns judged",
+          "goal_mode": "sealed"
+        },
+        {
+          "class": "verdict",
+          "key": "goal.verdict",
+          "text": "0 of 0 judged turns on goal, 0 of 5 turns judged",
+          "goal_mode": "implicit"
+        }
+      ]
+    },
+    {
+      "id": "table.protection.acts",
+      "surface": "record_page",
+      "lines": [
+        {
+          "class": "verdict",
+          "key": "protection.act.0",
+          "text": "flagged",
+          "mode": "observe",
+          "verdict": "warn",
+          "tool_name": "Bash"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.act.1",
+          "text": "flagged",
+          "mode": "observe",
+          "verdict": "nudge",
+          "tool_name": "Bash"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.act.2",
+          "text": "flagged",
+          "mode": "observe",
+          "verdict": "quarantine",
+          "tool_name": "Bash"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.act.3",
+          "text": "flagged",
+          "mode": "observe",
+          "verdict": "block",
+          "tool_name": "Bash"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.act.4",
+          "text": "flagged",
+          "mode": "nudge",
+          "verdict": "warn",
+          "tool_name": "Bash"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.act.5",
+          "text": "flagged, agent nudged",
+          "mode": "nudge",
+          "verdict": "nudge",
+          "tool_name": "Bash"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.act.6",
+          "text": "flagged",
+          "mode": "nudge",
+          "verdict": "quarantine",
+          "tool_name": "Bash"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.act.7",
+          "text": "flagged",
+          "mode": "nudge",
+          "verdict": "block",
+          "tool_name": "Bash"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.act.8",
+          "text": "flagged",
+          "mode": "enforce",
+          "verdict": "warn",
+          "tool_name": "Bash"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.act.9",
+          "text": "flagged",
+          "mode": "enforce",
+          "verdict": "nudge",
+          "tool_name": "Bash"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.act.10",
+          "text": "stopped Bash",
+          "mode": "enforce",
+          "verdict": "quarantine",
+          "tool_name": "Bash"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.act.11",
+          "text": "stopped Bash",
+          "mode": "enforce",
+          "verdict": "block",
+          "tool_name": "Bash"
+        }
+      ]
+    },
+    {
+      "id": "table.protection.not_checked",
+      "surface": "record_page",
+      "lines": [
+        {
+          "class": "measured",
+          "key": "protection.mode",
+          "text": "not checked",
+          "mode": "off"
+        }
+      ]
+    },
+    {
+      "id": "table.people",
+      "surface": "record_page",
+      "lines": [
+        {
+          "class": "measured",
+          "key": "people.messages",
+          "text": "5 messages from a person"
+        },
+        {
+          "class": "measured",
+          "key": "people.messages",
+          "text": "messages from a person: unclassified"
+        },
+        {
+          "class": "measured",
+          "key": "context.compactions",
+          "text": "1 compactions"
+        }
+      ]
+    },
+    {
+      "id": "builder.implicit-pending-nudge",
+      "surface": "record_page",
+      "lines": [
+        {
+          "class": "measured",
+          "key": "cost.model",
+          "text": "model cost 1250000 mmu"
+        },
+        {
+          "class": "measured",
+          "key": "cost.mu",
+          "text": "≈ 50000 mmu (pending)"
+        },
+        {
+          "class": "measured",
+          "key": "goal.mode",
+          "text": "implicit goal",
+          "goal_mode": "implicit"
+        },
+        {
+          "class": "verdict",
+          "key": "goal.verdict",
+          "text": "1 of 2 judged turns on goal, 2 of 6 turns judged",
+          "goal_mode": "implicit"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.act.0",
+          "text": "flagged, agent nudged",
+          "mode": "nudge",
+          "verdict": "nudge",
+          "tool_name": "Edit"
+        },
+        {
+          "class": "measured",
+          "key": "people.messages",
+          "text": "messages from a person: unclassified"
+        },
+        {
+          "class": "measured",
+          "key": "context.compactions",
+          "text": "0 compactions"
+        }
+      ]
+    },
+    {
+      "id": "builder.off-not-charged",
+      "surface": "record_page",
+      "lines": [
+        {
+          "class": "measured",
+          "key": "cost.model",
+          "text": "model cost 0 mmu"
+        },
+        {
+          "class": "measured",
+          "key": "cost.mu",
+          "text": "not charged"
+        },
+        {
+          "class": "measured",
+          "key": "goal.mode",
+          "text": "not checked",
+          "goal_mode": "off"
+        },
+        {
+          "class": "measured",
+          "key": "protection.mode",
+          "text": "not checked",
+          "mode": "off"
+        },
+        {
+          "class": "measured",
+          "key": "people.messages",
+          "text": "0 messages from a person"
+        },
+        {
+          "class": "measured",
+          "key": "context.compactions",
+          "text": "0 compactions"
+        }
+      ]
+    },
+    {
+      "id": "builder.sealed-canon-node",
+      "surface": "record_page",
+      "lines": [
+        {
+          "class": "measured",
+          "key": "cost.model",
+          "text": "model cost 1250000 mmu"
+        },
+        {
+          "class": "measured",
+          "key": "cost.mu",
+          "text": "µ 50000 mmu"
+        },
+        {
+          "class": "measured",
+          "key": "goal.mode",
+          "text": "sealed contract",
+          "goal_mode": "sealed"
+        },
+        {
+          "class": "measured",
+          "key": "goal.node",
+          "text": "Canon node mn-c7cn46",
+          "goal_mode": "sealed"
+        },
+        {
+          "class": "verdict",
+          "key": "goal.verdict",
+          "text": "4 of 4 judged turns on goal, 4 of 9 turns judged",
+          "goal_mode": "sealed"
+        },
+        {
+          "class": "measured",
+          "key": "people.messages",
+          "text": "0 messages from a person"
+        },
+        {
+          "class": "measured",
+          "key": "context.compactions",
+          "text": "0 compactions"
+        }
+      ]
+    },
+    {
+      "id": "builder.sealed-canon-pending",
+      "surface": "record_page",
+      "lines": [
+        {
+          "class": "measured",
+          "key": "cost.model",
+          "text": "model cost 1250000 mmu"
+        },
+        {
+          "class": "measured",
+          "key": "cost.mu",
+          "text": "≈ 50000 mmu (pending)"
+        },
+        {
+          "class": "measured",
+          "key": "goal.mode",
+          "text": "sealed contract",
+          "goal_mode": "sealed"
+        },
+        {
+          "class": "measured",
+          "key": "goal.node",
+          "text": "Canon node pending",
+          "goal_mode": "sealed"
+        },
+        {
+          "class": "verdict",
+          "key": "goal.verdict",
+          "text": "1 of 1 judged turns on goal, 1 of 3 turns judged",
+          "goal_mode": "sealed"
+        },
+        {
+          "class": "measured",
+          "key": "people.messages",
+          "text": "0 messages from a person"
+        },
+        {
+          "class": "measured",
+          "key": "context.compactions",
+          "text": "0 compactions"
+        }
+      ]
+    },
+    {
+      "id": "builder.sealed-final-enforce",
+      "surface": "record_page",
+      "lines": [
+        {
+          "class": "measured",
+          "key": "cost.model",
+          "text": "model cost 1250000 mmu"
+        },
+        {
+          "class": "measured",
+          "key": "cost.mu",
+          "text": "µ 50000 mmu"
+        },
+        {
+          "class": "measured",
+          "key": "goal.mode",
+          "text": "sealed contract",
+          "goal_mode": "sealed"
+        },
+        {
+          "class": "verdict",
+          "key": "goal.verdict",
+          "text": "3 of 4 judged turns on goal, 4 of 12 turns judged",
+          "goal_mode": "sealed"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.act.0",
+          "text": "stopped Bash",
+          "mode": "enforce",
+          "verdict": "block",
+          "tool_name": "Bash"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.act.1",
+          "text": "flagged",
+          "mode": "observe",
+          "verdict": "warn"
+        },
+        {
+          "class": "measured",
+          "key": "people.messages",
+          "text": "5 messages from a person"
+        },
+        {
+          "class": "measured",
+          "key": "context.compactions",
+          "text": "1 compactions"
+        }
+      ]
+    }
+  ]
+}
