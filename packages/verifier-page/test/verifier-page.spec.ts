@@ -92,3 +92,18 @@ test("malformed input is reported without verifying", async ({ page }) => {
   await expect(page.locator("#verdict")).toContainText("not valid JSON");
   expect(networkRequests).toEqual([]);
 });
+
+test("a page without crypto.subtle says so instead of failing every signature", async ({ page }) => {
+  // Browsers expose crypto.subtle only in secure contexts (https, localhost,
+  // file://). Served over plain http:// it is undefined, and the Ed25519
+  // check would throw and read as signature_invalid. Simulate that context.
+  await page.addInitScript(() => {
+    Object.defineProperty(globalThis.crypto, "subtle", { get: () => undefined });
+  });
+  const { networkRequests } = await open(page);
+  await verifyText(page, goldenBundle);
+  await expect(page.locator("#result")).toHaveAttribute("data-valid", "error");
+  await expect(page.locator("#verdict")).toContainText("secure context");
+  await expect(page.locator("#reasons")).toHaveCount(0);
+  expect(networkRequests).toEqual([]);
+});

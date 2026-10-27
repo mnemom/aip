@@ -23,3 +23,8 @@ context, aborts and counts every non-file request, verifies the golden
 bundle and every tampered fixture from `packages/verifier/test/fixtures/record`,
 and asserts the request count is zero. `.github/workflows/verifier-page.yml`
 runs it on every pull request.
+
+Host it over `https://` (or open it from `localhost` or a local file).
+Browsers expose Web Crypto (`crypto.subtle`), which the Ed25519 check
+needs, only in a secure context; over plain `http://` the page shows an
+error instead of a verdict.

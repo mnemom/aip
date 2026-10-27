@@ -147,6 +147,16 @@ function showError(message: string): void {
 }
 
 async function run(): Promise<void> {
+  // The Ed25519 check needs crypto.subtle, which browsers expose only in
+  // secure contexts (https, localhost, file://). Without it the verifier's
+  // check throws and every valid statement would read signature_invalid.
+  if (!globalThis.crypto?.subtle) {
+    showError(
+      "This browser exposes no Web Crypto (crypto.subtle) to this page, so signatures cannot be checked. Open the page from https://, localhost, or a local file: browsers allow Web Crypto only in a secure context.",
+    );
+    return;
+  }
+
   const inputText = $<HTMLTextAreaElement>("input").value;
   const jwksText = $<HTMLTextAreaElement>("jwks").value;
 
