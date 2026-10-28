@@ -172,10 +172,14 @@ jobs:
   verifier-test:
     permissions:
       contents: read
+      id-token: write       # Sigstore signing for the build-provenance attestation
+      attestations: write   # store the attestation on mnemom/aip
     if: github.event_name == 'release'
     name: Verifier CI gates + pack tarball
     needs: [verifier-guard]
     runs-on: ubuntu-latest
+    outputs:
+      tarball-sha256: ${{ steps.pack.outputs.sha256 }}
     defaults:
       run:
         working-directory: packages/verifier
@@ -199,10 +203,20 @@ jobs:
       - run: npm run build
       - run: npm test
       - name: Pack verifier tarball
+        id: pack
         run: |
           mkdir -p "$RUNNER_TEMP/verifier-pack"
           npm pack --pack-destination "$RUNNER_TEMP/verifier-pack"
           ls -l "$RUNNER_TEMP/verifier-pack"
+          set -- "$RUNNER_TEMP"/verifier-pack/*.tgz
+          if [ "$#" -ne 1 ]; then echo "ERROR: expected one tarball, found $#"; exit 1; fi
+          echo "sha256=$(sha256sum "$1" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+      # Build provenance for the exact bytes upload-verifier-release attaches:
+      # the subject is this .tgz, and the upload job refuses a tarball whose
+      # sha256 differs from steps.pack.outputs.sha256.
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: ${{ runner.temp }}/verifier-pack/*.tgz
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: verifier-tarball
@@ -221,6 +235,17 @@ jobs:
         with:
           name: verifier-tarball
           path: verifier-pack
+      - name: Check the tarball is the attested one
+        env:
+          ATTESTED_SHA256: ${{ needs.verifier-test.outputs.tarball-sha256 }}
+        run: |
+          set -- verifier-pack/*.tgz
+          if [ "$#" -ne 1 ]; then echo "ERROR: expected one tarball, found $#"; exit 1; fi
+          GOT=$(sha256sum "$1" | cut -d' ' -f1)
+          if [ -z "$ATTESTED_SHA256" ] || [ "$GOT" != "$ATTESTED_SHA256" ]; then
+            echo "ERROR: tarball sha256 $GOT != attested ${ATTESTED_SHA256:-<missing>}"
+            exit 1
+          fi
       - name: Upload tarball to the release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -234,7 +259,27 @@ jobs:
   # logic makes a no-op publish idempotent — when version is unchanged from
   # the registry, the call short-circuits without touching the registry.
 
+  # The dispatch path publishes to npm `latest`, which is only ever the SDK.
+  # Refuse any other directory: npm-directory=packages/verifier would put the
+  # verifier on npm `latest`, which the owner ruled out (MNE-9044); the
+  # verifier ships only as a GitHub release asset (aip-verifier- tags above).
+  dispatch-guard:
+    name: Refuse npm-directory other than packages/typescript
+    if: github.event_name == 'workflow_dispatch'
+    permissions: {}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check npm-directory
+        env:
+          NPM_DIRECTORY: ${{ inputs.npm-directory || 'packages/typescript' }}
+        run: |
+          if [ "$NPM_DIRECTORY" != "packages/typescript" ]; then
+            echo "ERROR: npm-directory '$NPM_DIRECTORY' is not allowed; the dispatch path publishes packages/typescript only"
+            exit 1
+          fi
+
   dispatch-publish-npm:
+    needs: [dispatch-guard]
     if: github.event_name == 'workflow_dispatch'
     # contents: write is over-granted relative to what dispatch-publish does
     # (the `gh release upload` step in the reusable workflow is gated on

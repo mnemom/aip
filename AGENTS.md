@@ -89,11 +89,23 @@ examples/                    # Working examples — used in docs
 - Deploy: `mnemom/deploy` orchestrator publishes to npm + PyPI on
   tagged releases. Don't modify the orchestrator.
 
-## Releasing the verifier (`packages/verifier`)
+### Release tags (`.github/workflows/publish.yml`)
 
-The verifier ships as a GitHub release asset, never to npm (MNE-9044).
-Nothing mints its tag: `release-please-config.json` lists only
-`packages/typescript` and `packages/python`, and `github-release.yml`
+| Tag | Publishes | Version check |
+|---|---|---|
+| `vX.Y.Z` | `packages/typescript` to npm `latest`, `packages/python` to PyPI (the verifier jobs also run and attach a tarball, unchecked against its version) | tag equals both SDK versions |
+| `aip-verifier-vX.Y.Z` | `@mnemom/aip-verifier` tarball attached to the GitHub release only, never npm or PyPI (MNE-9044) | tag equals `packages/verifier/package.json` version |
+
+- Create a verifier release from a commit on `main`, as a prerelease, e.g.
+  `gh release create aip-verifier-v0.6.0 --target <main sha> --prerelease`.
+  On an `aip-verifier-` tag the SDK validate, test, npm and PyPI jobs skip.
+- The `workflow_dispatch` path publishes `packages/typescript` only; any
+  other `npm-directory` is refused.
+
+### Releasing the verifier (`packages/verifier`)
+
+Nothing mints an `aip-verifier-v*` tag: `release-please-config.json` lists
+only `packages/typescript` and `packages/python`, and `github-release.yml`
 matches `vX.Y.Z-next` only. Cutting a verifier release is a manual step:
 
 1. Land the version bump in `packages/verifier/package.json` on `main`.
@@ -111,10 +123,9 @@ matches `vX.Y.Z-next` only. Cutting a verifier release is a manual step:
    equals `packages/verifier/package.json`. `publish.yml` strips
    `aip-verifier-v` and fails the run on a mismatch, so
    `aip-verifier-0.6.0` (no `v`) fails.
-4. On that prefix `publish.yml` skips the SDK jobs (version check, tests,
-   npm, PyPI). The verifier jobs attach
-   `mnemom-aip-verifier-<version>.tgz` to the release. Consumers install
-   from `https://github.com/mnemom/aip/releases/download/aip-verifier-v<version>/mnemom-aip-verifier-<version>.tgz`.
+4. The verifier jobs attach `mnemom-aip-verifier-<version>.tgz`, with a
+   build-provenance attestation, to the release. Consumers install from
+   `https://github.com/mnemom/aip/releases/download/aip-verifier-v<version>/mnemom-aip-verifier-<version>.tgz`.
 
 ## What you should NOT do
 
