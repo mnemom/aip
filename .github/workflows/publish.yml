@@ -146,14 +146,18 @@ jobs:
 
   # ── Release-triggered: @mnemom/aip-verifier → GitHub release asset (MNE-9044) ──
   #
-  # Owner decision (2026-10-27): the verifier is NOT published to npm. A release
-  # carries the packed tarball as a release asset. No npm token or OIDC is used.
+  # Owner decision (2026-10-27): a release carries the packed tarball as a release
+  # asset. Keith, 2026-10-28 (A-K-009): the package also goes to npm under the
+  # `next` dist-tag, never `latest`, through the org reusable npm-publish.yml
+  # (npm Trusted Publisher, OIDC, with provenance). No npm token is stored or read.
   #   1. verifier-guard keeps the existing guard script + self-test.
   #   2. verifier-test re-runs the verifier CI gates (ci.yml `verifier` job) and
-  #      packs the tarball, handed to the upload job as an artifact.
+  #      packs the tarball, handed to the upload jobs as an artifact.
   #   3. upload-verifier-release attaches the tarball to the release with `gh`.
+  #   4. publish-verifier-npm publishes packages/verifier to npm under `next`
+  #      through the org reusable npm-publish.yml.
   # Verifier-only releases (tag `aip-verifier-v<version>`) only: an SDK `v*`
-  # release skips these three jobs and carries no verifier tarball.
+  # release skips these four jobs and carries no verifier tarball.
   # Not wired into workflow_dispatch: dispatch-publish-npm stays typescript-only
   # (the `npm-directory` input is a choice with that one option).
 
@@ -260,6 +264,26 @@ jobs:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: gh release upload "$RELEASE_TAG" verifier-pack/*.tgz
 
+  publish-verifier-npm:
+    needs: [verifier-guard, verifier-test]
+    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'aip-verifier-')
+    permissions:
+      contents: write   # the reusable attaches the SBOM to the release
+      id-token: write   # OIDC -> npm Trusted Publisher; also signs the provenance
+    # Keith, 2026-10-28: the verifier goes through the org reusable like every
+    # other @mnemom package (ADR-020), not a hand-rolled npm publish. The
+    # reusable builds packages/verifier at the release commit, so this is not
+    # byte-for-byte the release-asset tarball; npm provenance ties it to this
+    # run and commit instead. verifier-test has already checked the tag against
+    # packages/verifier/package.json and run the CI gates on that commit.
+    # npm checks the Trusted Publisher against the CALLING workflow, so the
+    # npmjs.com config names publish.yml (this file), environment production.
+    # mnemom/.github @ scale/step-29-bump-node24-actions merge (ADR-020)
+    uses: mnemom/.github/.github/workflows/npm-publish.yml@3b60e34e88113070235f2d55248a3455295be153
+    with:
+      npm-directory: packages/verifier
+      tag: ${{ needs.verifier-guard.outputs.tag }}   # always `next`; the guard refuses anything else
+
   # ── Orchestrator dispatch publishing ──
   #
   # Both jobs fire in parallel on every main push. Each one's skip-on-existing
@@ -269,7 +293,7 @@ jobs:
   # The dispatch path publishes to npm `latest`, which is only ever the SDK.
   # Refuse any other directory: npm-directory=packages/verifier would put the
   # verifier on npm `latest`, which the owner ruled out (MNE-9044); the
-  # verifier ships only as a GitHub release asset (aip-verifier- tags above).
+  # verifier reaches npm only under `next`, from aip-verifier- releases above.
   dispatch-guard:
     name: Refuse npm-directory other than packages/typescript
     if: github.event_name == 'workflow_dispatch'
