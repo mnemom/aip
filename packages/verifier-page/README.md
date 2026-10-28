@@ -28,3 +28,22 @@ Host it over `https://` (or open it from `localhost` or a local file).
 Browsers expose Web Crypto (`crypto.subtle`), which the Ed25519 check
 needs, only in a secure context; over plain `http://` the page shows an
 error instead of a verdict.
+
+## Share page (`VERIFIER_PAGE_MODE`)
+
+Built with `VERIFIER_PAGE_MODE=true` (exactly that string; any other value
+builds the paste verifier above), the page is a share page instead. The
+signed card is in the URL fragment, `#card=<base64url JSON>`; browsers never
+send a fragment to a server and the CSP blocks the page from sending it
+anywhere. The page verifies it with `renderLines` against the key set built
+into the page and draws only the lines `renderLines` returns. A card that
+fails shows an error and none of the card's text. `og:image` is the generic
+`preview.png` (source `preview.svg`): no numbers. A link preview crawler
+never sees the fragment, so it could not show the card anyway.
+
+```sh
+npm run build:share   # dist-share/, with the fixture key set, for the tests only
+```
+
+`VERIFIER_PAGE_TEST_JWKS` swaps in a test key set; never set it for a build
+you deploy (CI checks `dist/` for the test key).

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Signed work record - Mnemom</title>
+<meta name="description" content="A signed work record, checked in your browser.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Signed work record">
+<meta property="og:description" content="A signed work record from Mnemom. Open the link to check the signature in your browser.">
+<meta property="og:image" content="./preview.png">
+<meta property="og:image:alt" content="Mnemom signed work record">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<main>
+  <article id="card" aria-labelledby="card-title">
+    <h1 id="card-title">Signed work record</h1>
+    <p id="status" role="status" class="chip" hidden></p>
+    <ul id="card-lines" class="card-lines" aria-label="Lines on this card" hidden></ul>
+    <p id="message" role="alert" hidden></p>
+  </article>
+  <footer>
+    <p>The card is in the link after the <code>#</code>. Your browser never sends it to a server, and this page makes no requests. Source: <code>github.com/mnemom/aip</code>, Apache-2.0.</p>
+  </footer>
+</main>
+<noscript><p>This page needs JavaScript to check the signature.</p></noscript>
+<script src="./app.js"></script>
+</body>
+</html>
