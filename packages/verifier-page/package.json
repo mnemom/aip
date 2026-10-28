@@ -9,7 +9,8 @@
     "build": "tsup && node scripts/copy-public.mjs",
     "typecheck": "tsc --noEmit",
     "test": "playwright test",
-    "serve": "node scripts/serve.mjs"
+    "serve": "node scripts/serve.mjs",
+    "build:share": "VERIFIER_PAGE_MODE=true OUT_DIR=dist-share VERIFIER_PAGE_TEST_JWKS=../verifier/test/fixtures/record/jwks.json tsup && VERIFIER_PAGE_MODE=true OUT_DIR=dist-share node scripts/copy-public.mjs"
   },
   "engines": {
     "node": ">=18.0.0"

@@ -42,3 +42,12 @@ table.statements { width: 100%; border-collapse: collapse; margin-top: 1rem; fon
 .statements tr.bad td { color: var(--bad); }
 footer { margin-top: 3rem; color: var(--muted); font-size: .9rem; }
 @media (max-width: 40rem) { .meta { grid-template-columns: 1fr; } .meta dd { margin-bottom: .4rem; } }
+.chip { display: inline-block; font-weight: 600; padding: .3rem .7rem; border-radius: 999px; border: 1px solid var(--ok); color: var(--ok); background: var(--ok-bg); margin: 0 0 1rem; }
+.card-lines { list-style: none; padding: 0; margin: 0; }
+.card-lines li { margin: 0 0 .75rem; padding: .75rem 1rem; border: 1px solid var(--line); border-radius: 8px; font-size: 1.5rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.card-lines li.revert { border-left: 4px solid var(--warn); background: var(--warn-bg); }
+.card-lines .tag { display: block; font-size: .85rem; font-weight: 700; color: var(--warn); }
+.card-lines .coverage { display: block; font-size: .9rem; font-weight: 400; color: var(--muted); }
+#message { border: 2px solid var(--bad); border-radius: 8px; padding: .75rem 1rem; color: var(--bad); background: var(--bad-bg); font-weight: 600; }
+#message.neutral { border-color: var(--line); color: var(--fg); background: var(--panel); font-weight: 400; }
+[hidden] { display: none !important; }

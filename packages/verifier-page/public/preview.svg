@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="Mnemom signed work record">
+  <rect width="1200" height="630" fill="#18181b"/>
+  <rect x="80" y="80" width="1040" height="470" rx="24" fill="#09090b" stroke="#3f3f46" stroke-width="2"/>
+  <circle cx="160" cy="180" r="36" fill="none" stroke="#2dd4bf" stroke-width="8"/>
+  <path d="M142 180 l14 14 l26 -28" fill="none" stroke="#2dd4bf" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="228" y="196" fill="#fafafa" font-family="system-ui, sans-serif" font-size="56" font-weight="700">Signed work record</text>
+  <text x="160" y="320" fill="#a1a1aa" font-family="system-ui, sans-serif" font-size="36">Open the link to check the signature</text>
+  <text x="160" y="376" fill="#a1a1aa" font-family="system-ui, sans-serif" font-size="36">in your browser. Nothing leaves it.</text>
+  <text x="160" y="500" fill="#fafafa" font-family="system-ui, sans-serif" font-size="40" font-weight="700">Mnemom</text>
+</svg>

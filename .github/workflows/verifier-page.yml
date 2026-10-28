@@ -5,8 +5,11 @@ name: Verifier page
 # Playwright test opens dist/index.html from file:// in an offline browser
 # context, aborts and counts every non-file request, and asserts zero.
 #
-# Record criterion that turns green here: K4.2 (verifier page verifies a
-# bundle with the network blocked). Runs on every PR and push to main with
+# Record criteria that turn green here: K4.2 (verifier page verifies a
+# bundle with the network blocked) and C5 row 6 / C5-R8 (the share page,
+# built with VERIFIER_PAGE_MODE=true, verifies a card from the URL fragment
+# with the network blocked, draws only the lines the verifier returns, and
+# has a generic preview). Runs on every PR and push to main with
 # no path filter, so it can be made a required check. Uploads dist/ as the
 # `verifier-page` artifact; it never deploys.
 
@@ -71,15 +74,32 @@ jobs:
         working-directory: packages/verifier-page
         run: npm run build
 
-      - name: Bundle makes no network call
+      # Share page: VERIFIER_PAGE_MODE is on only when exactly "true". The
+      # test build swaps in the fixture key set so the fixture card verifies;
+      # it is built to dist-share/, which is never uploaded.
+      - name: Build share page (VERIFIER_PAGE_MODE=true, fixture keys)
+        working-directory: packages/verifier-page
+        run: npm run build:share
+
+      - name: Bundles make no network call
         working-directory: packages/verifier-page
         run: |
-          if grep -nE "fetch\(|XMLHttpRequest|sendBeacon|WebSocket\(|import\(" dist/app.js; then
-            echo "::error::dist/app.js contains a network or dynamic-import call"; exit 1
+          for d in dist dist-share; do
+            if grep -nE "fetch\(|XMLHttpRequest|sendBeacon|WebSocket\(|import\(" "$d/app.js"; then
+              echo "::error::$d/app.js contains a network or dynamic-import call"; exit 1
+            fi
+            grep -q "connect-src 'none'" "$d/index.html"
+          done
+          # The deployable build carries only the published keys, never the fixture key.
+          if grep -q "aap-test-record" dist/app.js; then
+            echo "::error::dist/app.js contains the test key set"; exit 1
           fi
-          grep -q "connect-src 'none'" dist/index.html
+          # The deployable build is the paste verifier; the share page is opt-in.
+          if grep -q "card-lines" dist/index.html; then
+            echo "::error::dist/index.html is the share page; VERIFIER_PAGE_MODE must be unset in the deployable build"; exit 1
+          fi
 
-      - name: Offline verification test (K4.2)
+      - name: Offline verification tests (K4.2, C5-R8)
         working-directory: packages/verifier-page
         env:
           CI: "1"
