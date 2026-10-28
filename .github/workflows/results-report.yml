@@ -2,16 +2,25 @@ name: Results report
 
 # Rebuild each committed D90 results report from its signed outcomes and diff
 # it byte for byte against the committed file; any difference fails (MNE-9041).
-# Cases live in packages/results-report/fixtures/<case>/ as outcomes.json,
-# jwks.json and report.md. The builder verifies every outcome signature and
-# runs claim-lint over the report, so unsigned or hand-edited data cannot
-# produce a passing report. Read-only: it never deploys or writes back.
+# Cases live in packages/results-report/fixtures/<case>/ as report.md plus
+# either outcomes.json + jwks.json (signed AAP-Outcome/v1 statements; the
+# builder verifies every signature) or rows.json (the record app's unsigned
+# outcome rows, the shape mnemom-api #4129 produces; no signature to verify,
+# no arm, no estimate). claim-lint runs over every report. Read-only: it never
+# deploys, publishes or writes back. Runs on PRs touching the package or this
+# workflow (the byte-for-byte rebuild is the C5-R9 test), on push to main, weekly
+# and on demand.
 
 on:
   push:
     branches: [main]
   pull_request:
+    paths:
+      - "packages/results-report/**"
+      - ".github/workflows/results-report.yml"
   workflow_dispatch:
+  schedule:
+    - cron: "17 6 * * 1"
 
 permissions: {}
 
@@ -62,10 +71,14 @@ jobs:
           n=0
           for dir in fixtures/*/; do
             case="$(basename "$dir")"
-            node dist/cli.js build \
-              --outcomes "$dir/outcomes.json" \
-              --jwks "$dir/jwks.json" \
-              --out "$out/$case.md"
+            if [ -f "$dir/rows.json" ]; then
+              node dist/cli.js build --record-rows "$dir/rows.json" --out "$out/$case.md"
+            else
+              node dist/cli.js build \
+                --outcomes "$dir/outcomes.json" \
+                --jwks "$dir/jwks.json" \
+                --out "$out/$case.md"
+            fi
             cmp "$out/$case.md" "$dir/report.md" || {
               echo "::error::report for '$case' differs from a rebuild of its signed outcomes"
               diff -u "$dir/report.md" "$out/$case.md" || true

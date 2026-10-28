@@ -1,0 +1,7 @@
+[
+  { "repo": "mnemom/aip", "pr_number": 101, "team": "team_alpha", "merged_at": "2026-10-01T10:00:00.000Z", "merged_by_kind": "person", "status": "settled", "mu_charged_mmu": "4000" },
+  { "repo": "mnemom/aip", "pr_number": 102, "team": "team_alpha", "merged_at": "2026-10-02T10:00:00.000Z", "merged_by_kind": "automation", "status": "settled", "mu_charged_mmu": "2500" },
+  { "repo": "mnemom/aip", "pr_number": 103, "team": "team_alpha", "merged_at": "2026-10-03T10:00:00.000Z", "merged_by_kind": "unknown", "status": "settled", "mu_charged_mmu": null },
+  { "repo": "mnemom/aip", "pr_number": 104, "team": "team_beta", "merged_at": "2026-10-04T10:00:00.000Z", "merged_by_kind": "person", "status": "reverted", "mu_charged_mmu": "1000" },
+  { "repo": "mnemom/aip", "pr_number": 105, "team": "team_beta", "merged_at": "2026-10-25T10:00:00.000Z", "merged_by_kind": "person", "status": "watching", "mu_charged_mmu": null }
+]
