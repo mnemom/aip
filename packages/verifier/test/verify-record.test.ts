@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { canonicalJson } from "../src/canonical.js";
 import { FLAGS, REASONS, type RecordJwks } from "../src/statements.js";
 import { statementDigest, verify, verifyStatement } from "../src/verify-record.js";
-import { TEST_KID, signStatement, testJwk } from "./helpers/sign.js";
+import { RETIRED_KID, RETIRED_PRIVATE_KEY_HEX, TEST_KID, retiredJwk, signStatement, testJwk } from "./helpers/sign.js";
 import type { TamperedCase } from "./helpers/build-fixtures.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -178,5 +178,30 @@ describe("verifyStatement: order of checks", () => {
     expect(s.checkpoints).toHaveLength(1);
     const res = await verifyStatement(s, jwks);
     expect(res.flags).toEqual([]);
+  });
+});
+
+describe("key rotation: statements signed by a retired key", () => {
+  const oldStatement = async () =>
+    signStatement(
+      { ...fixture<Record<string, unknown>>("golden-conduct"), signing_key_id: RETIRED_KID },
+      RETIRED_PRIVATE_KEY_HEX,
+    );
+
+  it("verifies old-key and new-key statements against a JWKS holding both", async () => {
+    const both: RecordJwks = { keys: [await retiredJwk(), await testJwk()] };
+    const old = await verifyStatement(await oldStatement(), both);
+    expect(old.reasons).toEqual([]);
+    expect(old.valid).toBe(true);
+    expect(old.signing_key_id).toBe(RETIRED_KID);
+    const current = await verifyStatement(fixture("golden-conduct"), both);
+    expect(current.valid).toBe(true);
+    expect(current.signing_key_id).toBe(TEST_KID);
+  });
+
+  it("fails key_not_found once the retired key is dropped from the JWKS", async () => {
+    const res = await verifyStatement(await oldStatement(), { keys: [await testJwk()] });
+    expect(res.valid).toBe(false);
+    expect(res.reasons).toEqual([REASONS.key_not_found]);
   });
 });

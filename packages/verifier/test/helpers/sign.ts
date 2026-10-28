@@ -8,7 +8,7 @@
  */
 
 import { getPublicKeyAsync, signAsync } from "@noble/ed25519";
-import { utf8ToBytes, hexToBytes } from "@noble/hashes/utils.js";
+import { bytesToHex, utf8ToBytes, hexToBytes } from "@noble/hashes/utils.js";
 
 import { statementCommitment } from "../../src/verify-record.js";
 import type { RecordJwk, RecordJwks } from "../../src/statements.js";
@@ -40,4 +40,16 @@ export async function signStatement<T extends Record<string, unknown>>(
   const { signature: _drop, ...unsigned } = statement as T & { signature?: string };
   const sig = await signAsync(utf8ToBytes(statementCommitment(unsigned)), hexToBytes(privHex));
   return { ...(unsigned as T), signature: base64url(sig) };
+}
+
+/**
+ * Key-rotation vector: a second fixed, public test key standing in for a
+ * retired signer (the current key is TEST_KID above). Same caveat: never
+ * serve it from a JWKS.
+ */
+export const RETIRED_KID = "aap-test-record-2026-04";
+export const RETIRED_PRIVATE_KEY_HEX = bytesToHex(crypto.getRandomValues(new Uint8Array(32))); // generated per run, never committed
+
+export async function retiredJwk(): Promise<RecordJwk> {
+  return testJwk(RETIRED_KID, RETIRED_PRIVATE_KEY_HEX);
 }

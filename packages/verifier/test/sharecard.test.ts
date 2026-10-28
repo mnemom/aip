@@ -1,7 +1,10 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { getPublicKeyAsync, signAsync } from "@noble/ed25519";
+import { bytesToHex, hexToBytes, utf8ToBytes } from "@noble/hashes/utils.js";
 import { describe, expect, it } from "vitest";
+import { RETIRED_PRIVATE_KEY_HEX } from "./helpers/sign.js";
 import { canonicalJson, shareCardSigningInput, SHARE_CARD_STATEMENT_TYPES, SHARE_CARD_TYP, verifyShareCard } from "../src/sharecard.js";
 import {
   baseCard, buildFixtures, signWithTestKey, testPublicKeyHex, TRANSPARENCY_ROOT_TYP, TEST_KEY_ID, b64url,
@@ -215,5 +218,25 @@ describe("hardening (MNE-9022 review findings 1-4)", () => {
   });
   it("rejects duplicate line ids", async () => {
     await rejects((c) => (c.lines[1].id = c.lines[0].id), "duplicate line id");
+  });
+});
+
+describe("key rotation: card signed by a retired key", () => {
+  const signWithRetired = async () => {
+    const card = { ...baseCard(), signing_key_id: "retired-sharecard-key" };
+    const sig = await signAsync(utf8ToBytes(shareCardSigningInput(card)), hexToBytes(RETIRED_PRIVATE_KEY_HEX));
+    return { ...card, signature: b64url(sig) };
+  };
+
+  it("verifies with the retired public key and fails with the current one", async () => {
+    const card = await signWithRetired();
+    const retiredPk = bytesToHex(await getPublicKeyAsync(hexToBytes(RETIRED_PRIVATE_KEY_HEX)));
+    const ok = await verifyShareCard(card, { publicKey: retiredPk });
+    expect(ok.errors).toEqual([]);
+    expect(ok.valid).toBe(true);
+    const bad = await verifyShareCard(card, { publicKey: await testPublicKeyHex() });
+    expect(bad.valid).toBe(false);
+    expect(bad.lines).toEqual([]);
+    expect(bad.errors).toEqual(["signature: verification failed"]);
   });
 });
