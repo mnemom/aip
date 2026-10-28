@@ -43,6 +43,7 @@ jobs:
   # SDK releases only. A tag starting with `aip-verifier-` is a verifier-only
   # release (K4.1): these four jobs skip, so the SDK tag/version check never
   # fails and npm/PyPI are never touched, and only the verifier jobs below run.
+  # The verifier jobs carry the inverse condition, so the two paths are disjoint.
 
   validate:
     permissions:
@@ -151,13 +152,15 @@ jobs:
   #   2. verifier-test re-runs the verifier CI gates (ci.yml `verifier` job) and
   #      packs the tarball, handed to the upload job as an artifact.
   #   3. upload-verifier-release attaches the tarball to the release with `gh`.
+  # Verifier-only releases (tag `aip-verifier-v<version>`) only: an SDK `v*`
+  # release skips these three jobs and carries no verifier tarball.
   # Not wired into workflow_dispatch: dispatch-publish-npm stays typescript-only
   # (the `npm-directory` input is a choice with that one option).
 
   verifier-guard:
     permissions:
       contents: read
-    if: github.event_name == 'release'
+    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'aip-verifier-')
     name: Verifier dist-tag guard
     runs-on: ubuntu-latest
     outputs:
@@ -177,7 +180,7 @@ jobs:
   verifier-test:
     permissions:
       contents: read
-    if: github.event_name == 'release'
+    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'aip-verifier-')
     name: Verifier CI gates + pack tarball
     needs: [verifier-guard]
     runs-on: ubuntu-latest
@@ -190,7 +193,6 @@ jobs:
         with:
           node-version: "24"
       - name: Check tag against verifier version
-        if: startsWith(github.event.release.tag_name, 'aip-verifier-')
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
@@ -217,7 +219,7 @@ jobs:
   upload-verifier-release:
     name: Attach verifier tarball to GitHub release
     needs: [verifier-guard, verifier-test]
-    if: github.event_name == 'release'
+    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'aip-verifier-')
     runs-on: ubuntu-latest
     permissions:
       contents: write   # gh release upload
