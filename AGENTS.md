@@ -93,12 +93,12 @@ examples/                    # Working examples — used in docs
 
 | Tag | Publishes | Version check |
 |---|---|---|
-| `vX.Y.Z` | `packages/typescript` to npm `latest`, `packages/python` to PyPI (the verifier jobs also run and attach a tarball, unchecked against its version) | tag equals both SDK versions |
+| `vX.Y.Z` | `packages/typescript` to npm `latest`, `packages/python` to PyPI | tag equals both SDK versions |
 | `aip-verifier-vX.Y.Z` | `@mnemom/aip-verifier` tarball attached to the GitHub release only, never npm or PyPI (MNE-9044) | tag equals `packages/verifier/package.json` version |
 
-- Create a verifier release from a commit on `main`, as a prerelease, e.g.
-  `gh release create aip-verifier-v0.6.0 --target <main sha> --prerelease`.
-  On an `aip-verifier-` tag the SDK validate, test, npm and PyPI jobs skip.
+- On an `aip-verifier-` tag the SDK validate, test, npm and PyPI jobs skip;
+  on a `v*` tag the verifier jobs skip. Release steps are under
+  "Releasing the verifier" below.
 - The `workflow_dispatch` path publishes `packages/typescript` to npm (and
   `packages/python` to PyPI); any other `npm-directory` is refused.
 
