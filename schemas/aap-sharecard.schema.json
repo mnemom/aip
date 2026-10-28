@@ -28,7 +28,7 @@
         "additionalProperties": false,
         "required": ["typ", "hash"],
         "properties": {
-          "typ": { "enum": ["AAP-Statement/v1"] },
+          "typ": { "enum": ["AAP-ConductRecord/v1", "AAP-PRRecord/v1", "AAP-Outcome/v1"] },
           "hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
         }
       }

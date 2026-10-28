@@ -2,7 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { canonicalJson, shareCardSigningInput, SHARE_CARD_TYP, verifyShareCard } from "../src/sharecard.js";
+import { canonicalJson, shareCardSigningInput, SHARE_CARD_STATEMENT_TYPES, SHARE_CARD_TYP, verifyShareCard } from "../src/sharecard.js";
 import {
   baseCard, buildFixtures, signWithTestKey, testPublicKeyHex, TRANSPARENCY_ROOT_TYP, TEST_KEY_ID, b64url,
 } from "./helpers/sharecard-fixtures.js";
@@ -17,7 +17,7 @@ const GOLDEN =
   '{"id":"l1","kind":"count","label":"Changes reviewed","statement_hash":"' + "1".repeat(64) + '","value":42},' +
   '{"id":"l2","kind":"count","label":"Checks passed","statement_hash":"' + "2".repeat(64) + '","value":40}],' +
   '"period":{"end":"2026-10-07","start":"2026-10-01"},"signing_key_id":"test-sharecard-key-1",' +
-  '"statements":[{"hash":"' + "1".repeat(64) + '","typ":"AAP-Statement/v1"},{"hash":"' + "2".repeat(64) + '","typ":"AAP-Statement/v1"}],' +
+  '"statements":[{"hash":"' + "1".repeat(64) + '","typ":"AAP-ConductRecord/v1"},{"hash":"' + "2".repeat(64) + '","typ":"AAP-PRRecord/v1"}],' +
   '"typ":"AAP-ShareCard/v1"}';
 
 describe("fixtures", () => {
@@ -186,12 +186,32 @@ describe("hardening (MNE-9022 review findings 1-4)", () => {
     await rejects((c) => (c.period = { start: "2026-10-07", end: "2026-10-01" }), "start must be <= end");
     expect((await verifySigned((c) => (c.period = { start: "2026-10-07", end: "2026-10-07" }))).valid).toBe(true);
   });
+  it("pins statement typ to the three real record statement types", () => {
+    expect([...SHARE_CARD_STATEMENT_TYPES]).toEqual(["AAP-ConductRecord/v1", "AAP-PRRecord/v1", "AAP-Outcome/v1"]);
+  });
+  it("rejects the old placeholder, the card's own typ, and the bundle typ as a statement typ", async () => {
+    for (const t of ["AAP-Statement/v1", "AAP-ShareCard/v1", "AAP-RecordBundle/v1"]) {
+      await rejects((c) => (c.statements[0].typ = t), "statements[0].typ");
+    }
+  });
+  it("accepts each of the three real types", async () => {
+    const pk = await testPublicKeyHex();
+    for (const t of ["AAP-ConductRecord/v1", "AAP-PRRecord/v1", "AAP-Outcome/v1"]) {
+      const c = baseCard() as any;
+      c.statements[0].typ = t;
+      expect((await verifyShareCard(await signWithTestKey(c), { publicKey: pk })).valid).toBe(true);
+    }
+  });
+  it("keeps the schema enum in step with the verifier constant", () => {
+    const schema = JSON.parse(readFileSync(join(dir, "..", "..", "..", "..", "..", "schemas", "aap-sharecard.schema.json"), "utf8"));
+    expect(schema.properties.statements.items.properties.typ.enum).toEqual([...SHARE_CARD_STATEMENT_TYPES]);
+  });
   it("rejects unknown statement typ", async () => {
     await rejects((c) => (c.statements[0].typ = "anything"), "statements[0].typ");
     await rejects((c) => (c.statements[0].typ = "mnemom/secret-repo"), "statements[0].typ");
   });
   it("rejects a statement no line references", async () => {
-    await rejects((c) => c.statements.push({ typ: "AAP-Statement/v1", hash: "9".repeat(64) }), "not referenced by any line");
+    await rejects((c) => c.statements.push({ typ: "AAP-Outcome/v1", hash: "9".repeat(64) }), "not referenced by any line");
   });
   it("rejects duplicate line ids", async () => {
     await rejects((c) => (c.lines[1].id = c.lines[0].id), "duplicate line id");

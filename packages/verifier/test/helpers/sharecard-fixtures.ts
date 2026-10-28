@@ -36,8 +36,8 @@ export function baseCard(): Record<string, unknown> {
     issued_at: "2026-10-08T00:00:00.000Z",
     signing_key_id: TEST_KEY_ID,
     statements: [
-      { typ: "AAP-Statement/v1", hash: H1 },
-      { typ: "AAP-Statement/v1", hash: H2 },
+      { typ: "AAP-ConductRecord/v1", hash: H1 },
+      { typ: "AAP-PRRecord/v1", hash: H2 },
     ],
     lines: [
       { id: "l1", kind: "count", label: "Changes reviewed", value: 42, statement_hash: H1 },
@@ -49,7 +49,7 @@ export function baseCard(): Record<string, unknown> {
 export function periodCardBase(): Record<string, unknown> {
   const c = baseCard();
   c.card_id = "card-period-0001";
-  (c.statements as unknown[]).push({ typ: "AAP-Statement/v1", hash: H3 });
+  (c.statements as unknown[]).push({ typ: "AAP-Outcome/v1", hash: H3 });
   (c.lines as unknown[]).push({ id: "l3", kind: "revert", label: "Changes reverted", value: 2, statement_hash: H3 });
   return c;
 }
