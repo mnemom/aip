@@ -9,15 +9,15 @@
   "signing_key_id": "test-sharecard-key-1",
   "statements": [
     {
-      "typ": "AAP-Statement/v1",
+      "typ": "AAP-ConductRecord/v1",
       "hash": "1111111111111111111111111111111111111111111111111111111111111111"
     },
     {
-      "typ": "AAP-Statement/v1",
+      "typ": "AAP-PRRecord/v1",
       "hash": "2222222222222222222222222222222222222222222222222222222222222222"
     },
     {
-      "typ": "AAP-Statement/v1",
+      "typ": "AAP-Outcome/v1",
       "hash": "3333333333333333333333333333333333333333333333333333333333333333"
     }
   ],
@@ -44,5 +44,5 @@
       "statement_hash": "3333333333333333333333333333333333333333333333333333333333333333"
     }
   ],
-  "signature": "OQf-4xgUQbIxOef_BsJeTehfpqLPPR2GTv8_y6EbxPX9UkFp2PpE2pnETh2VqcwDfV1U_4bSR8Pwrpsch3DwCw"
+  "signature": "T5pLp7cq6EPR3fcPJeDCzXMWJqn_Libc6_xye0eb1IKM33LmZjrRBOqmLGIbrFmg25akMIOzbedSvYnPy8YuAg"
 }

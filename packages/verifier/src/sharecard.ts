@@ -75,8 +75,16 @@ const OPAQUE_ID = /^[a-z0-9_-]{1,64}$/;
  */
 const LABEL = /^[A-Za-z0-9 .,()+-]{1,40}$/;
 const LABEL_MAX = 40;
-/** Statement types a v1 card may commit to (the only type in v1 fixtures). */
-export const SHARE_CARD_STATEMENT_TYPES: readonly string[] = ["AAP-Statement/v1"];
+/**
+ * Statement types a v1 card may commit to: the three signed record statements
+ * (C5-R3). The share card itself ("AAP-ShareCard/v1") and the bundle are not
+ * valid sources. Mirrored in schemas/aap-sharecard.schema.json.
+ */
+export const SHARE_CARD_STATEMENT_TYPES: readonly string[] = [
+  "AAP-ConductRecord/v1",
+  "AAP-PRRecord/v1",
+  "AAP-Outcome/v1",
+];
 const SIGNATURE_LEN = 86; // 64 bytes, unpadded base64url
 const RFC3339 = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|([+-])(\d{2}):(\d{2}))$/;
 
