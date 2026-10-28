@@ -99,8 +99,8 @@ examples/                    # Working examples — used in docs
 - Create a verifier release from a commit on `main`, as a prerelease, e.g.
   `gh release create aip-verifier-v0.6.0 --target <main sha> --prerelease`.
   On an `aip-verifier-` tag the SDK validate, test, npm and PyPI jobs skip.
-- The `workflow_dispatch` path publishes `packages/typescript` only; any
-  other `npm-directory` is refused.
+- The `workflow_dispatch` path publishes `packages/typescript` to npm (and
+  `packages/python` to PyPI); any other `npm-directory` is refused.
 
 ### Releasing the verifier (`packages/verifier`)
 
