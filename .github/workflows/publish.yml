@@ -135,16 +135,14 @@ jobs:
       npm-directory: packages/typescript
       tag: latest
 
-  # ── Release-triggered: @mnemom/aip-verifier → dist-tag `next` ONLY (MNE-9044) ──
+  # ── Release-triggered: @mnemom/aip-verifier → GitHub release asset (MNE-9044) ──
   #
-  # The verifier is pre-GA. It publishes with `--tag next` and never `latest`;
-  # promoting to `latest` is a separate, human `npm dist-tag add`. Three layers:
-  #   1. verifier-guard refuses any tag but `next` (script + its test) and is the
-  #      ONLY source of the tag handed to the reusable publish below.
+  # Owner decision (2026-10-27): the verifier is NOT published to npm. A release
+  # carries the packed tarball as a release asset. No npm token or OIDC is used.
+  #   1. verifier-guard keeps the existing guard script + self-test.
   #   2. verifier-test re-runs the verifier CI gates (ci.yml `verifier` job) and
-  #      a `npm publish --dry-run --tag next` before anything is published.
-  #   3. verify-verifier-dist-tag fails the run if `latest` points at the
-  #      version just published.
+  #      packs the tarball, handed to the upload job as an artifact.
+  #   3. upload-verifier-release attaches the tarball to the release with `gh`.
   # Not wired into workflow_dispatch: dispatch-publish-npm stays typescript-only.
 
   verifier-guard:
@@ -171,7 +169,7 @@ jobs:
     permissions:
       contents: read
     if: github.event_name == 'release'
-    name: Verifier CI gates + publish dry-run
+    name: Verifier CI gates + pack tarball
     needs: [verifier-guard]
     runs-on: ubuntu-latest
     defaults:
@@ -186,45 +184,35 @@ jobs:
       - run: npm run typecheck
       - run: npm run build
       - run: npm test
-      - name: Publish dry-run (tag next)
-        env:
-          NPM_TAG: ${{ needs.verifier-guard.outputs.tag }}
-        run: npm publish --dry-run --access public --tag "$NPM_TAG"
+      - name: Pack verifier tarball
+        run: |
+          mkdir -p "$RUNNER_TEMP/verifier-pack"
+          npm pack --pack-destination "$RUNNER_TEMP/verifier-pack"
+          ls -l "$RUNNER_TEMP/verifier-pack"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: verifier-tarball
+          path: ${{ runner.temp }}/verifier-pack/*.tgz
+          if-no-files-found: error
 
-  publish-npm-verifier:
-    name: Publish @mnemom/aip-verifier (next)
+  upload-verifier-release:
+    name: Attach verifier tarball to GitHub release
     needs: [verifier-guard, verifier-test]
     if: github.event_name == 'release'
-    permissions:
-      contents: write   # for SBOM attach to GitHub Release
-      id-token: write   # for npm OIDC Trusted Publisher + provenance
-    # Same reusable + pin as publish-npm above (ADR-020). That pin hard-codes
-    # `npm publish --provenance` (no `provenance` input exists at this SHA); aip
-    # is a PUBLIC repo, so npm accepts it.
-    uses: mnemom/.github/.github/workflows/npm-publish.yml@3b60e34e88113070235f2d55248a3455295be153
-    with:
-      npm-directory: packages/verifier
-      tag: ${{ needs.verifier-guard.outputs.tag }}
-
-  verify-verifier-dist-tag:
-    permissions:
-      contents: read
-    name: Verify verifier is not on latest
-    needs: [publish-npm-verifier]
-    if: github.event_name == 'release'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write   # gh release upload
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
-      - name: Fail if latest points at the published verifier version
-        run: |
-          PKG_NAME=$(node -p "require('./packages/verifier/package.json').name")
-          PKG_VERSION=$(node -p "require('./packages/verifier/package.json').version")
-          LATEST=$(npm view "$PKG_NAME" dist-tags.latest 2>/dev/null || echo "")
-          echo "$PKG_NAME dist-tags.latest='${LATEST}' (this release: $PKG_VERSION)"
-          if [ "$LATEST" = "$PKG_VERSION" ]; then
-            echo "ERROR: $PKG_NAME@$PKG_VERSION is tagged latest; verifier must be next-only" >&2
-            exit 1
-          fi
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: verifier-tarball
+          path: verifier-pack
+      - name: Upload tarball to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$RELEASE_TAG" verifier-pack/*.tgz
 
   # ── Orchestrator dispatch publishing ──
   #
