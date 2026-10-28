@@ -1,0 +1,93 @@
+name: Verifier npm bootstrap (one-shot)
+
+# One-shot first publish of @mnemom/aip-verifier 0.6.1 under npm tag `next`
+# (K4.1, Keith go 2026-10-28). npm only lets a Trusted Publisher be added to a
+# package that already exists, so the first version goes out with the org
+# NPM_TOKEN; every later version goes through publish.yml's
+# publish-verifier-npm job (OIDC, provenance).
+#
+# REMOVE THIS WORKFLOW the same day the Trusted Publisher for
+# @mnemom/aip-verifier (repo mnemom/aip, workflow publish.yml, environment
+# production) is added on npmjs.com.
+#
+# Dispatch-only. It refuses to run if the package already exists on the
+# registry, so it can never publish twice.
+
+on:
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  bootstrap:
+    name: First publish of @mnemom/aip-verifier (next)
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: packages/verifier
+    env:
+      PACKAGE: "@mnemom/aip-verifier"
+      VERSION: "0.6.1"
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+        with:
+          ref: ${{ github.ref }}
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v6
+        with:
+          node-version: "24"
+          registry-url: https://registry.npmjs.org
+
+      - name: npm whoami (fail loudly without a working token)
+        run: |
+          if ! who=$(npm whoami 2>&1); then
+            echo "::error::npm whoami failed; NPM_TOKEN is missing, expired or not an npm user token: $who"
+            exit 1
+          fi
+          echo "Publishing as npm user: $who"
+
+      - name: Refuse unless the package is absent from the registry
+        run: |
+          if out=$(npm view "$PACKAGE" name 2>&1); then
+            echo "::error::$PACKAGE already exists on the registry ($out). This bootstrap only runs once; use publish.yml."
+            exit 1
+          fi
+          if ! grep -q 'E404' <<<"$out"; then
+            echo "::error::npm view did not return a 404, refusing: $out"
+            exit 1
+          fi
+          echo "$PACKAGE is not on the registry (404), continuing"
+
+      - name: Check the package version
+        run: |
+          v=$(node -p "require('./package.json').version")
+          n=$(node -p "require('./package.json').name")
+          if [ "$n" != "$PACKAGE" ] || [ "$v" != "$VERSION" ]; then
+            echo "::error::packages/verifier is $n@$v, expected $PACKAGE@$VERSION"
+            exit 1
+          fi
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm test
+
+      - name: Publish under next (no provenance; later versions get it from publish.yml)
+        run: npm publish --access public --tag next
+
+      - name: Confirm the version resolves on the registry
+        run: |
+          for _ in 1 2 3 4 5 6; do
+            if got=$(npm view "$PACKAGE@$VERSION" version 2>/dev/null) && [ "$got" = "$VERSION" ]; then
+              echo "$PACKAGE@$VERSION resolves"
+              npm view "$PACKAGE" dist-tags
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::$PACKAGE@$VERSION did not resolve on the registry after publish"
+          exit 1
