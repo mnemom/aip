@@ -146,14 +146,17 @@ jobs:
 
   # ── Release-triggered: @mnemom/aip-verifier → GitHub release asset (MNE-9044) ──
   #
-  # Owner decision (2026-10-27): the verifier is NOT published to npm. A release
-  # carries the packed tarball as a release asset. No npm token or OIDC is used.
+  # Owner decision (2026-10-27): a release carries the packed tarball as a release
+  # asset. Keith, 2026-10-28 (A-K-009): the same tarball also goes to npm under
+  # the `next` dist-tag, never `latest`, through an npm Trusted Publisher (OIDC)
+  # with provenance. No npm token is stored or read.
   #   1. verifier-guard keeps the existing guard script + self-test.
   #   2. verifier-test re-runs the verifier CI gates (ci.yml `verifier` job) and
-  #      packs the tarball, handed to the upload job as an artifact.
+  #      packs the tarball, handed to the upload jobs as an artifact.
   #   3. upload-verifier-release attaches the tarball to the release with `gh`.
+  #   4. publish-verifier-npm publishes that tarball to npm under `next`.
   # Verifier-only releases (tag `aip-verifier-v<version>`) only: an SDK `v*`
-  # release skips these three jobs and carries no verifier tarball.
+  # release skips these four jobs and carries no verifier tarball.
   # Not wired into workflow_dispatch: dispatch-publish-npm stays typescript-only
   # (the `npm-directory` input is a choice with that one option).
 
@@ -259,6 +262,75 @@ jobs:
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: gh release upload "$RELEASE_TAG" verifier-pack/*.tgz
+
+  publish-verifier-npm:
+    name: Publish verifier tarball to npm (next)
+    needs: [verifier-guard, verifier-test]
+    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'aip-verifier-')
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write   # OIDC -> npm Trusted Publisher; also signs the provenance
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+        with:
+          sparse-checkout: .github/scripts
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v6
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+      - name: Refuse any dist-tag but next
+        env:
+          VERIFIER_NPM_TAG: ${{ needs.verifier-guard.outputs.tag }}
+        run: .github/scripts/check-npm-dist-tag.sh "$VERIFIER_NPM_TAG"
+      # Trusted publishing needs npm 11.5.1 or later. Fail here rather than let
+      # an older npm fall back to a token lookup.
+      - name: Check npm supports trusted publishing
+        run: |
+          NPM_VERSION=$(npm --version)
+          if ! printf '11.5.1\n%s\n' "$NPM_VERSION" | sort -V -C; then
+            echo "ERROR: npm $NPM_VERSION is older than 11.5.1 and cannot publish through OIDC"
+            exit 1
+          fi
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: verifier-tarball
+          path: verifier-pack
+      - name: Check the tarball is the attested one
+        id: tarball
+        env:
+          ATTESTED_SHA256: ${{ needs.verifier-test.outputs.tarball-sha256 }}
+        run: |
+          set -- verifier-pack/*.tgz
+          if [ "$#" -ne 1 ]; then echo "ERROR: expected one tarball, found $#"; exit 1; fi
+          GOT=$(sha256sum "$1" | cut -d' ' -f1)
+          if [ -z "$ATTESTED_SHA256" ] || [ "$GOT" != "$ATTESTED_SHA256" ]; then
+            echo "ERROR: tarball sha256 $GOT != attested ${ATTESTED_SHA256:-<missing>}"
+            exit 1
+          fi
+          echo "path=$1" >> "$GITHUB_OUTPUT"
+          echo "version=$(tar -xOzf "$1" package/package.json | node -p 'JSON.parse(require("fs").readFileSync(0)).version')" >> "$GITHUB_OUTPUT"
+      - name: Check if already published
+        id: check
+        env:
+          VERSION: ${{ steps.tarball.outputs.version }}
+        run: |
+          if npm view "@mnemom/aip-verifier@$VERSION" version >/dev/null 2>&1; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "@mnemom/aip-verifier@$VERSION already published, skipping"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+      # No NODE_AUTH_TOKEN: npm exchanges the job's OIDC token for a short-lived
+      # publish token, which works only once the Trusted Publisher is set up on
+      # npmjs.com (repo mnemom/aip, workflow publish.yml, environment production).
+      - name: Publish to npm (Trusted Publisher, provenance)
+        if: steps.check.outputs.skip != 'true'
+        env:
+          TARBALL: ${{ steps.tarball.outputs.path }}
+          VERIFIER_NPM_TAG: ${{ needs.verifier-guard.outputs.tag }}
+        run: npm publish "$TARBALL" --tag "$VERIFIER_NPM_TAG" --provenance --access public
 
   # ── Orchestrator dispatch publishing ──
   #
