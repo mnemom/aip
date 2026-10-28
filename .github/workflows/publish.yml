@@ -26,9 +26,13 @@ on:
         required: false
         type: string
       npm-directory:
+        # A choice, not a free string: a dispatch can never hand packages/verifier
+        # (GitHub release asset only, MNE-9044) to the npm reusable below.
         description: "Directory containing package.json to publish"
         required: false
-        type: string
+        type: choice
+        options:
+          - packages/typescript
         default: "packages/typescript"
 
 
@@ -147,7 +151,8 @@ jobs:
   #   2. verifier-test re-runs the verifier CI gates (ci.yml `verifier` job) and
   #      packs the tarball, handed to the upload job as an artifact.
   #   3. upload-verifier-release attaches the tarball to the release with `gh`.
-  # Not wired into workflow_dispatch: dispatch-publish-npm stays typescript-only.
+  # Not wired into workflow_dispatch: dispatch-publish-npm stays typescript-only
+  # (the `npm-directory` input is a choice with that one option).
 
   verifier-guard:
     permissions:
