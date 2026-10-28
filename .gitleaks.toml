@@ -1,0 +1,22 @@
+# gitleaks config for mnemom/aip (record criterion K5.3).
+#
+# Extends the default rules. Reviewed against the full history on 2026-10-28.
+# No allowlist skips a whole file: each one is per-rule with condition = "AND",
+# so a finding is dropped only when it sits at the listed path AND its value is
+# the listed one. Any other key there, of any rule, still fails the scan. The
+# secret-scan meta-check plants keys at that path to prove it.
+
+title = "mnemom/aip"
+
+[extend]
+useDefault = true
+
+# RFC 8032 section 7.1, test 1: the published Ed25519 test-vector secret key,
+# used to sign verifier test fixtures. Public by design, never a deploy key.
+[[rules]]
+id = "generic-api-key"
+[[rules.allowlists]]
+description = "RFC 8032 Ed25519 test vector 1 in the verifier signing helper"
+condition = "AND"
+paths = ['''(^|/)packages/verifier/test/helpers/sign\.ts$''']
+regexes = ['''^9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60$''']
