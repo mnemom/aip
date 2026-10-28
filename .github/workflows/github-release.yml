@@ -1,0 +1,141 @@
+name: GitHub Release (next)
+
+# MS5: publish a `next` PRE-RELEASE on GitHub, and (separately, deliberately)
+# mark a release `latest` later. GitHub release only: NO npm publish, NO PyPI
+# publish, no registry token or OIDC anywhere in this file.
+#
+# Never fires on its own. Triggers are exactly:
+#   - workflow_dispatch (action = publish-next | promote-latest)
+#   - a pushed tag matching vX.Y.Z-next[.N] (publish-next only)
+# Release-please tags (vX.Y.Z) do NOT match the tag filter.
+#
+# Why this does not cascade into publish.yml: publish.yml listens for
+# `release: published`. Events caused by the default GITHUB_TOKEN do not start
+# new workflow runs, and every release mutation here uses that token. Do not
+# swap in a PAT or App token without revisiting that.
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+-next"
+      - "v[0-9]+.[0-9]+.[0-9]+-next.[0-9]+"
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "publish-next: create/update the pre-release. promote-latest: mark an existing release latest."
+        required: true
+        type: choice
+        options:
+          - publish-next
+          - promote-latest
+        default: publish-next
+      tag:
+        description: "Release tag, e.g. v1.4.0-next.1 (publish-next) or the tag to promote (promote-latest)"
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  validate:
+    permissions:
+      contents: read
+    name: Validate tag
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - name: Resolve and check tag
+        id: tag
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+          INPUT_ACTION: ${{ inputs.action }}
+        run: |
+          TAG="${INPUT_TAG:-$GITHUB_REF_NAME}"
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ] && [ "${INPUT_ACTION}" = "promote-latest" ]; then
+            RE='^v[0-9]+\.[0-9]+\.[0-9]+(-next(\.[0-9]+)?)?$'
+          else
+            RE='^v[0-9]+\.[0-9]+\.[0-9]+-next(\.[0-9]+)?$'
+          fi
+          if ! [[ "$TAG" =~ $RE ]]; then
+            echo "ERROR: tag '$TAG' does not match $RE"
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
+  verifier-test:
+    permissions:
+      contents: read
+    if: github.event_name == 'push' || inputs.action == 'publish-next'
+    name: Verifier CI gates + pack tarball
+    needs: [validate]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/verifier
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v6
+        with:
+          node-version: "24"
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm test
+      - name: Pack verifier tarball
+        run: |
+          mkdir -p "$RUNNER_TEMP/verifier-pack"
+          npm pack --pack-destination "$RUNNER_TEMP/verifier-pack"
+          ls -l "$RUNNER_TEMP/verifier-pack"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: verifier-tarball
+          path: ${{ runner.temp }}/verifier-pack/*.tgz
+          if-no-files-found: error
+
+  publish-next:
+    name: Publish next pre-release
+    needs: [validate, verifier-test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # gh release create / upload
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: verifier-tarball
+          path: verifier-pack
+      - name: Create pre-release (never latest) and attach tarball
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.validate.outputs.tag }}
+          TARGET_SHA: ${{ github.sha }}
+        run: |
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release upload "$RELEASE_TAG" verifier-pack/*.tgz --clobber
+          else
+            gh release create "$RELEASE_TAG" verifier-pack/*.tgz \
+              --target "$TARGET_SHA" \
+              --title "$RELEASE_TAG" \
+              --generate-notes \
+              --prerelease \
+              --latest=false
+          fi
+
+  promote-latest:
+    name: Mark release latest
+    needs: [validate]
+    if: github.event_name == 'workflow_dispatch' && inputs.action == 'promote-latest'
+    runs-on: ubuntu-latest
+    environment: production   # approval gate, same as the PyPI publish jobs
+    permissions:
+      contents: write   # gh release edit
+    steps:
+      - name: Promote to latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ needs.validate.outputs.tag }}
+        run: |
+          gh release view "$RELEASE_TAG" >/dev/null
+          gh release edit "$RELEASE_TAG" --prerelease=false --latest
