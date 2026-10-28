@@ -234,7 +234,27 @@ jobs:
   # logic makes a no-op publish idempotent — when version is unchanged from
   # the registry, the call short-circuits without touching the registry.
 
+  # The dispatch path publishes to npm `latest`, which is only ever the SDK.
+  # Refuse any other directory: npm-directory=packages/verifier would put the
+  # verifier on npm `latest`, which the owner ruled out (MNE-9044); the
+  # verifier ships only as a GitHub release asset (aip-verifier- tags above).
+  dispatch-guard:
+    name: Refuse npm-directory other than packages/typescript
+    if: github.event_name == 'workflow_dispatch'
+    permissions: {}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check npm-directory
+        env:
+          NPM_DIRECTORY: ${{ inputs.npm-directory || 'packages/typescript' }}
+        run: |
+          if [ "$NPM_DIRECTORY" != "packages/typescript" ]; then
+            echo "ERROR: npm-directory '$NPM_DIRECTORY' is not allowed; the dispatch path publishes packages/typescript only"
+            exit 1
+          fi
+
   dispatch-publish-npm:
+    needs: [dispatch-guard]
     if: github.event_name == 'workflow_dispatch'
     # contents: write is over-granted relative to what dispatch-publish does
     # (the `gh release upload` step in the reusable workflow is gated on
