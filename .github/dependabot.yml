@@ -29,3 +29,14 @@ updates:
     groups:
       ci-tooling:
         patterns: ["*"]
+  # The verifier, its page and the results report each carry their own package-lock.json.
+  - package-ecosystem: "npm"
+    directories:
+      - "/packages/verifier"
+      - "/packages/verifier-page"
+      - "/packages/results-report"
+    schedule:
+      interval: "weekly"
+    groups:
+      package-dependencies:
+        patterns: ["*"]
