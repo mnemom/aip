@@ -7,9 +7,17 @@ name: Results report
 # builder verifies every signature) or rows.json (the record app's unsigned
 # outcome rows, the shape mnemom-api #4129 produces; no signature to verify,
 # no arm, no estimate). claim-lint runs over every report. Read-only: it never
-# deploys, publishes or writes back. Manual or weekly only.
+# deploys, publishes or writes back. Runs on PRs touching the package or this
+# workflow (the byte-for-byte rebuild is the C5-R9 test), on push to main, weekly
+# and on demand.
 
 on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - "packages/results-report/**"
+      - ".github/workflows/results-report.yml"
   workflow_dispatch:
   schedule:
     - cron: "17 6 * * 1"
