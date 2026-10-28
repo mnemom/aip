@@ -35,11 +35,15 @@ on:
 permissions: {}
 jobs:
   # ── Release-triggered: validate → test → (publish-npm, publish-pypi) ──
+  #
+  # SDK releases only. A tag starting with `aip-verifier-` is a verifier-only
+  # release (K4.1): these four jobs skip, so the SDK tag/version check never
+  # fails and npm/PyPI are never touched, and only the verifier jobs below run.
 
   validate:
     permissions:
       contents: read
-    if: github.event_name == 'release'
+    if: github.event_name == 'release' && !startsWith(github.event.release.tag_name, 'aip-verifier-')
     name: Validate versions
     runs-on: ubuntu-latest
     steps:
@@ -70,7 +74,7 @@ jobs:
   test:
     permissions:
       contents: read
-    if: github.event_name == 'release'
+    if: github.event_name == 'release' && !startsWith(github.event.release.tag_name, 'aip-verifier-')
     name: Test
     runs-on: ubuntu-latest
     steps:
@@ -101,7 +105,7 @@ jobs:
   publish-pypi:
     name: Publish to PyPI
     needs: [validate, test]
-    if: github.event_name == 'release'
+    if: github.event_name == 'release' && !startsWith(github.event.release.tag_name, 'aip-verifier-')
     runs-on: ubuntu-latest
     permissions:
       id-token: write   # OIDC → PyPI Trusted Publisher
@@ -125,7 +129,7 @@ jobs:
 
   publish-npm:
     needs: [validate, test]
-    if: github.event_name == 'release'
+    if: github.event_name == 'release' && !startsWith(github.event.release.tag_name, 'aip-verifier-')
     permissions:
       contents: write   # for SBOM attach to GitHub Release
       id-token: write   # for npm OIDC Trusted Publisher
@@ -180,6 +184,16 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v6
         with:
           node-version: "24"
+      - name: Check tag against verifier version
+        if: startsWith(github.event.release.tag_name, 'aip-verifier-')
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          VERIFIER_VERSION=$(node -p "require('./package.json').version")
+          if [ "${RELEASE_TAG#aip-verifier-v}" != "$VERIFIER_VERSION" ]; then
+            echo "ERROR: packages/verifier/package.json version ($VERIFIER_VERSION) != tag ($RELEASE_TAG)"
+            exit 1
+          fi
       - run: npm ci
       - run: npm run typecheck
       - run: npm run build
