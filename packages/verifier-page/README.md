@@ -37,8 +37,10 @@ signed card is in the URL fragment, `#card=<base64url JSON>`; browsers never
 send a fragment to a server and the CSP blocks the page from sending it
 anywhere. The page verifies it with `renderLines` against the key set built
 into the page and draws only the lines `renderLines` returns. A card that
-fails shows an error and none of the card's text. `og:image` is the generic
-`preview.png` (source `preview.svg`): no numbers. A link preview crawler
+fails shows an error and none of the card's text. `og:image` and `twitter:image` are the generic
+`preview.png` (source `preview.svg`): no numbers. Crawlers need an absolute URL,
+so the build writes one: `SHARE_OG_IMAGE_URL` (https, no query/fragment;
+default `https://www.mnemom.ai/share/preview.png`). A link preview crawler
 never sees the fragment, so it could not show the card anyway.
 
 ```sh

@@ -113,7 +113,13 @@ test("the preview image is generic: no numbers in the tags or the image source",
   await blocked(page);
   await page.goto(shareUrl);
   const meta = async (sel: string) => (await page.locator(sel).getAttribute("content")) ?? "";
-  expect(await meta('meta[property="og:image"]')).toBe("./preview.png");
+  for (const sel of ['meta[property="og:image"]', 'meta[name="twitter:image"]']) {
+    const url = new URL(await meta(sel)); // throws if relative
+    expect(url.protocol).toBe("https:");
+    expect(url.search + url.hash).toBe("");
+    expect(url.pathname).not.toMatch(/\d/);
+  }
+  expect(await meta('meta[property="og:image"]')).toBe("https://www.mnemom.ai/share/preview.png");
   for (const sel of ['meta[property="og:title"]', 'meta[property="og:description"]', 'meta[property="og:image:alt"]', 'meta[name="description"]']) {
     expect(await meta(sel)).not.toMatch(/\d/);
   }
