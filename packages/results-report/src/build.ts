@@ -84,7 +84,8 @@ export function buildReport(outcomes: Outcome[]): Report {
   const reverts = all.filter((o) => o.reverted).sort(by((o) => `${o.team}\u0000${o.digest}`));
   if (reverts.length === 0) line("outcome", "outcome", "No reverts recorded.");
   for (const o of reverts) {
-    line("outcome", "outcome", `${o.team}: revert of merge ${short(o.merge_sha)} (outcome ${short(o.digest)})`);
+    const what = o.ref !== undefined ? `revert of ${o.ref}` : `revert of merge ${short(o.merge_sha)} (outcome ${short(o.digest)})`;
+    line("outcome", "outcome", `${o.team}: ${what}`);
   }
   md.push("");
 

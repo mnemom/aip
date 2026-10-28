@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { lintRendering } from "@mnemom/aip-verifier";
 
 import { TEST_KID, signStatement, testJwks } from "../../verifier/test/helpers/sign.js";
-import { readOutcomes, type Outcome } from "../src/adapter.js";
+import { readOutcomes, readRecordRows, type Outcome } from "../src/adapter.js";
 import { buildReport } from "../src/build.js";
 
 const FIX = join(dirname(fileURLToPath(import.meta.url)), "..", "fixtures");
@@ -88,5 +88,55 @@ describe("results report", () => {
     const md = buildReport([] as Outcome[]).markdown;
     expect(md).toContain("No outcomes recorded.");
     expect(md).toContain("No reverts recorded.");
+  });
+});
+
+describe("record-app rows (the real C3 shape, mnemom-api #4129)", () => {
+  const rows = () => JSON.parse(readFileSync(join(FIX, "record-rows", "rows.json"), "utf8"));
+
+  it("rebuilds byte for byte, in any input order", () => {
+    const a = buildReport(readRecordRows(rows())).markdown;
+    expect(buildReport(readRecordRows(rows().reverse())).markdown).toBe(a);
+    expect(a).toBe(readFileSync(join(FIX, "record-rows", "report.md"), "utf8"));
+  });
+
+  it("leaves a watching row out, lists the revert by repo and PR", () => {
+    const outs = readRecordRows(rows());
+    expect(outs.map((o) => o.digest)).not.toContain("mnemom/aip#105");
+    const md = buildReport(outs).markdown;
+    expect(md).toContain("team_beta: revert of mnemom/aip#104");
+    expect(md).toContain("team_beta: 1 PR, 1 revert");
+  });
+
+  it("says accepted only of a person merge; unknown and automation never", () => {
+    const md = buildReport(readRecordRows(rows())).markdown;
+    expect(md).toContain("team_alpha: 3 PRs, 1 human-merged and accepted with no revert, 2 automation-merged with no revert, 0 reverts");
+    const noPerson = buildReport(readRecordRows(rows().filter((r: { merged_by_kind: string }) => r.merged_by_kind !== "person")));
+    expect(noPerson.markdown).not.toMatch(/accepted/i);
+  });
+
+  it("builds no head-to-head and no estimate: rows carry neither arm nor estimate", () => {
+    const md = buildReport(readRecordRows(rows())).markdown;
+    expect(md).not.toMatch(/Head-to-head|estimate/i);
+  });
+
+  it("passes claim-lint", () => {
+    expect(lintRendering({ surface: "record_page", lines: buildReport(readRecordRows(rows())).lines }).ok).toBe(true);
+  });
+
+  it("reads no person field and rejects malformed rows", () => {
+    const md = buildReport(readRecordRows([{ ...rows()[0], author_login: "someone-secret", agent_id: "agent-secret" }])).markdown;
+    expect(md).not.toMatch(/secret/);
+    const base = rows()[0];
+    for (const bad of [{ repo: "nope" }, { pr_number: 0 }, { team: "" }, { merged_by_kind: "human" }, { status: "accepted" }]) {
+      expect(() => readRecordRows([{ ...base, ...bad }])).toThrow();
+    }
+    expect(() => readRecordRows([base, base])).toThrow(/repeats/);
+    expect(() => readRecordRows({})).toThrow();
+  });
+
+  it("an estimate on a row is ignored: only signed statements can carry one", () => {
+    const md = buildReport(readRecordRows([{ ...rows()[0], estimate: { method: "lower_bound", counting_floor_tokens: 200000, net_of_mu: true, reports_loss: true, net_lower_bound: 5 } }])).markdown;
+    expect(md).not.toMatch(/estimate/i);
   });
 });
