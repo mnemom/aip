@@ -89,6 +89,19 @@ examples/                    # Working examples — used in docs
 - Deploy: `mnemom/deploy` orchestrator publishes to npm + PyPI on
   tagged releases. Don't modify the orchestrator.
 
+### Release tags (`.github/workflows/publish.yml`)
+
+| Tag | Publishes | Version check |
+|---|---|---|
+| `vX.Y.Z` | `packages/typescript` to npm `latest`, `packages/python` to PyPI (the verifier jobs also run and attach a tarball, unchecked against its version) | tag equals both SDK versions |
+| `aip-verifier-vX.Y.Z` | `@mnemom/aip-verifier` tarball attached to the GitHub release only, never npm or PyPI (MNE-9044) | tag equals `packages/verifier/package.json` version |
+
+- Create a verifier release from a commit on `main`, as a prerelease, e.g.
+  `gh release create aip-verifier-v0.6.0 --target <main sha> --prerelease`.
+  On an `aip-verifier-` tag the SDK validate, test, npm and PyPI jobs skip.
+- The `workflow_dispatch` path publishes `packages/typescript` only; any
+  other `npm-directory` is refused.
+
 ## What you should NOT do
 
 - Don't add new runtime dependencies without explicit approval. AIP is
