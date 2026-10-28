@@ -102,6 +102,31 @@ examples/                    # Working examples — used in docs
 - The `workflow_dispatch` path publishes `packages/typescript` only; any
   other `npm-directory` is refused.
 
+### Releasing the verifier (`packages/verifier`)
+
+Nothing mints an `aip-verifier-v*` tag: `release-please-config.json` lists
+only `packages/typescript` and `packages/python`, and `github-release.yml`
+matches `vX.Y.Z-next` only. Cutting a verifier release is a manual step:
+
+1. Land the version bump in `packages/verifier/package.json` on `main`.
+2. Create the release as a person (`gh` with your own login). A release
+   made with `GITHUB_TOKEN` does not start `publish.yml`.
+
+   ```bash
+   gh release create aip-verifier-v<version> --repo mnemom/aip \
+     --target <main-sha> --title "@mnemom/aip-verifier <version>" \
+     --notes "Verifier tarball built from main. Not published to npm." \
+     --prerelease --latest=false
+   ```
+
+3. The tag form is exactly `aip-verifier-v<version>`, where `<version>`
+   equals `packages/verifier/package.json`. `publish.yml` strips
+   `aip-verifier-v` and fails the run on a mismatch, so
+   `aip-verifier-0.6.0` (no `v`) fails.
+4. The verifier jobs attach `mnemom-aip-verifier-<version>.tgz`, with a
+   build-provenance attestation, to the release. Consumers install from
+   `https://github.com/mnemom/aip/releases/download/aip-verifier-v<version>/mnemom-aip-verifier-<version>.tgz`.
+
 ## What you should NOT do
 
 - Don't add new runtime dependencies without explicit approval. AIP is
