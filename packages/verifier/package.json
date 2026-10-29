@@ -1,7 +1,7 @@
 {
   "name": "@mnemom/aip-verifier",
-  "version": "0.6.1",
-  "description": "Offline verification of AIP integrity certificates \u2014 Ed25519 signatures, chain hashes, and Merkle proofs",
+  "version": "0.6.2",
+  "description": "Offline verification of AIP integrity certificates — Ed25519 signatures, chain hashes, and Merkle proofs",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
