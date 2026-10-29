@@ -99,8 +99,8 @@ examples/                    # Working examples — used in docs
 - On an `aip-verifier-` tag the SDK validate, test, npm and PyPI jobs skip;
   on a `v*` tag the verifier jobs skip. Release steps are under
   "Releasing the verifier" below.
-- The `workflow_dispatch` path publishes `packages/typescript` only; any
-  other `npm-directory` is refused.
+- The `workflow_dispatch` path publishes `packages/typescript` to npm (and
+  `packages/python` to PyPI); any other `npm-directory` is refused.
 
 ### Releasing the verifier (`packages/verifier`)
 
