@@ -84,12 +84,12 @@ jobs:
     name: evaluate
     # `issue_comment` fires on EVERY comment in the repo, issues included, and this job
     # spends a full Agent SDK review run. So it is filtered down to the only comments that
-    # can change the gate's answer. This is a COST filter, not a security control — it
-    # deliberately does not check who wrote the comment. Eligibility (not a bot, author
-    # association, SHA matches the current head, no later revoke) is decided inside the
-    # worker off data read fresh from the API, and must stay there: a workflow-level author
-    # check would be a second copy of an authorization rule, free to drift out of step with
-    # the one that counts.
+    # can change the gate's answer. This `if:` is a COST filter, not a security control.
+    # Eligibility (not a bot, author association, SHA matches the current head, no later
+    # revoke) is decided inside the worker off data read fresh from the API, and must stay
+    # there. On this PUBLIC repo the `pr` step adds a second cost filter (see its
+    # STANDING note): a review or comment from an account without write access ends the
+    # run before the App token, install or reviewers.
     if: >-
       github.event_name != 'issue_comment' ||
       (github.event.issue.pull_request != null &&
@@ -124,7 +124,55 @@ jobs:
         id: pr
         env:
           DISPATCH_PR: ${{ github.event.inputs.pr_number }}
+          # Read only via env, never interpolated into the script (same rule as adw-zte.yml).
+          SENDER_LOGIN: ${{ github.event.sender.login }}
         run: |
+          # STANDING (aip only; COST control, not authz). On a public repo any GitHub account
+          # can submit a review or comment `/adw-approve`, and each would start a full
+          # reviewer run. The sign-offs the worker honours need write standing (it refuses
+          # `/adw-approve` without it, and a review only satisfies branch protection from a
+          # writer), so for these two triggers the SENDER (reviewer, dismisser, commenter or
+          # editor) must hold
+          # write/admin on this repo, read from the REAL permission endpoint exactly as
+          # adw-zte.yml's `decide` step does (MNE-2774: `author_association` cannot see
+          # private org membership, so it would drop a private member's sign-off). A
+          # determinate "no" (404, or read/triage/none) skips quietly with no status; an
+          # indeterminate answer after retries fails the run loudly rather than dropping a
+          # sign-off that may be valid (MNE-5813). Push, dispatch and sweep runs need no
+          # check: their triggers already require write access or carry no outside input.
+          case "$GITHUB_EVENT_NAME" in
+            pull_request_review|issue_comment)
+              PERM=""
+              if [ -n "$SENDER_LOGIN" ]; then
+                for attempt in 1 2 3 4 5; do
+                  resp=$(gh api "repos/$GH_REPO/collaborators/$SENDER_LOGIN/permission" -i 2>/dev/null) || true
+                  code=$(printf '%s\n' "$resp" | head -n1 | awk '{print $2}')
+                  case "$code" in
+                    200)
+                      PERM=$(printf '%s\n' "$resp" \
+                        | awk 'body { print } /^\r?$/ { body=1 }' \
+                        | jq -r '.permission // "none"')
+                      break
+                      ;;
+                    404) PERM="none"; break ;;
+                  esac
+                  if [ "$attempt" -lt 5 ]; then sleep $((attempt * 5)); fi
+                done
+                if [ -z "$PERM" ]; then
+                  echo "::error title=review-gate: permission lookup unavailable::Could not resolve $SENDER_LOGIN's permission on $GH_REPO after 5 attempts. Failing rather than dropping a sign-off that may be authorized; re-run this job once the API recovers."
+                  exit 1
+                fi
+              fi
+              case "$PERM" in
+                admin|write) ;;
+                *)
+                  echo "Sender '${SENDER_LOGIN:-<none>}' has '${PERM:-none}' on $GH_REPO, not write — this $GITHUB_EVENT_NAME cannot change the gate; skipping."
+                  echo "skip=1" >> "$GITHUB_OUTPUT"
+                  exit 0
+                  ;;
+              esac
+              ;;
+          esac
           if [ "$GITHUB_EVENT_NAME" = "issue_comment" ]; then
             # A comment payload names the PR but carries no head SHA, so the identity fields
             # are resolved by the SAME REST call the dispatch path uses. Resolving the head
