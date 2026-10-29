@@ -1,0 +1,444 @@
+# Pre-merge code-review gate for aip (self-hosted ADW design + code review).
+#
+# Ported from mnemom/mnemom-adw's own `.github/workflows/review-gate.yml`. It runs the
+# fleet's adversarial reviewers (the design lens, the code lens, and the security lens)
+# via the Claude Agent SDK against this PR's diff, then publishes a `review-gate` commit
+# status on the PR head:
+#   success  — no blocking design/code review findings on HEAD
+#   failure  — blocking findings remain (or the gate errored — fail closed)
+#   pending  — a reviewer produced no verdict
+#
+# WHY THIS REPO NEEDS IT: the deploy repo-security gate (mnemom/deploy
+# gates/repo-security/check.js, evaluateRepo step 5) requires a `review-gate` check on this
+# repo's default branch (Record criterion K1.15). This workflow is what publishes it.
+#
+# ⚠ NOT YET A REQUIRED CHECK. Adding `review-gate` to
+# `repos/mnemom/aip/branches/main/protection` is a deliberate SECOND step, taken by a
+# human after this workflow has produced verdicts on real PRs here. Promoting a check to
+# required before it is known to run reliably strands every open PR behind a status that may
+# never appear. Until that flip, this gate is observable-but-advisory: it reds loudly, it
+# does not block.
+#
+# SECURITY (load-bearing): this runs on pull_request_target with a write token AND a Claude
+# secret. It always checks out the TRUSTED default-branch copy of this repo (via the explicit
+# `ref:` pin) and reads the PR diff as DATA via `gh pr diff` — it NEVER checks out or executes
+# PR-head code, so no token is ever exposed to PR-controlled code. The reviewers receive the
+# diff as a file to read, not a tree to run.
+#
+# The GitHub App token minted below is scoped to `mnemom-adw` ALONE and is used for exactly
+# one thing: installing the (private) worker package. It deliberately does NOT carry write
+# scope on this repo — every write the gate performs against aip goes through the
+# ambient `GITHUB_TOKEN` at precisely the `permissions:` block declared below. Do not widen
+# the `repositories:` list to include this repo "for convenience"; that would hand a
+# pull_request_target workflow a broad write credential it has no use for.
+name: review-gate
+
+on:
+  # The gate computes its verdict from the PR diff in ONE synchronous run, so it only needs
+  # to (re-)run when the PR's code changes — not when other CI suites finish.
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+  # A NEVER-AUTO structural block's own stated remedy is a human approving review at the
+  # current head, and the gate re-reads live review state on every run — so it must re-run
+  # when that review is submitted, or the status sits stale-red until the sweep catches up.
+  # `dismissed` matters as much as `submitted`: dismissing an approval must flip the gate
+  # back to `failure`, not leave a now-invalid `success` in place.
+  pull_request_review:
+    types: [submitted, dismissed]
+  # The COMMENT sign-off path (`/adw-approve <sha>`), the exact counterpart of the review
+  # trigger above. Without it the command would be honoured but never read — the gate only
+  # re-runs on a push, a review, a dispatch, or the sweep, and the sweep only rescues PRs
+  # whose status is pending/absent, never one sitting at `failure`. `edited` is included
+  # because the command is parsed out of the comment BODY.
+  issue_comment:
+    types: [created, edited]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "PR number to (re-)evaluate. Omit for a safe no-op."
+        required: false
+        type: string
+  # Self-heal sweep. The gate is synchronous, but its run can be CANCELLED by the concurrency
+  # group (a newer push supersedes an in-flight review) or die before it publishes — leaving
+  # the head with a stale `pending` / absent status and NO run in flight to clear it.
+  schedule:
+    - cron: "*/15 * * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  # Key by head SHA so a new push supersedes an in-flight review of an older commit
+  # (workflow_dispatch keys by pr_number; a lone dispatch falls back to run_id).
+  # `issue_comment` carries no `pull_request` object at all, so it keys on the issue number
+  # instead — two sign-off comments typed in quick succession collapse to one evaluation
+  # rather than racing, and the survivor still publishes on that PR's head.
+  group: review-gate-${{ github.event.pull_request.head.sha || github.event.issue.number || github.event.inputs.pr_number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  evaluate:
+    # NB: the job/check name must NOT be "review-gate" — that is the commit-status context
+    # this job publishes; a same-named always-green job check would satisfy branch
+    # protection's required "review-gate" check even when the gate is red.
+    name: evaluate
+    # `issue_comment` fires on EVERY comment in the repo, issues included, and this job
+    # spends a full Agent SDK review run. So it is filtered down to the only comments that
+    # can change the gate's answer. This is a COST filter, not a security control — it
+    # deliberately does not check who wrote the comment. Eligibility (not a bot, author
+    # association, SHA matches the current head, no later revoke) is decided inside the
+    # worker off data read fresh from the API, and must stay there: a workflow-level author
+    # check would be a second copy of an authorization rule, free to drift out of step with
+    # the one that counts.
+    if: >-
+      github.event_name != 'issue_comment' ||
+      (github.event.issue.pull_request != null &&
+       contains(github.event.comment.body, '/adw-approve'))
+    runs-on: ubuntu-latest
+    # The write scopes below live here (job-level), not workflow-level, so the
+    # `sweep` job below (which never needs pull-requests/statuses write) keeps
+    # its own narrower grant instead of inheriting a workflow-wide one
+    # (TokenPermissionsID least-privilege hardening).
+    permissions:
+      contents: read
+      pull-requests: write # post the consolidated review-gate PR comment
+      statuses: write
+      id-token: write # MNE-5908: mint the GitHub OIDC token mnemom_adw.wif exchanges for an
+      # Anthropic credential (workload-identity federation). The OIDC request pair never
+      # reaches the reviewers: wif captures it and removes it from their environment.
+      checks: read # read /commits/{sha}/check-runs — without this scope the read 403s and the
+      # gate's red-check advisory context is permanently blind (reported as UNREADABLE, never
+      # silently treated as "no red checks")
+      actions: read # read Actions workflow/run metadata for the "which check-run is the gate's
+      # OWN?" join (check-run → workflow_run → workflow path). Without it the join 403s
+      # ("Resource not accessible by integration"), the gate cannot exclude its OWN prior red
+      # `evaluate`/`review-gate` check-run from the deterministic-CI-red set, and it circularly
+      # self-blocks — reporting "CI is already red" when the only red check is itself, which stops
+      # a human /adw-approve from ever clearing a NEVER-AUTO finding on re-evaluation (seen on
+      # mnemom/mnemom-api#2986). Read-only; NEVER widen to `actions: write` — the sweep job holds that separately.
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Resolve PR number and head SHA
+        id: pr
+        env:
+          DISPATCH_PR: ${{ github.event.inputs.pr_number }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "issue_comment" ]; then
+            # A comment payload names the PR but carries no head SHA, so the identity fields
+            # are resolved by the SAME REST call the dispatch path uses. Resolving the head
+            # LIVE (rather than trusting anything in the comment) is what stops a sign-off
+            # naming a stale SHA from approving a commit that is no longer the head.
+            NUM=$(jq -r '.issue.number // empty' "$GITHUB_EVENT_PATH")
+            PR_JSON=$(gh api "repos/$GH_REPO/pulls/$NUM" 2>/dev/null || true)
+            SHA=$(jq -r '.head.sha // empty' <<<"$PR_JSON" 2>/dev/null || true)
+            HEAD_REF=$(jq -r '.head.ref // empty' <<<"$PR_JSON" 2>/dev/null || true)
+            HEAD_REPO=$(jq -r '.head.repo.full_name // empty' <<<"$PR_JSON" 2>/dev/null || true)
+            PR_AUTHOR=$(jq -r '.user.login // empty' <<<"$PR_JSON" 2>/dev/null || true)
+          elif [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            # Self-heal re-dispatch. With a pr_number, evaluate THAT PR's head via the same
+            # path as the event triggers. Without one, fall back to a safe no-op rather than
+            # guessing a PR.
+            NUM="$DISPATCH_PR"
+            if [ -n "$NUM" ]; then
+              PR_JSON=$(gh api "repos/$GH_REPO/pulls/$NUM" 2>/dev/null || true)
+              SHA=$(jq -r '.head.sha // empty' <<<"$PR_JSON" 2>/dev/null || true)
+              HEAD_REF=$(jq -r '.head.ref // empty' <<<"$PR_JSON" 2>/dev/null || true)
+              HEAD_REPO=$(jq -r '.head.repo.full_name // empty' <<<"$PR_JSON" 2>/dev/null || true)
+              PR_AUTHOR=$(jq -r '.user.login // empty' <<<"$PR_JSON" 2>/dev/null || true)
+            else
+              echo "workflow_dispatch with no pr_number — nothing to evaluate."
+              SHA=""
+              HEAD_REF=""
+              HEAD_REPO=""
+              PR_AUTHOR=""
+            fi
+          else
+            # pull_request_target / pull_request_review: both carry an identically-shaped
+            # `pull_request` object, so both read the same fields straight from the payload.
+            NUM=$(jq -r '.pull_request.number // empty' "$GITHUB_EVENT_PATH")
+            SHA=$(jq -r '.pull_request.head.sha // empty' "$GITHUB_EVENT_PATH")
+            HEAD_REF=$(jq -r '.pull_request.head.ref // empty' "$GITHUB_EVENT_PATH")
+            HEAD_REPO=$(jq -r '.pull_request.head.repo.full_name // empty' "$GITHUB_EVENT_PATH")
+            PR_AUTHOR=$(jq -r '.pull_request.user.login // empty' "$GITHUB_EVENT_PATH")
+          fi
+          {
+            echo "number=$NUM"
+            echo "sha=$SHA"
+            echo "head_ref=$HEAD_REF"
+          } >> "$GITHUB_OUTPUT"
+          if [ -z "$NUM" ] || [ -z "$SHA" ]; then
+            echo "No unambiguous PR context for this event — skipping."
+            echo "skip=1" >> "$GITHUB_OUTPUT"
+          elif [ "$HEAD_REPO" != "$GH_REPO" ]; then
+            # PUBLIC-REPO GUARD (aip only; not in the private-repo copies). The reviewers are
+            # Agent SDK sessions with shell access whose environment holds ANTHROPIC_API_KEY and
+            # this job's write token, and the diff they read is prompt input. On a public repo
+            # any GitHub account can open a fork PR, so evaluating one would hand an outsider's
+            # text to an agent holding those credentials. A fork head (or a deleted head repo,
+            # which reads as empty) is therefore never evaluated: it gets a `failure` status and
+            # a maintainer re-pushes the branch to this repo for review.
+            echo "Head repo '${HEAD_REPO:-<deleted>}' is not $GH_REPO — fork PR, not evaluated."
+            {
+              echo "skip=1"
+              echo "fork=1"
+            } >> "$GITHUB_OUTPUT"
+          elif [[ "$HEAD_REF" == mergify/merge-queue/* ]] \
+            && [ "$HEAD_REPO" = "$GH_REPO" ] \
+            && [ "$PR_AUTHOR" = "mergify[bot]" ]; then
+            # This is a Mergify speculative merge-queue draft, not the real PR head. The gate
+            # already published its verdict on the PR's own head SHA; re-judging the same diff
+            # independently here (a fresh, non-deterministic Agent SDK run) can disagree with
+            # that verdict, which makes Mergify bisect the batch and dequeue an otherwise-clean
+            # PR. The queue trusts the PR-head verdict.
+            #
+            # The head-ref PATTERN alone is not an authorization signal — anyone who can open a
+            # PR can name a branch `mergify/merge-queue/...` and would otherwise get a free
+            # `review-gate=success` with no evaluation ever run: a total gate bypass on
+            # arbitrary code. So this branch additionally requires the head repo to be THIS repo
+            # (not a fork) and the author to be the real `mergify[bot]` identity. If either
+            # check fails, neither this elif nor the trusted-status publish below fires, and the
+            # PR falls through to a normal evaluation.
+            #
+            # It still publishes a trusted `success` rather than skipping silently: Mergify
+            # appends branch-protection required checks to a queue rule's merge conditions at
+            # RUNTIME, and treats an ABSENT check as pending forever.
+            echo "Head ref '$HEAD_REF' is a verified Mergify merge-queue draft (same-repo, mergify[bot]-authored) — already judged on its own head; skipping evaluation and publishing a trusted status instead."
+            {
+              echo "skip=1"
+              echo "queue_draft_verified=1"
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish trusted status for a Mergify merge-queue draft
+        # Gated on `queue_draft_verified`, NOT a re-derived head-ref pattern match — that
+        # output is only ever set inside the `pr` step's identity-checked elif (same repo +
+        # mergify[bot] author), so this step cannot fire for a same-named PR that failed
+        # either check.
+        if: steps.pr.outputs.skip == '1' && steps.pr.outputs.queue_draft_verified == '1'
+        run: |
+          gh api "repos/$GH_REPO/statuses/${{ steps.pr.outputs.sha }}" \
+            --method POST \
+            -f state="success" \
+            -f context="review-gate" \
+            -f target_url="${GITHUB_SERVER_URL}/${GH_REPO}/actions/runs/${GITHUB_RUN_ID}" \
+            -f description="skipped: Mergify merge-queue draft — judged on the PR's own head"
+
+      - name: Publish failure status for a fork PR (not evaluated)
+        # Gated on `fork`, which only the `pr` step's head-repo check sets. Fail closed: a
+        # fork head never reaches the reviewers, the App token or the Claude credential.
+        if: steps.pr.outputs.skip == '1' && steps.pr.outputs.fork == '1'
+        run: |
+          gh api "repos/$GH_REPO/statuses/${{ steps.pr.outputs.sha }}" \
+            --method POST \
+            -f state="failure" \
+            -f context="review-gate" \
+            -f target_url="${GITHUB_SERVER_URL}/${GH_REPO}/actions/runs/${GITHUB_RUN_ID}" \
+            -f description="fork PR not evaluated: a maintainer re-pushes it to a branch here"
+
+      - name: Mint GitHub App token (read the private worker repo ONLY)
+        # Scoped to `mnemom-adw` and nothing else — see the SECURITY note in the header. This
+        # token's entire job is to let `uv tool install` fetch a private package; it has no
+        # scope on aip, so it cannot post statuses, push, or comment here even if
+        # something later in this job tried to use it.
+        if: steps.pr.outputs.skip != '1'
+        id: app
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ vars.ADW_APP_ID }}
+          private-key: ${{ secrets.ADW_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: |
+            mnemom-adw
+
+      - name: Checkout default branch (trusted)
+        if: steps.pr.outputs.skip != '1'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Pin to the default branch so we always read a trusted tree, NEVER the PR head —
+          # otherwise a malicious PR could steer what the reviewers are shown, and (with
+          # statuses:write in scope) self-publish a green review-gate status. We read the PR
+          # diff via gh as DATA; the reviewers never execute PR-head code.
+          ref: ${{ github.event.repository.default_branch }}
+          # Submodules are deliberately NOT initialised: the gate reviews this repo's diff only.
+          submodules: false
+
+      - uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        if: steps.pr.outputs.skip != '1'
+        with:
+          # Cache uv's wheel/source store across runs: the install below re-resolves
+          # mnemom-adw@main every run (correct — it must track main), but its dependency set
+          # is stable and restores from cache instead of the network.
+          enable-cache: true
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        if: steps.pr.outputs.skip != '1'
+        with:
+          python-version: "3.12"
+
+      - name: Install the mnemom-adw reviewer (+ Agent SDK)
+        # The worker library lives at packages/adw-worker in the mnemom-adw monorepo (that
+        # repo is a uv workspace; its root is not an installable package). Same install the
+        # ZTE workflow in this repo already performs, so it exercises no new credential path.
+        if: steps.pr.outputs.skip != '1'
+        run: |
+          BASE="git+https://x-access-token:${{ steps.app.outputs.token }}@github.com/${{ github.repository_owner }}/mnemom-adw.git@main"
+          uv tool install --python 3.12 "mnemom-adw[sdk] @ ${BASE}#subdirectory=packages/adw-worker" \
+            || uv tool install --python 3.12 "mnemom-adw[sdk] @ ${BASE}"
+
+      - name: Run ADW review gate
+        if: steps.pr.outputs.skip != '1'
+        id: gate
+        env:
+          # The Claude credential the Agent SDK reviewers authenticate with. The fleet ships
+          # ANTHROPIC_API_KEY org-wide, so a MISSING token is an operational defect, not a
+          # pre-provision state — ADW_REQUIRE_REVIEW_TOKEN=1 makes token-absent a loud
+          # `failure` rather than a soft `pending` that the self-heal sweep would loop on
+          # forever.
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # MNE-5908 workload-identity federation (GitHub OIDC -> Anthropic), dual-accept.
+          # ADW_WIF_RULES is a JSON map of OIDC subject -> federation rule id, e.g.
+          #   {"repo:mnemom/aip:pull_request": "fdrl_...",
+          #    "repo:mnemom/aip:ref:refs/heads/main": "fdrl_..."}
+          # held in a repo variable (rule ids are not secret). Unset/empty, an unmapped
+          # subject or a rejected preflight exchange all leave the static secrets above in
+          # effect, unchanged; the gate logs the subject it saw. Logic: mnemom_adw/wif.py.
+          ADW_WIF_RULES: ${{ vars.ADW_WIF_RULES }}
+          ANTHROPIC_ORGANIZATION_ID: 1ed06b3d-cacd-4e3f-8f0e-343a27741126
+          ANTHROPIC_SERVICE_ACCOUNT_ID: svac_01VAy6H23tetAUiqkqW2WEC1
+          ANTHROPIC_WORKSPACE_ID: wrkspc_01CzT77DkM1kNEBXn5N8Bnu5
+          ADW_REQUIRE_REVIEW_TOKEN: "1"
+          # Per-call wall-clock watchdog for the review lenses. The 600s default is too small
+          # for a large diff (measured in mnemom-adw: a 2189-line diff needed 718s for one
+          # lens and CI killed it twice per run, leaving an unresolvable `pending`). Raising a
+          # wall-clock cap does not weaken the gate — no finding is skipped and no severity is
+          # downgraded; a genuine hang is still caught by the unchanged 600s idle watchdog.
+          ADW_AGENT_TIMEOUT_SEC: "1800"
+          # The TRUSTED default-branch checkout made above, handed to the CLI so the gate's
+          # deterministic pre-passes can actually read it. Without this they fail closed and
+          # are inert.
+          #
+          # Safe ONLY because that checkout pins `ref: default_branch` and never the PR head:
+          # these pre-passes walk and read source files into the reviewer prompt, so a PR-head
+          # tree here would let a malicious PR choose what the reviewers are told. Do not set
+          # this in any workflow that checks out untrusted code.
+          ADW_REVIEW_TRUSTED_DIR: ${{ github.workspace }}
+        run: |
+          set +e
+          # The CLI resolves the PR diff (as DATA) + linked issue, runs the reviewers, and
+          # publishes the `review-gate` status on the head SHA itself (fail-closed).
+          mnemom-adw \
+            --review-pr "${{ steps.pr.outputs.number }}" \
+            --repo "$GH_REPO" \
+            --target-url "${GITHUB_SERVER_URL}/${GH_REPO}/actions/runs/${GITHUB_RUN_ID}"
+          CODE=$?
+          set -e
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+          # Without this exit, the step's last command is the `echo` above, which always
+          # succeeds — so the STEP (and the JOB) would conclude "success" for CODE=2 (blocking
+          # findings) or CODE=3 (pending) even though the CLI already published `failure` /
+          # `pending` as the review-gate status. That lets the run conclusion and the status
+          # disagree in the direction that reads as passing. Exiting with the CLI's own code
+          # makes the two impossible to disagree.
+          exit "$CODE"
+
+      - name: Fail-closed fallback status
+        # The CLI publishes the status itself when it can resolve the head SHA. If it exits 4
+        # (could not resolve the PR / diff via gh) it may not have published anything —
+        # publish a failure on the event SHA so a gh-resolution failure still reds the gate
+        # (NEVER leaves it silently green / unset).
+        #
+        # `always()` is required: the gate step above can itself fail (via `exit "$CODE"`),
+        # and Actions skips subsequent steps by default once a prior step has failed. Values
+        # written to `$GITHUB_OUTPUT` before a step's process exits are captured regardless of
+        # that step's final exit status, so `steps.gate.outputs.code` is still readable here.
+        if: always() && steps.pr.outputs.skip != '1' && steps.gate.outputs.code == '4'
+        run: |
+          gh api "repos/$GH_REPO/statuses/${{ steps.pr.outputs.sha }}" \
+            --method POST \
+            -f state="failure" \
+            -f context="review-gate" \
+            -f target_url="${GITHUB_SERVER_URL}/${GH_REPO}/actions/runs/${GITHUB_RUN_ID}" \
+            -f description="review-gate could not run (see logs)"
+
+  sweep:
+    # Self-heal sweep: runs ONLY on the schedule cron — a strict no-op on every other trigger,
+    # so a normal pull_request_target run never enters it. Read-only except the
+    # workflow_dispatch re-trigger. It re-dispatches the gate for any open PR whose HEAD
+    # carries a stranded `pending` (or absent) `review-gate` status with no gate run currently
+    # in flight — the cancelled-by-concurrency / died-before-publish case that otherwise needs
+    # a manual rerun.
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      statuses: read
+      actions: write # workflow_dispatch the gate for a stranded PR
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Re-dispatch the gate for stranded-pending PRs
+        run: |
+          set -euo pipefail
+          # Open, non-draft PRs (a draft never needs the gate until ready_for_review).
+          # `--limit` is REQUIRED: `gh pr list` silently caps at 30 results by default, so
+          # without it a repo with >30 open PRs would leave stranded-pending gates beyond the
+          # 30th un-swept indefinitely.
+          PRS=$(gh pr list --repo "$GH_REPO" --state open --draft=false --limit 200 \
+            --json number,headRefOid --jq '.[] | "\(.number) \(.headRefOid)"' 2>/dev/null || true)
+          [ -n "$PRS" ] || { echo "no open PRs to sweep"; exit 0; }
+          # Feed the loop on a DEDICATED fd (3) and read from it explicitly — do NOT simplify
+          # this back to `while read -r NUM SHA; do … done <<< "$PRS"`. Every `gh` child in the
+          # body inherits the loop's stdin, and gh reads stdin; a bare `gh` therefore CONSUMES
+          # the rest of the herestring and the loop terminates after an iteration or two.
+          # Reading `<&3` leaves fd 0 free for the children to eat harmlessly.
+          while read -r NUM SHA <&3; do
+            [ -n "$NUM" ] && [ -n "$SHA" ] || continue
+            # A genuinely-resolved gate is success/failure; only a `pending` or an ABSENT
+            # status is a candidate for re-dispatch (a stranded synchronous gate never reaches
+            # success/failure).
+            STATE=$(gh api "repos/$GH_REPO/commits/$SHA/status" \
+              --jq '.statuses[] | select(.context=="review-gate") | .state' 2>/dev/null | head -1 || true)
+            if [ "$STATE" = "success" ] || [ "$STATE" = "failure" ] || [ "$STATE" = "error" ]; then
+              continue  # gate already produced a verdict on this head — nothing to heal
+            fi
+            # STATE is "pending" or empty (absent). Before re-dispatching, confirm no gate run
+            # is already in flight for this head (a just-pushed PR has a legitimately-pending
+            # run we must not duplicate).
+            #
+            # FAIL-SAFE: if `gh run list` itself ERRORS (throttle / transient API), we cannot
+            # confirm there is no run in flight — treat that as IN-FLIGHT and SKIP, rather than
+            # fail-open to a re-dispatch. Capture the gh exit code SEPARATELY from the jq count
+            # so a command error is distinguishable from a legitimate empty result (count 0).
+            #
+            # Under `set -e` a bare `RUNS_JSON=$(gh …)` that exits non-zero aborts the WHOLE
+            # step before any `$?` check can run (so the fail-safe `if` below would be dead
+            # code, and one transient API error would kill the sweep for every remaining PR).
+            # Capture the exit code on the SAME line via `|| RC=$?` so `set -e` is not tripped;
+            # `$?` after a `||` is always 0, so we must branch on RC, not `$?`.
+            #
+            # `--limit` is REQUIRED here for the same reason as above: without it gh returns
+            # only its default page across ALL PRs, so the in-flight check for this head is
+            # evaluated against an arbitrarily truncated window. Raising it can only make MORE
+            # runs visible, i.e. only ever skip more — monotonic in the fail-safe direction.
+            RC=0
+            RUNS_JSON=$(gh run list --repo "$GH_REPO" --workflow=review-gate.yml --limit 200 \
+              --json status,headSha 2>/dev/null) || RC=$?
+            if [ "$RC" -ne 0 ] || [ -z "$RUNS_JSON" ]; then
+              echo "PR #$NUM ($SHA): could not read gate runs (gh error/empty) — skipping (fail-safe)"
+              continue
+            fi
+            IN_FLIGHT=$(printf '%s' "$RUNS_JSON" | jq --arg sha "$SHA" \
+              '[.[] | select(.headSha==$sha and (.status=="in_progress" or .status=="queued"))] | length' \
+              2>/dev/null || echo 1)
+            if [ "${IN_FLIGHT:-1}" -ge 1 ]; then
+              echo "PR #$NUM ($SHA): gate run already in flight (or unverifiable); skipping"
+              continue
+            fi
+            echo "PR #$NUM ($SHA): review-gate status='${STATE:-absent}', no run in flight — re-dispatching gate"
+            gh workflow run review-gate.yml --repo "$GH_REPO" -f pr_number="$NUM" \
+              2>/dev/null || echo "WARN: dispatch failed for #$NUM"
+          done 3<<< "$PRS"
