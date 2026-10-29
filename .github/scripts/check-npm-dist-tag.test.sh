@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Tests for check-npm-dist-tag.sh — the "refuse latest" guard (MNE-9044).
+# Tests for check-npm-dist-tag.sh — the "latest only" dist-tag guard (MNE-9044, reversed).
 set -uo pipefail
 dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 guard="$dir/check-npm-dist-tag.sh"
@@ -16,8 +16,9 @@ expect() { # expect <want-exit> <args...>
   fi
 }
 
-expect 0 next
-expect 1 latest
+expect 0 latest
+expect 1 next
+expect 1 NEXT
 expect 1 LATEST
 expect 1 Latest
 expect 1 " latest"

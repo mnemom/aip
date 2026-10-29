@@ -147,14 +147,15 @@ jobs:
   # ── Release-triggered: @mnemom/aip-verifier → GitHub release asset (MNE-9044) ──
   #
   # Owner decision (2026-10-27): a release carries the packed tarball as a release
-  # asset. Keith, 2026-10-28 (A-K-009): the package also goes to npm under the
-  # `next` dist-tag, never `latest`, through the org reusable npm-publish.yml
+  # asset. Keith, 2026-10-28 (A-K-009): the package also goes to npm, through
+  # the org reusable npm-publish.yml. Owner reversal (customers install
+  # `latest`): the dist-tag is `latest`, not `next`
   # (npm Trusted Publisher, OIDC, with provenance). No npm token is stored or read.
   #   1. verifier-guard keeps the existing guard script + self-test.
   #   2. verifier-test re-runs the verifier CI gates (ci.yml `verifier` job) and
   #      packs the tarball, handed to the upload jobs as an artifact.
   #   3. upload-verifier-release attaches the tarball to the release with `gh`.
-  #   4. publish-verifier-npm publishes packages/verifier to npm under `next`
+  #   4. publish-verifier-npm publishes packages/verifier to npm under `latest`
   #      through the org reusable npm-publish.yml.
   # Verifier-only releases (tag `aip-verifier-v<version>`) only: an SDK `v*`
   # release skips these four jobs and carries no verifier tarball.
@@ -173,10 +174,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
       - name: Guard script self-test
         run: .github/scripts/check-npm-dist-tag.test.sh
-      - name: Refuse any dist-tag but next
+      - name: Refuse any dist-tag but latest
         id: guard
         env:
-          VERIFIER_NPM_TAG: next
+          VERIFIER_NPM_TAG: latest
         run: |
           .github/scripts/check-npm-dist-tag.sh "$VERIFIER_NPM_TAG"
           echo "tag=$VERIFIER_NPM_TAG" >> "$GITHUB_OUTPUT"
@@ -282,7 +283,7 @@ jobs:
     uses: mnemom/.github/.github/workflows/npm-publish.yml@3b60e34e88113070235f2d55248a3455295be153
     with:
       npm-directory: packages/verifier
-      tag: ${{ needs.verifier-guard.outputs.tag }}   # always `next`; the guard refuses anything else
+      tag: ${{ needs.verifier-guard.outputs.tag }}   # always `latest`; the guard refuses anything else
 
   # ── Orchestrator dispatch publishing ──
   #
@@ -290,10 +291,10 @@ jobs:
   # logic makes a no-op publish idempotent — when version is unchanged from
   # the registry, the call short-circuits without touching the registry.
 
-  # The dispatch path publishes to npm `latest`, which is only ever the SDK.
-  # Refuse any other directory: npm-directory=packages/verifier would put the
-  # verifier on npm `latest`, which the owner ruled out (MNE-9044); the
-  # verifier reaches npm only under `next`, from aip-verifier- releases above.
+  # The dispatch path publishes to npm `latest` for the SDK only. Refuse any
+  # other directory: the verifier also takes npm `latest` (owner reversal of
+  # MNE-9044), but only from aip-verifier- releases above, which run the
+  # dist-tag guard, tests and tarball attach; the dispatch path has none of those.
   dispatch-guard:
     name: Refuse npm-directory other than packages/typescript
     if: github.event_name == 'workflow_dispatch'

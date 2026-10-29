@@ -1,6 +1,6 @@
 name: Verifier npm bootstrap (one-shot)
 
-# One-shot first publish of @mnemom/aip-verifier 0.6.1 under npm tag `next`
+# One-shot first publish of @mnemom/aip-verifier 0.6.2 under npm tag `latest`
 # (K4.1, Keith go 2026-10-28). npm only lets a Trusted Publisher be added to a
 # package that already exists, so the first version goes out with the org
 # NPM_TOKEN; every later version goes through publish.yml's
@@ -20,7 +20,7 @@ permissions: {}
 
 jobs:
   bootstrap:
-    name: First publish of @mnemom/aip-verifier (next)
+    name: First publish of @mnemom/aip-verifier (latest)
     runs-on: ubuntu-latest
     environment: production
     permissions:
@@ -30,7 +30,7 @@ jobs:
         working-directory: packages/verifier
     env:
       PACKAGE: "@mnemom/aip-verifier"
-      VERSION: "0.6.1"
+      VERSION: "0.6.2"
       NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
@@ -76,8 +76,8 @@ jobs:
       - run: npm run build
       - run: npm test
 
-      - name: Publish under next (no provenance; later versions get it from publish.yml)
-        run: npm publish --access public --tag next
+      - name: Publish under latest (no provenance; later versions get it from publish.yml)
+        run: npm publish --access public --tag latest
 
       - name: Confirm the version resolves on the registry
         run: |
