@@ -70,15 +70,15 @@
     "directory": "packages/verifier"
   },
   "dependencies": {
-    "@noble/ed25519": "^3.0.0",
-    "@noble/hashes": "^2.0.1"
+    "@noble/ed25519": "^3.2.0",
+    "@noble/hashes": "^2.4.0"
   },
   "devDependencies": {
     "@mnemom/sdk": "^1.1.0",
-    "@types/node": "^25.2.2",
-    "tsup": "^8.0.0",
-    "typescript": "^5.4.0",
-    "vitest": "^4.1.11"
+    "@types/node": "^26.6.5",
+    "tsup": "^9.0.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
   },
   "overrides": {
     "esbuild": "^0.28.1"
