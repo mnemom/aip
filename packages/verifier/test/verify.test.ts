@@ -3,6 +3,7 @@ import { signAsync, getPublicKeyAsync } from "@noble/ed25519";
 import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils.js";
 import { verifyCertificate } from "../src/index.js";
 import { computeChainHash } from "../src/crypto.js";
+import { canonicalJson } from "../src/canonical.js";
 import type { IntegrityCertificate } from "../src/index.js";
 
 // Fixed test-only seed; not a real key.
@@ -34,10 +35,15 @@ async function buildCertificate(): Promise<{
     commitments.combined_commitment,
     issuedAt,
   );
+  // Same shape as the issuer's buildSignedPayload (mnemom-api): 7 fields, sorted keys.
   const signedPayload = JSON.stringify({
-    certificate_id: "cert-test-1",
-    verdict: "clear",
+    agent_id: "agent-test",
     chain_hash: chainHash,
+    checkpoint_id: "ic-test-1",
+    input_commitment: commitments.combined_commitment,
+    thinking_block_hash: commitments.thinking_block_hash,
+    timestamp: issuedAt,
+    verdict: "clear",
   });
   const sig = await signAsync(utf8ToBytes(signedPayload), SEED);
 
@@ -108,5 +114,58 @@ describe("verifyCertificate", () => {
     const result = await verifyCertificate(cert, { publicKey: publicKeyHex });
     expect(result.valid).toBe(false);
     expect(result.checks.chain.valid).toBe(false);
+  });
+
+  it("rejects a tampered subject field even though the embedded payload still verifies (MNE-9159)", async () => {
+    const { cert, publicKeyHex } = await buildCertificate();
+    cert.subject.agent_id = "agent-attacker";
+    const result = await verifyCertificate(cert, { publicKey: publicKeyHex });
+    expect(result.valid).toBe(false);
+    expect(result.checks.signature.valid).toBe(false);
+    expect(result.checks.signature.details).toContain("payload binding");
+  });
+
+  it("rejects a tampered commitment field (MNE-9159)", async () => {
+    const { cert, publicKeyHex } = await buildCertificate();
+    cert.input_commitments.thinking_block_hash = "f".repeat(64);
+    const result = await verifyCertificate(cert, { publicKey: publicKeyHex });
+    expect(result.checks.signature.valid).toBe(false);
+  });
+
+  it("rejects a share card signed by the same key presented as a certificate (MNE-9159)", async () => {
+    const { cert, publicKeyHex } = await buildCertificate();
+    // A genuinely signed AAP-ShareCard/v1 body (canonical JSON, same key).
+    const card = canonicalJson({
+      typ: "AAP-ShareCard/v1",
+      card_id: "card-1",
+      issued_at: "2026-01-01T00:00:00.000Z",
+      lines: [],
+      statements: [],
+    });
+    const sig = await signAsync(utf8ToBytes(card), SEED);
+    cert.proofs.signature.value = toBase64(sig);
+    cert.proofs.signature.signed_payload = card;
+    const result = await verifyCertificate(cert, { publicKey: publicKeyHex });
+    expect(result.valid).toBe(false);
+    expect(result.checks.signature.valid).toBe(false);
+  });
+
+  it("rejects an arbitrary string signed by the same key as signed_payload (MNE-9159)", async () => {
+    const { cert, publicKeyHex } = await buildCertificate();
+    const msg = "anything the attestation key ever signed";
+    cert.proofs.signature.value = toBase64(await signAsync(utf8ToBytes(msg), SEED));
+    cert.proofs.signature.signed_payload = msg;
+    const result = await verifyCertificate(cert, { publicKey: publicKeyHex });
+    expect(result.checks.signature.valid).toBe(false);
+  });
+
+  it("rejects a payload with an extra field even if validly signed (MNE-9159)", async () => {
+    const { cert, publicKeyHex } = await buildCertificate();
+    const obj = JSON.parse(cert.proofs.signature.signed_payload) as Record<string, string>;
+    const msg = JSON.stringify({ ...obj, typ: "AAP-ShareCard/v1" }, Object.keys({ ...obj, typ: 1 }).sort());
+    cert.proofs.signature.value = toBase64(await signAsync(utf8ToBytes(msg), SEED));
+    cert.proofs.signature.signed_payload = msg;
+    const result = await verifyCertificate(cert, { publicKey: publicKeyHex });
+    expect(result.checks.signature.valid).toBe(false);
   });
 });
