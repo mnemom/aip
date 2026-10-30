@@ -148,6 +148,11 @@ async function checkSignature(
 
 /** Recompute chain hash and compare. */
 function checkChain(cert: IntegrityCertificate): CheckResult {
+  // Certificates are untrusted JSON; a missing chain proof is a failed
+  // check, not an exception.
+  if (!cert.proofs.chain) {
+    return { valid: false, details: "No chain proof data in certificate" };
+  }
   const expected = computeChainHash(
     cert.proofs.chain.prev_chain_hash,
     cert.subject.checkpoint_id,

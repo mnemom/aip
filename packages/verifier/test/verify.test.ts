@@ -125,6 +125,15 @@ describe("verifyCertificate", () => {
     expect(result.checks.signature.details).toContain("payload binding");
   });
 
+  it("fails closed, without throwing, when the chain proof is missing (MNE-9159)", async () => {
+    const { cert, publicKeyHex } = await buildCertificate();
+    delete (cert.proofs as { chain?: unknown }).chain;
+    const result = await verifyCertificate(cert, { publicKey: publicKeyHex });
+    expect(result.valid).toBe(false);
+    expect(result.checks.signature.valid).toBe(false);
+    expect(result.checks.chain.valid).toBe(false);
+  });
+
   it("rejects a tampered commitment field (MNE-9159)", async () => {
     const { cert, publicKeyHex } = await buildCertificate();
     cert.input_commitments.thinking_block_hash = "f".repeat(64);

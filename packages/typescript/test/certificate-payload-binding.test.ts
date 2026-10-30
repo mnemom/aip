@@ -84,6 +84,15 @@ describe("verifyCertificate payload binding (MNE-9159)", () => {
     expect(r.checks.signature.details).toContain("payload binding");
   });
 
+  it("fails closed, without throwing, when the chain proof is missing", async () => {
+    const { cert, publicKey } = await build();
+    delete (cert.proofs as { chain?: unknown }).chain;
+    const r = await verifyCertificate(cert, publicKey);
+    expect(r.valid).toBe(false);
+    expect(r.checks.signature.valid).toBe(false);
+    expect(r.checks.chain.valid).toBe(false);
+  });
+
   it("rejects a tampered commitment field", async () => {
     const { cert, publicKey } = await build();
     cert.input_commitments.thinking_block_hash = "f".repeat(64);
