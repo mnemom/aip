@@ -1,4 +1,6 @@
 /**
+ * Threat model: packages/verifier-page/THREAT-MODEL.md
+ *
  * @mnemom/aip-verifier
  *
  * Offline verification of AIP Integrity Certificates.
