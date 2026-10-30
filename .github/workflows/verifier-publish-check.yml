@@ -1,0 +1,53 @@
+name: Verifier publish check
+
+# Record K1.15: on every PR that touches @mnemom/aip-verifier, prove that
+# `npm publish` would ship what publish.yml ships for an aip-verifier- release.
+# .github/scripts/check-verifier-publish.mjs runs `npm publish --dry-run` and
+# `npm pack` (the release-asset tarball, verifier-test) on the PR commit and
+# fails when their files or shasum differ, when the tarball holds a file outside
+# package.json, LICENSE, README and dist/, when an entry point is missing, or
+# when the manifest's gitHead is not the commit under test (github.sha, the
+# commit actions/checkout put at HEAD). A dry run never uploads and needs no
+# token or OIDC. Node 24 is publish.yml's verifier-test version (npm 11).
+
+on:
+  pull_request:
+    paths:
+      - "packages/verifier/**"
+      - ".github/scripts/check-verifier-publish*.mjs"
+      - ".github/workflows/verifier-publish-check.yml"
+      - ".github/workflows/publish.yml"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  check:
+    permissions:
+      contents: read
+    name: Verifier publish dry-run
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: packages/verifier/package-lock.json
+
+      - name: Check script tests (fail on a mismatched tarball or gitHead)
+        run: node --test .github/scripts/check-verifier-publish.test.mjs
+
+      - name: Build
+        working-directory: packages/verifier
+        run: |
+          npm ci
+          npm run build
+
+      - name: npm publish --dry-run matches the release tarball, gitHead is this commit
+        env:
+          EXPECT_SHA: ${{ github.sha }}
+        run: node .github/scripts/check-verifier-publish.mjs --dir packages/verifier --expect-sha "$EXPECT_SHA"
