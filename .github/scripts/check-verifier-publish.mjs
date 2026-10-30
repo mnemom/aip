@@ -74,7 +74,7 @@ export function compare({ pkg, dryRun, packed, gitHead, headSha, expectSha }) {
   return errors;
 }
 
-function parseArgs(argv) {
+export function parseArgs(argv) {
   const a = {};
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--dir" || argv[i] === "--expect-sha") a[argv[i].slice(2)] = argv[++i];

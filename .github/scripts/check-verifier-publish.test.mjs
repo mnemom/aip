@@ -6,7 +6,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { compare, entryOf, entryPoints } from "./check-verifier-publish.mjs";
+import { compare, entryOf, entryPoints, parseArgs } from "./check-verifier-publish.mjs";
 
 const SCRIPT = fileURLToPath(new URL("./check-verifier-publish.mjs", import.meta.url));
 const SHA = "a".repeat(40);
@@ -110,4 +110,20 @@ test("end to end: the real npm run passes at HEAD and fails on a mismatched gitH
   const bad = runCheck("--dir", extra.dir, "--expect-sha", extra.head);
   assert.equal(bad.status, 1);
   assert.match(bad.stderr, /tarball holds secrets\.txt/);
+});
+
+test("parseArgs: --dir and --expect-sha parse; no --dir or an unknown argument throws", () => {
+  assert.deepEqual(parseArgs(["--dir", "d", "--expect-sha", SHA]), { dir: "d", "expect-sha": SHA });
+  assert.throws(() => parseArgs([]), /--dir is required/);
+  assert.throws(() => parseArgs(["--expect-sha", SHA]), /--dir is required/);
+  assert.throws(() => parseArgs(["--dir", "d", "--tag", "next"]), /unknown argument --tag/);
+});
+
+test("CLI: a bad argument is exit 2 (could not run), never a pass", () => {
+  const none = runCheck();
+  assert.equal(none.status, 2);
+  assert.match(none.stderr, /--dir is required/);
+  const unknown = runCheck("--dir", ".", "--bogus");
+  assert.equal(unknown.status, 2);
+  assert.match(unknown.stderr, /unknown argument --bogus/);
 });
