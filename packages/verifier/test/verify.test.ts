@@ -159,6 +159,19 @@ describe("verifyCertificate", () => {
     expect(result.checks.signature.valid).toBe(false);
   });
 
+  it.each(["null", "42", "true", '"x"', "[]", '[{"timestamp":"t"}]'])(
+    "rejects a validly signed non-object JSON payload %s (MNE-9159)",
+    async (msg) => {
+      const { cert, publicKeyHex } = await buildCertificate();
+      cert.proofs.signature.value = toBase64(await signAsync(utf8ToBytes(msg), SEED));
+      cert.proofs.signature.signed_payload = msg;
+      const result = await verifyCertificate(cert, { publicKey: publicKeyHex });
+      expect(result.valid).toBe(false);
+      expect(result.checks.signature.valid).toBe(false);
+      expect(result.checks.signature.details).toContain("payload binding");
+    },
+  );
+
   it("rejects a payload with an extra field even if validly signed (MNE-9159)", async () => {
     const { cert, publicKeyHex } = await buildCertificate();
     const obj = JSON.parse(cert.proofs.signature.signed_payload) as Record<string, string>;
