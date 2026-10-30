@@ -1,4 +1,6 @@
 /**
+ * Threat model: packages/verifier-page/THREAT-MODEL.md
+ *
  * Share page (C5-R8). The signed card arrives in the URL fragment,
  * `#card=<base64url of the JSON>`. Browsers never send a fragment to a
  * server, and the CSP (`connect-src 'none'`) stops the page sending it
