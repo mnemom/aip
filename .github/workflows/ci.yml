@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # GitHub merge-queue trigger (MNE-1213). Required checks must run in the
+  # merge_group context for this repo to be eligible for a merge queue, the
+  # way mnemom-platform/ci.yml already is. The dispatch-deploy job stays gated
+  # to `github.event_name == 'push'`, so no deploy fires on merge_group events.
+  merge_group:
 
 
 permissions: {}
