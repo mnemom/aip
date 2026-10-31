@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1](https://github.com/mnemom/aip/compare/v1.3.0...v1.3.1) (2026-10-31)
+
+
+### Fixed
+
+* **deps:** bump vitest and @vitest/mocker to 4.1.12 in packages/typescript ([#191](https://github.com/mnemom/aip/issues/191)) ([8d23742](https://github.com/mnemom/aip/commit/8d2374285a54c3fd2658016c31240bdd06f7ec5d))
+* **deps:** bump vitest to 4.1.12 in typescript SDK lockfile (Scorecard [#13](https://github.com/mnemom/aip/issues/13)) ([#190](https://github.com/mnemom/aip/issues/190)) ([3c511bb](https://github.com/mnemom/aip/commit/3c511bb8d0537b75c88b1dfa58b8798e1e68addd))
+* **deps:** clear OSV alert for esbuild in both npm lockfiles (dev-only) ([#140](https://github.com/mnemom/aip/issues/140)) ([d9acfba](https://github.com/mnemom/aip/commit/d9acfba5477aa7a0b0845aabdaa0450e390d773a))
+* **verifier:** bind certificate signature to its own fields (MNE-9159) ([#237](https://github.com/mnemom/aip/issues/237)) ([1d02ab7](https://github.com/mnemom/aip/commit/1d02ab766c7631322a3fa0f93c43210aace3f9e8))
+
 ## [1.3.0](https://github.com/mnemom/aip/compare/v1.2.0...v1.3.0) (2026-08-29)
 
 
