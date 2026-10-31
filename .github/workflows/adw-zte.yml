@@ -593,7 +593,7 @@ jobs:
       - name: Mint GitHub App token
         id: app
         if: vars.ADW_APP_ID != ''
-        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           client-id: ${{ vars.ADW_APP_ID }}
           private-key: ${{ secrets.ADW_APP_PRIVATE_KEY }}
@@ -757,7 +757,7 @@ jobs:
       # ID as the JWT `iss`, so this variable's value stays valid under the new key.
       - name: Mint GitHub App token
         id: app
-        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           client-id: ${{ vars.ADW_APP_ID }}
           private-key: ${{ secrets.ADW_APP_PRIVATE_KEY }}
@@ -778,7 +778,7 @@ jobs:
           fetch-depth: 0
           token: ${{ steps.app.outputs.token }}
 
-      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           # Cache uv's wheel/source store across runs: the worker install below
           # re-resolves mnemom-adw@main every run (correct — it must track main),
@@ -1035,7 +1035,7 @@ jobs:
 
       - name: Set up Node
         if: steps.node.outputs.manager == 'pnpm' || steps.node.outputs.manager == 'npm'
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ steps.node.outputs.node-version }}
 
@@ -1213,6 +1213,24 @@ jobs:
           # it up. See src/mnemom_adw/event_stream.py.
           ADW_EVENT_INGEST_URL: ${{ vars.ADW_EVENT_INGEST_URL }}
           ADW_EVENT_INGEST_TOKEN: ${{ secrets.ADW_EVENT_INGEST_TOKEN }}
+          # Record source (Keith: Record, K1.11 / T5) — OFF unless the repo variable
+          # MNEMOM_RECORD_WORKER reads exactly `on`. Unset, empty or any other value
+          # reads off, and an off run is byte-identical to today: no gateway routing,
+          # no conversation header, no commit trailer, no commit report. With it on,
+          # each phase's SDK traffic routes through the Mnemom gateway at
+          # MNEMOM_RECORD_GATEWAY_URL with `x-mnemom-conversation-id: adw-<adw_id>`
+          # (never `x-mnemom-contract`), commits carry a `Mnemom-Conversation` trailer
+          # and are reported best-effort to the record commit index at
+          # MNEMOM_RECORD_INDEX_URL with the MNEMOM_RECORD_API_KEY secret. A gateway
+          # 5xx, timeout or no connection falls back to api.anthropic.com for that
+          # phase (commits unbound) so phase result and exit code match an unrouted
+          # run; a failed report never fails a phase. Rolled out one internal-cohort
+          # repo at a time by setting the variable, never by editing this file.
+          # See src/mnemom_adw/record_worker.py.
+          MNEMOM_RECORD_WORKER: ${{ vars.MNEMOM_RECORD_WORKER }}
+          MNEMOM_RECORD_GATEWAY_URL: ${{ vars.MNEMOM_RECORD_GATEWAY_URL }}
+          MNEMOM_RECORD_INDEX_URL: ${{ vars.MNEMOM_RECORD_INDEX_URL }}
+          MNEMOM_RECORD_API_KEY: ${{ secrets.MNEMOM_RECORD_API_KEY }}
           # The issue number, adw id, and repo slug reach the worker only as quoted
           # shell vars — never interpolated into the command body (they can carry
           # attacker-controlled input on workflow_dispatch / repository_dispatch).
