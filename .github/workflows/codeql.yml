@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # GitHub merge-queue trigger (MNE-1213). `CodeQL` is a required check on main
+  # and only reports on a ref this workflow analyzed, so it must also run in the
+  # merge_group context or a queued PR waits on it forever (see ci.yml).
+  merge_group:
   schedule:
     - cron: "0 0 * * 0"  # Weekly on Sundays
   workflow_dispatch:
