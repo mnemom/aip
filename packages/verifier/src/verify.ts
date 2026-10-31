@@ -81,14 +81,62 @@ function resolvePublicKey(key: string | Uint8Array): Uint8Array {
   return key;
 }
 
-/** Verify the Ed25519 signature over the signed payload. */
+/**
+ * Rebuild the signed payload exactly as the issuer's `buildSignedPayload`
+ * (mnemom-api src/analyze/certificate.ts) constructs it: a JSON object of
+ * exactly seven fields, keys sorted, no whitespace. Every field except
+ * `timestamp` comes from the certificate itself; `timestamp` is the
+ * checkpoint time, which the certificate carries only inside the payload.
+ * Returns null when the embedded payload is not a JSON object with a string
+ * timestamp.
+ */
+function rebuildSignedPayload(cert: IntegrityCertificate): string | null {
+  let embedded: unknown;
+  try {
+    embedded = JSON.parse(cert.proofs.signature.signed_payload);
+  } catch {
+    return null;
+  }
+  if (embedded === null || typeof embedded !== "object" || Array.isArray(embedded)) {
+    return null;
+  }
+  const timestamp = (embedded as { timestamp?: unknown }).timestamp;
+  if (typeof timestamp !== "string") return null;
+  const payload = {
+    agent_id: cert.subject.agent_id,
+    chain_hash: cert.proofs.chain?.chain_hash ?? "",
+    checkpoint_id: cert.subject.checkpoint_id,
+    input_commitment: cert.input_commitments.combined_commitment,
+    thinking_block_hash: cert.input_commitments.thinking_block_hash,
+    timestamp,
+    verdict: cert.claims.verdict,
+  };
+  return JSON.stringify(payload, Object.keys(payload).sort());
+}
+
+/**
+ * Verify the Ed25519 signature, and that the signed bytes are this
+ * certificate's own payload (MNE-9159). A valid signature over some other
+ * string (e.g. a share card signed by the same key) must not pass: the
+ * payload is rebuilt from the certificate fields and must equal the embedded
+ * string byte for byte before the signature is checked against it.
+ */
 async function checkSignature(
   cert: IntegrityCertificate,
   publicKey: Uint8Array,
 ): Promise<CheckResult> {
   const { value, signed_payload } = cert.proofs.signature;
 
-  const valid = await verifySignature(value, signed_payload, publicKey);
+  const expected = rebuildSignedPayload(cert);
+  if (expected === null || expected !== signed_payload) {
+    return {
+      valid: false,
+      details:
+        "signed_payload does not match the certificate's own fields (payload binding failed)",
+    };
+  }
+
+  const valid = await verifySignature(value, expected, publicKey);
 
   return {
     valid,
@@ -100,6 +148,11 @@ async function checkSignature(
 
 /** Recompute chain hash and compare. */
 function checkChain(cert: IntegrityCertificate): CheckResult {
+  // Certificates are untrusted JSON; a missing chain proof is a failed
+  // check, not an exception.
+  if (!cert.proofs.chain) {
+    return { valid: false, details: "No chain proof data in certificate" };
+  }
   const expected = computeChainHash(
     cert.proofs.chain.prev_chain_hash,
     cert.subject.checkpoint_id,

@@ -63,15 +63,56 @@ function computeNodeHash(left: string, right: string): string {
 // ---------------------------------------------------------------------------
 
 /**
- * Verify the Ed25519 signature on a certificate.
+ * Rebuild the signed payload exactly as the issuer's `buildSignedPayload`
+ * does (mnemom-api src/analyze/certificate.ts): seven fields, sorted keys, no
+ * whitespace. Only `timestamp` is read from the embedded payload (the
+ * certificate carries it nowhere else). Returns null if the embedded payload
+ * is not a JSON object with a string timestamp.
+ */
+function rebuildSignedPayload(certificate: IntegrityCertificate): string | null {
+  let embedded: unknown;
+  try {
+    embedded = JSON.parse(certificate.proofs.signature.signed_payload);
+  } catch {
+    return null;
+  }
+  if (embedded === null || typeof embedded !== "object" || Array.isArray(embedded)) {
+    return null;
+  }
+  const timestamp = (embedded as { timestamp?: unknown }).timestamp;
+  if (typeof timestamp !== "string") return null;
+  const payload = {
+    agent_id: certificate.subject.agent_id,
+    chain_hash: certificate.proofs.chain?.chain_hash ?? "",
+    checkpoint_id: certificate.subject.checkpoint_id,
+    input_commitment: certificate.input_commitments.combined_commitment,
+    thinking_block_hash: certificate.input_commitments.thinking_block_hash,
+    timestamp,
+    verdict: certificate.claims.verdict,
+  };
+  return JSON.stringify(payload, Object.keys(payload).sort());
+}
+
+/**
+ * Verify the Ed25519 signature on a certificate, and that the signed bytes
+ * are this certificate's own payload (MNE-9159): a signature the same key made
+ * over any other string (e.g. a share card) must not verify.
  */
 async function verifySignature(
   certificate: IntegrityCertificate,
   publicKey: Uint8Array,
 ): Promise<{ valid: boolean; details: string }> {
   try {
+    const expected = rebuildSignedPayload(certificate);
+    if (expected === null || expected !== certificate.proofs.signature.signed_payload) {
+      return {
+        valid: false,
+        details:
+          "signed_payload does not match the certificate's own fields (payload binding failed)",
+      };
+    }
     const signatureBytes = base64ToUint8(certificate.proofs.signature.value);
-    const messageBytes = encoder.encode(certificate.proofs.signature.signed_payload);
+    const messageBytes = encoder.encode(expected);
     const valid = await ed.verifyAsync(signatureBytes, messageBytes, publicKey);
 
     return {
