@@ -12,7 +12,8 @@ comment, naming the doc and the threat rows you checked, for example:
 
 The threat-model-links gate (K5.8) in mnemom/deploy, gates/threat-model-links/, fails a
 merged PR that touches these paths without such a line. Text inside this comment does not
-count, and neither does a line copied unchanged from any version of this template.
+count, and neither does a line copied unchanged from any version of this template, so the
+pre-filled line below sits inside the comment: left in place it never counted.
 
 A new surface with its own threat model gets its own line below, with the paths it covers,
 and its own entry in mnemom/deploy registry/threshold-registry.json
