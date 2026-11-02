@@ -128,7 +128,8 @@ matches `vX.Y.Z-next` only. Cutting a verifier release is a manual step:
    publishes `@mnemom/aip-verifier@<version>` to npm under `latest` with
    provenance through the org reusable `npm-publish.yml`; that is a fresh
    build of `packages/verifier` at the release commit, not the attested
-   tarball's bytes.
+   tarball's bytes. The reusable also attaches
+   `sbom-mnemom-aip-verifier-<version>.cdx.json` (CycloneDX) to the release.
    Consumers run `npm install @mnemom/aip-verifier`, or install the tarball from
    `https://github.com/mnemom/aip/releases/download/aip-verifier-v<version>/mnemom-aip-verifier-<version>.tgz`.
 5. npm accepts the OIDC publish only once a Trusted Publisher (repo
