@@ -27,7 +27,8 @@ on:
         type: string
       npm-directory:
         # A choice, not a free string: a dispatch can never hand packages/verifier
-        # (GitHub release asset only, MNE-9044) to the npm reusable below.
+        # to the npm reusable below. The verifier reaches npm only from an
+        # aip-verifier- release (publish-verifier-npm), behind the guard and gates.
         description: "Directory containing package.json to publish"
         required: false
         type: choice
@@ -144,7 +145,7 @@ jobs:
       npm-directory: packages/typescript
       tag: latest
 
-  # ── Release-triggered: @mnemom/aip-verifier → GitHub release asset (MNE-9044) ──
+  # ── Release-triggered: @mnemom/aip-verifier → GitHub release asset + npm `latest` (K4.1) ──
   #
   # Owner decision (2026-10-27): a release carries the packed tarball as a release
   # asset. Keith, 2026-10-28 (A-K-009): the package also goes to npm, through
