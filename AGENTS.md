@@ -94,7 +94,7 @@ examples/                    # Working examples — used in docs
 | Tag | Publishes | Version check |
 |---|---|---|
 | `vX.Y.Z` | `packages/typescript` to npm `latest`, `packages/python` to PyPI | tag equals both SDK versions |
-| `aip-verifier-vX.Y.Z` | `@mnemom/aip-verifier` tarball attached to the GitHub release only, never npm or PyPI (MNE-9044) | tag equals `packages/verifier/package.json` version |
+| `aip-verifier-vX.Y.Z` | `packages/verifier` to npm `latest` as `@mnemom/aip-verifier` (Trusted Publisher, provenance), plus its tarball attached to the GitHub release; never PyPI | tag equals `packages/verifier/package.json` version |
 
 - On an `aip-verifier-` tag the SDK validate, test, npm and PyPI jobs skip;
   on a `v*` tag the verifier jobs skip. Release steps are under
@@ -115,7 +115,7 @@ matches `vX.Y.Z-next` only. Cutting a verifier release is a manual step:
    ```bash
    gh release create aip-verifier-v<version> --repo mnemom/aip \
      --target <main-sha> --title "@mnemom/aip-verifier <version>" \
-     --notes "Verifier tarball built from main. Not published to npm." \
+     --notes "Verifier built from main. publish.yml publishes it to npm under latest." \
      --prerelease --latest=false
    ```
 
@@ -124,8 +124,19 @@ matches `vX.Y.Z-next` only. Cutting a verifier release is a manual step:
    `aip-verifier-v` and fails the run on a mismatch, so
    `aip-verifier-0.6.0` (no `v`) fails.
 4. The verifier jobs attach `mnemom-aip-verifier-<version>.tgz`, with a
-   build-provenance attestation, to the release. Consumers install from
+   build-provenance attestation, to the release. `publish-verifier-npm`
+   publishes `@mnemom/aip-verifier@<version>` to npm under `latest` with
+   provenance through the org reusable `npm-publish.yml`; that is a fresh
+   build of `packages/verifier` at the release commit, not the attested
+   tarball's bytes. The reusable also attaches
+   `sbom-mnemom-aip-verifier-<version>.cdx.json` (CycloneDX) to the release.
+   Consumers run `npm install @mnemom/aip-verifier`, or install the tarball from
    `https://github.com/mnemom/aip/releases/download/aip-verifier-v<version>/mnemom-aip-verifier-<version>.tgz`.
+5. npm accepts the OIDC publish only once a Trusted Publisher (repo
+   `mnemom/aip`, workflow `publish.yml`, environment `production`) is set on
+   the package, and that needs the package to exist. Until then
+   `publish-verifier-npm` fails and the tarball upload still runs;
+   `verifier-npm-bootstrap.yml` is the one-shot first publish.
 
 ## What you should NOT do
 
