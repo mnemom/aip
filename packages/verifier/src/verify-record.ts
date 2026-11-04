@@ -259,39 +259,58 @@ function chainKey(s: Record<string, unknown>): string {
  * - a non-null `previous_digest` must name a statement earlier in the bundle
  *   (build order) with the same `typ` and `lineage_key`;
  * - no two statements of one chain may name the same predecessor, and a chain
- *   has at most one genesis (a fork, or a spliced second history).
+ *   has at most one root (a fork, or a spliced second history).
+ * The one exception is retention: mnemom-api deletes a lineage's builds once
+ * they pass 30 days (record-retention.ts), so the FIRST statement of a chain
+ * in the bundle may name a predecessor the bundle does not hold. That is the
+ * non-failing `lineage_truncated` flag and it takes the chain's root, so a
+ * later genesis in the same chain still fails. A predecessor missing anywhere
+ * else is `chain_broken`, and so is one that is in the bundle but later
+ * (order is strict: the producer emits chain order).
  * A malformed `previous_digest` is `digest_malformed` (verifyStatement) and
- * is skipped here. The App bundles a lineage from its genesis
- * (app-bundle-source.ts), so a predecessor outside the bundle is a break.
+ * is skipped here.
  */
-function chainReasons(raw: unknown[], digests: (string | null)[]): Map<number, Reason> {
-  const out = new Map<number, Reason>();
+function chainReasons(
+  raw: unknown[],
+  digests: (string | null)[],
+): { broken: Map<number, Reason>; truncated: Map<number, string> } {
+  const broken = new Map<number, Reason>();
+  const truncated = new Map<number, string>();
   const indexOf = new Map<string, number>();
   digests.forEach((d, i) => {
     if (d && !indexOf.has(d)) indexOf.set(d, i);
   });
   const taken = new Set<string>();
+  const seen = new Set<string>();
   raw.forEach((s, i) => {
     if (!isObject(s) || !("previous_digest" in s)) return;
     const prev = s.previous_digest;
     const key = chainKey(s);
+    const first = !seen.has(key);
+    seen.add(key);
+    const root = `${key}\u0000root`;
     if (prev === null) {
-      if (taken.has(`${key}\u0000genesis`)) out.set(i, REASONS.chain_broken);
-      taken.add(`${key}\u0000genesis`);
+      if (taken.has(root)) broken.set(i, REASONS.chain_broken);
+      taken.add(root);
       return;
     }
     if (typeof prev !== "string" || !DIGEST_RE.test(prev)) return;
     const j = indexOf.get(prev);
+    if (j === undefined && first) {
+      truncated.set(i, prev);
+      taken.add(root);
+      return;
+    }
     // A statement has a digest only when it is an object (verifyStatement),
     // so raw[j] is one whenever j is found.
     if (j === undefined || j >= i || chainKey(raw[j] as Record<string, unknown>) !== key) {
-      out.set(i, REASONS.chain_broken);
+      broken.set(i, REASONS.chain_broken);
       return;
     }
-    if (taken.has(`${key}\u0000${prev}`)) out.set(i, REASONS.chain_broken);
+    if (taken.has(`${key}\u0000${prev}`)) broken.set(i, REASONS.chain_broken);
     taken.add(`${key}\u0000${prev}`);
   });
-  return out;
+  return { broken, truncated };
 }
 
 /**
@@ -387,9 +406,11 @@ export async function verify(
   const flags: StatementFlag[] = [];
   statements.forEach((s, i) => {
     s.reasons.forEach((r) => reasons.push(`${i}:${r}`));
-    const broken = chain.get(i);
+    const broken = chain.broken.get(i);
     if (broken && !s.reasons.includes(broken)) reasons.push(`${i}:${broken}`);
     flags.push(...s.flags);
+    const cut = chain.truncated.get(i);
+    if (cut && s.valid) flags.push({ flag: FLAGS.lineage_truncated, subject: cut });
     const raw = rawStatements[i];
     if (!s.valid || !isObject(raw)) return;
     for (const [field, targets] of Object.entries(LINK_TARGETS)) {

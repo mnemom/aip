@@ -194,6 +194,12 @@ export const FLAGS = {
   card_hash_not_recorded: "card hash not recorded",
   card_not_bound: "card not bound",
   linked_statement_not_in_bundle: "linked statement not in bundle",
+  /**
+   * The first statement of a chain in the bundle names a predecessor the
+   * bundle does not hold: retention removed the lineage's older builds
+   * (mnemom-api record-retention.ts). Never changes `valid`.
+   */
+  lineage_truncated: "lineage truncated",
 } as const;
 
 export type Flag = (typeof FLAGS)[keyof typeof FLAGS];

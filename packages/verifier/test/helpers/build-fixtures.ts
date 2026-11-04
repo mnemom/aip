@@ -129,7 +129,14 @@ export async function buildFixtures(): Promise<Record<string, unknown>> {
   const conduct2OtherLineage = await signStatement({ ...conduct2, lineage_key: "conv_" + "9".repeat(32) });
   const conduct2Fork = await signStatement({ ...conduct2, built_at: "2026-10-23T18:31:00.000Z" });
   const conduct1Again = await signStatement({ ...conduct1, built_at: "2026-10-23T18:45:00.000Z" });
-  const chainMissing = { typ: BUNDLE_TYP, statements: [conduct2, pr] };
+  // A gap inside the bundle. A missing predecessor on the first statement of a
+  // chain is retention (lineage_truncated), so the gap sits after conduct1.
+  const conduct3 = await signStatement({
+    ...conduct2,
+    previous_digest: statementDigest(conduct2),
+    built_at: "2026-10-23T18:40:00.000Z",
+  });
+  const chainMissing = { typ: BUNDLE_TYP, statements: [conduct1, conduct3, pr] };
   const chainReordered = { typ: BUNDLE_TYP, statements: [conduct2, conduct1, pr] };
   const chainOtherLineage = { typ: BUNDLE_TYP, statements: [conduct1, conduct2OtherLineage] };
   const chainFork = { typ: BUNDLE_TYP, statements: [conduct1, conduct2, conduct2Fork] };
@@ -147,7 +154,7 @@ export async function buildFixtures(): Promise<Record<string, unknown>> {
     { name: "card-estimate-line", reason: `0:${REASONS.card_line_class_not_allowed}`, input: cardEstimate },
     { name: "card-verdict-no-coverage", reason: `0:${REASONS.card_verdict_without_coverage}`, input: cardVerdictNoCoverage },
     { name: "bundle-wrong-link", reason: `1:${REASONS.linked_statement_wrong_typ}`, input: wrongLinkBundle },
-    { name: "chain-predecessor-missing", reason: `0:${REASONS.chain_broken}`, input: chainMissing },
+    { name: "chain-predecessor-missing", reason: `1:${REASONS.chain_broken}`, input: chainMissing },
     { name: "chain-reordered", reason: `0:${REASONS.chain_broken}`, input: chainReordered },
     { name: "chain-other-lineage", reason: `1:${REASONS.chain_broken}`, input: chainOtherLineage },
     { name: "chain-fork", reason: `2:${REASONS.chain_broken}`, input: chainFork },

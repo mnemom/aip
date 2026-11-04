@@ -42,6 +42,7 @@ const FLAG_TEXT: Record<string, string> = {
   [FLAGS.card_hash_not_recorded]: "A checkpoint recorded no card hash.",
   [FLAGS.card_not_bound]: "A checkpoint carries no signed card commitment.",
   [FLAGS.linked_statement_not_in_bundle]: "A digest names a statement outside this bundle.",
+  [FLAGS.lineage_truncated]: "The record's oldest builds are not in this bundle (removed by retention); the builds it holds still chain.",
 };
 
 function $<T extends HTMLElement>(id: string): T {

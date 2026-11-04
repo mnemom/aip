@@ -91,16 +91,50 @@ describe("verify: previous_digest chain and head binding (K1.20)", () => {
     expect((await verify(golden(), jwks)).valid).toBe(true);
   });
 
-  it("fails a chain break instead of flagging it", async () => {
+  it("flags a lineage truncated by retention: absent predecessor on the chain's first statement", async () => {
+    // Retention (mnemom-api record-retention.ts) deleted conduct1; the oldest
+    // surviving build names it. Honest bundle: valid, with a non-failing flag.
     const b = golden();
-    const res = await verify({ ...b, statements: b.statements.slice(1) }, jwks);
-    expect(res.valid).toBe(false);
+    const res = await verify({ ...b, statements: b.statements.slice(1) }, jwks, { expected_head_sha: HEAD });
+    expect(res.reasons).toEqual([]);
+    expect(res.valid).toBe(true);
+    expect(res.flags).toContainEqual({ flag: FLAGS.lineage_truncated, subject: b.statements[1]!.previous_digest });
+    // The predecessor is a chain question, never the generic link flag.
+    expect(res.flags.filter((f) => f.flag === FLAGS.linked_statement_not_in_bundle)).toEqual([]);
+  });
+
+  it("fails an absent predecessor mid-chain as chain_broken", async () => {
+    const b = golden();
+    const [c1, c2] = b.statements;
+    const c3 = await signStatement({ ...c2!, previous_digest: statementDigest(c2!), built_at: "2026-10-23T18:40:00.000Z" });
+    // c1 present, c2 missing, c3 names c2: a gap inside the bundle.
+    const gap = await verify({ ...b, statements: [c1!, c3] }, jwks);
+    expect(gap.reasons).toEqual([`1:${REASONS.chain_broken}`]);
+    expect(gap.flags.map((f) => f.flag)).not.toContain(FLAGS.lineage_truncated);
+    // Truncated head, then a gap: the first is a flag, the second still fails.
+    const c4 = await signStatement({ ...c3, previous_digest: "9".repeat(64), built_at: "2026-10-23T18:50:00.000Z" });
+    const both = await verify({ ...b, statements: [c2!, c4] }, jwks);
+    expect(both.reasons).toEqual([`1:${REASONS.chain_broken}`]);
+    expect(both.flags).toContainEqual({ flag: FLAGS.lineage_truncated, subject: c2!.previous_digest });
+    // A truncated root takes the chain's root: a later genesis is a second history.
+    const c1Again = await signStatement({ ...c1!, built_at: "2026-10-23T18:45:00.000Z" });
+    expect((await verify({ ...b, statements: [c2!, c1Again] }, jwks)).reasons).toEqual([`1:${REASONS.chain_broken}`]);
+  });
+
+  it("keeps the strict order rule: a predecessor later in the bundle fails, it is not truncation", async () => {
+    const b = golden();
+    const [c1, c2] = b.statements;
+    const res = await verify({ ...b, statements: [c2!, c1!] }, jwks);
     expect(res.reasons).toEqual([`0:${REASONS.chain_broken}`]);
-    // The missing predecessor is a failure now, not a "linked statement not in bundle" flag.
-    expect(res.flags).not.toContainEqual({
-      flag: FLAGS.linked_statement_not_in_bundle,
-      subject: b.statements[1]!.previous_digest,
-    });
+    expect(res.flags.map((f) => f.flag)).not.toContain(FLAGS.lineage_truncated);
+  });
+
+  it("does not flag truncation on a statement that fails its signature", async () => {
+    const b = golden();
+    const edited = { ...b.statements[1]!, cost: { mu_millimu: 1 } };
+    const res = await verify({ ...b, statements: [edited, ...b.statements.slice(2)] }, jwks);
+    expect(res.reasons).toContain(`0:${REASONS.signature_invalid}`);
+    expect(res.flags.map((f) => f.flag)).not.toContain(FLAGS.lineage_truncated);
   });
 
   it("an edited predecessor fails its signature and breaks its successor's link", async () => {
