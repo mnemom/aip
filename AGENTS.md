@@ -132,11 +132,10 @@ matches `vX.Y.Z-next` only. Cutting a verifier release is a manual step:
    `sbom-mnemom-verify-<version>.cdx.json` (CycloneDX) to the release.
    Consumers run `npm install @mnemom/verify`, or install the tarball from
    `https://github.com/mnemom/aip/releases/download/verify-v<version>/mnemom-verify-<version>.tgz`.
-5. npm accepts the OIDC publish only once a Trusted Publisher (repo
-   `mnemom/aip`, workflow `publish.yml`, environment `production`) is set on
-   the package, and that needs the package to exist. Until then
-   `publish-verify-npm` fails and the tarball upload still runs;
-   `verifier-npm-bootstrap.yml` is the one-shot first publish.
+5. npm accepts the OIDC publish only from the Trusted Publisher set on
+   `@mnemom/verify`: repo `mnemom/aip`, workflow `publish.yml`, environment
+   `production`. Renaming that workflow file or environment breaks npm
+   publishing until the Trusted Publisher is updated on npmjs.com.
 
 ## What you should NOT do
 
