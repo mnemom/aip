@@ -282,8 +282,9 @@ function chainReasons(raw: unknown[], digests: (string | null)[]): Map<number, R
     }
     if (typeof prev !== "string" || !DIGEST_RE.test(prev)) return;
     const j = indexOf.get(prev);
-    const target = j === undefined ? undefined : raw[j];
-    if (j === undefined || j >= i || !isObject(target) || chainKey(target) !== key) {
+    // A statement has a digest only when it is an object (verifyStatement),
+    // so raw[j] is one whenever j is found.
+    if (j === undefined || j >= i || chainKey(raw[j] as Record<string, unknown>) !== key) {
       out.set(i, REASONS.chain_broken);
       return;
     }

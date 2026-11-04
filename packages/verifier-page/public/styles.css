@@ -15,7 +15,7 @@ h1 { font-size: 1.6rem; margin: 0 0 .25rem; }
 .lede { color: var(--muted); margin-top: 0; }
 section { margin: 1.25rem 0; }
 label { display: block; font-weight: 600; margin-bottom: .35rem; }
-textarea { width: 100%; font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: .6rem; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg); resize: vertical; }
+textarea, #expected-head { box-sizing: border-box; width: 100%; font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: .6rem; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--fg); resize: vertical; }
 .drop { border: 2px dashed var(--line); border-radius: 8px; padding: .75rem; }
 .drop.over { border-color: var(--ok); background: var(--ok-bg); }
 .hint { color: var(--muted); font-size: .9rem; margin: .4rem 0 0; }

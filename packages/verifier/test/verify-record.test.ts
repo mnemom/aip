@@ -191,8 +191,49 @@ describe("verify: previous_digest chain and head binding (K1.20)", () => {
     }
   });
 
+  it("reports chain_broken once when an alias mismatch and a missing predecessor meet", async () => {
+    const b = golden();
+    // previous_digest names conduct1, which is not in the bundle; prev_digest disagrees too.
+    const c2 = await signStatement({ ...b.statements[1]!, prev_digest: "9".repeat(64) });
+    const res = await verify({ ...b, statements: [c2] }, jwks);
+    expect(res.reasons).toEqual([`0:${REASONS.chain_broken}`]);
+  });
+
+  it("a malformed previous_digest in a bundle is digest_malformed, not chain_broken", async () => {
+    const b = golden();
+    const c2 = await signStatement({ ...b.statements[1]!, previous_digest: "not-a-digest" });
+    const res = await verify({ ...b, statements: [b.statements[0]!, c2] }, jwks);
+    expect(res.reasons).toEqual([`1:${REASONS.digest_malformed}`]);
+  });
+
+  it("a non-object entry fails on its own and leaves the chain and head checks intact", async () => {
+    const b = golden();
+    for (const junk of [null, "x", 42]) {
+      // At the front it shifts every index; at the end it sits after the PR record.
+      const front = await verify({ ...b, statements: [junk, ...b.statements] }, jwks, { expected_head_sha: HEAD });
+      expect(front.reasons, String(junk)).toEqual([`0:${REASONS.not_an_object}`]);
+      const end = await verify({ ...b, statements: [...b.statements, junk] }, jwks, { expected_head_sha: HEAD });
+      expect(end.reasons, String(junk)).toEqual([`${b.statements.length}:${REASONS.not_an_object}`]);
+    }
+  });
+
+  it("skips a verified PR record with no string head_sha when binding the head", async () => {
+    const b = golden();
+    const pr = b.statements[2]!;
+    const noHead: Record<string, unknown> = { ...pr, previous_digest: statementDigest(pr), built_at: "2026-10-23T20:00:00.000Z" };
+    delete noHead.head_sha;
+    const latest = await signStatement(noHead);
+    // The earlier PR record still binds the head.
+    const res = await verify({ ...b, statements: [...b.statements, latest] }, jwks, { expected_head_sha: HEAD });
+    expect(res.reasons).toEqual([]);
+    // Alone, a PR record without a head binds nothing.
+    const bare = await signStatement({ ...noHead, previous_digest: null, head_sha: 7 });
+    expect((await verify(bare, jwks, { expected_head_sha: HEAD })).reasons).toEqual([REASONS.head_unbound]);
+  });
+
   it("refuses a malformed expected head before reading the input", async () => {
-    for (const bad of ["F".repeat(40), "f".repeat(39), "", "HEAD"]) {
+    const nonString = [42, null, ["f".repeat(40)]] as unknown as string[];
+    for (const bad of ["F".repeat(40), "f".repeat(39), "", "HEAD", ...nonString]) {
       const res = await verify(golden(), jwks, { expected_head_sha: bad });
       expect(res.reasons).toEqual([REASONS.expected_head_malformed]);
       expect(res.statements).toEqual([]);

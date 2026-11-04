@@ -24,6 +24,12 @@
     <p class="hint" id="keys-note"></p>
   </section>
 
+  <section>
+    <label for="expected-head">Expected PR head commit (optional)</label>
+    <input id="expected-head" type="text" spellcheck="false" autocomplete="off" placeholder="40 hex characters">
+    <p class="hint">When set, the input must carry a verified PR record that names this commit as its head.</p>
+  </section>
+
   <p><button id="verify" type="button">Verify</button></p>
 
   <section id="result" class="result" aria-live="polite"></section>

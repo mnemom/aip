@@ -32,6 +32,10 @@ const REASON_TEXT: Record<string, string> = {
   [REASONS.linked_statement_wrong_typ]: "A digest points at a statement of the wrong type.",
   [REASONS.card_line_class_not_allowed]: "The share card carries a line class a card may not show.",
   [REASONS.card_verdict_without_coverage]: "The share card states a verdict its source does not cover.",
+  [REASONS.chain_broken]: "The record's previous_digest chain is broken: its predecessor is missing, out of order, from another record, or named twice.",
+  [REASONS.head_mismatch]: "The latest PR record in the input names a different head commit than the one expected.",
+  [REASONS.head_unbound]: "No verified PR record in the input names a head commit, so it binds to none.",
+  [REASONS.expected_head_malformed]: "The expected head is not a 40 or 64 character lowercase hex commit sha.",
 };
 
 const FLAG_TEXT: Record<string, string> = {
@@ -161,6 +165,8 @@ async function run(): Promise<void> {
 
   const inputText = $<HTMLTextAreaElement>("input").value;
   const jwksText = $<HTMLTextAreaElement>("jwks").value;
+  // Optional: the PR head commit the input must bind to (K1.20).
+  const expectedHead = $<HTMLInputElement>("expected-head").value.trim();
 
   const jwks = parseJson(jwksText);
   if (jwks.error || !isJwks(jwks.value)) {
@@ -183,7 +189,11 @@ async function run(): Promise<void> {
       : null;
   // The verifier takes parsed JSON and a JWKS; it never throws and never
   // touches the network.
-  const result = await verify(input.value, jwks.value as Parameters<typeof verify>[1]);
+  const result = await verify(
+    input.value,
+    jwks.value as Parameters<typeof verify>[1],
+    expectedHead ? { expected_head_sha: expectedHead } : {},
+  );
   render(result, typ);
 }
 
