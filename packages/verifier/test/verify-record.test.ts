@@ -168,6 +168,29 @@ describe("verify: previous_digest chain and head binding (K1.20)", () => {
     ]);
   });
 
+  it("fails a statement whose prev_digest and previous_digest aliases differ", async () => {
+    const b = golden();
+    const [c1, c2] = b.statements;
+    const prev = statementDigest(c1!);
+    const other = "9".repeat(64);
+    // Equal aliases (both null, or the same digest) pass.
+    const c1Both = await signStatement({ ...c1!, prev_digest: null });
+    const c2Both = await signStatement({ ...c2!, previous_digest: statementDigest(c1Both), prev_digest: statementDigest(c1Both) });
+    expect((await verify({ ...b, statements: [c1Both, c2Both] }, jwks)).reasons).toEqual([]);
+    // A differing pair fails as chain_broken, once, in a bundle and on its own.
+    const cases: [string, Record<string, unknown>, number][] = [
+      ["null vs digest", await signStatement({ ...c1!, prev_digest: prev }), 0],
+      ["digest vs null", await signStatement({ ...c2!, prev_digest: null }), 1],
+      ["two digests", await signStatement({ ...c2!, prev_digest: other }), 1],
+    ];
+    for (const [name, bad, i] of cases) {
+      const statements = i === 0 ? [bad, c2!] : [c1!, bad];
+      const inBundle = await verify({ ...b, statements }, jwks);
+      expect(inBundle.reasons.filter((r) => r.startsWith(`${i}:`)), name).toEqual([`${i}:${REASONS.chain_broken}`]);
+      expect((await verify(bad, jwks)).reasons, name).toEqual([`0:${REASONS.chain_broken}`]);
+    }
+  });
+
   it("refuses a malformed expected head before reading the input", async () => {
     for (const bad of ["F".repeat(40), "f".repeat(39), "", "HEAD"]) {
       const res = await verify(golden(), jwks, { expected_head_sha: bad });

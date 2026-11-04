@@ -174,7 +174,9 @@ export const REASONS = {
    * The `previous_digest` chain of one record does not hold inside the bundle
    * (K1.20): the named build is missing, of another type or lineage, later in
    * build order, or a second build names the same predecessor (a fork, or a
-   * second genesis). Reported on the statement whose link is broken.
+   * second genesis), or the statement carries both `prev_digest` and
+   * `previous_digest` with different values. Reported on the statement whose
+   * link is broken.
    */
   chain_broken: "chain_broken",
   /** `expected_head_sha` was given and the latest PR record names another head (K1.20). */

@@ -218,6 +218,12 @@ export async function verifyStatement(
       break;
     }
   }
+  // `prev_digest` and `previous_digest` are signed aliases (lead pick
+  // 2026-10-29): a statement that carries both with different values is
+  // internally inconsistent about its predecessor (K1.20).
+  if ("prev_digest" in statement && "previous_digest" in statement) {
+    if (statement.prev_digest !== statement.previous_digest) reasons.push(REASONS.chain_broken);
+  }
   if (typ === "AAP-ShareCard/v1") reasons.push(...shareCardReasons(statement.lines));
 
   const flags = typ === "AAP-ConductRecord/v1" ? checkpointFlags(statement.checkpoints) : [];
@@ -381,7 +387,7 @@ export async function verify(
   statements.forEach((s, i) => {
     s.reasons.forEach((r) => reasons.push(`${i}:${r}`));
     const broken = chain.get(i);
-    if (broken) reasons.push(`${i}:${broken}`);
+    if (broken && !s.reasons.includes(broken)) reasons.push(`${i}:${broken}`);
     flags.push(...s.flags);
     const raw = rawStatements[i];
     if (!s.valid || !isObject(raw)) return;
