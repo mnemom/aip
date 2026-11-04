@@ -170,6 +170,19 @@ export const REASONS = {
   linked_statement_wrong_typ: "linked_statement_wrong_typ",
   card_line_class_not_allowed: "card_line_class_not_allowed",
   card_verdict_without_coverage: "card_verdict_without_coverage",
+  /**
+   * The `previous_digest` chain of one record does not hold inside the bundle
+   * (K1.20): the named build is missing, of another type or lineage, later in
+   * build order, or a second build names the same predecessor (a fork, or a
+   * second genesis). Reported on the statement whose link is broken.
+   */
+  chain_broken: "chain_broken",
+  /** `expected_head_sha` was given and the latest PR record names another head (K1.20). */
+  head_mismatch: "head_mismatch",
+  /** `expected_head_sha` was given and no verified PR record in the input names a head (K1.20). */
+  head_unbound: "head_unbound",
+  /** `expected_head_sha` was given but is not a lowercase hex git commit id. */
+  expected_head_malformed: "expected_head_malformed",
 } as const;
 
 export type Reason = (typeof REASONS)[keyof typeof REASONS];
@@ -197,6 +210,17 @@ export interface StatementVerificationResult {
   signing_key_id: string | null;
   reasons: Reason[];
   flags: StatementFlag[];
+}
+
+/** Options for `verify`. */
+export interface RecordVerifyOptions {
+  /**
+   * The PR head commit the bundle was built for: the head before the App's
+   * bundle commit (`AAP-PRRecord/v1.head_sha`). When given, the latest
+   * verified PR record in the input must name it, or `verify` fails with
+   * `head_mismatch` / `head_unbound` (K1.20). Lowercase hex, 40 or 64 chars.
+   */
+  expected_head_sha?: string;
 }
 
 export interface RecordVerificationResult {

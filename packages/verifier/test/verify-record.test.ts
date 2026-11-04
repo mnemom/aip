@@ -72,9 +72,83 @@ describe("verify: golden fixtures", () => {
 describe("verify: tampered fixtures fail closed with the named reason", () => {
   const cases = fixture<TamperedCase[]>("tampered");
   it.each(cases.map((c) => [c.name, c] as const))("%s", async (_name, c) => {
-    const res = await verify(c.input, jwks);
+    const res = await verify(
+      c.input,
+      jwks,
+      c.expected_head_sha === undefined ? {} : { expected_head_sha: c.expected_head_sha },
+    );
     expect(res.valid).toBe(false);
     expect(res.reasons).toContain(c.reason);
+  });
+});
+
+describe("verify: previous_digest chain and head binding (K1.20)", () => {
+  const golden = () => fixture<{ typ: string; statements: Record<string, unknown>[] }>("golden-bundle");
+  const HEAD = "f".repeat(40);
+
+  it("passes the golden bundle with its own head, and without the option", async () => {
+    expect((await verify(golden(), jwks, { expected_head_sha: HEAD })).reasons).toEqual([]);
+    expect((await verify(golden(), jwks)).valid).toBe(true);
+  });
+
+  it("fails a chain break instead of flagging it", async () => {
+    const b = golden();
+    const res = await verify({ ...b, statements: b.statements.slice(1) }, jwks);
+    expect(res.valid).toBe(false);
+    expect(res.reasons).toEqual([`0:${REASONS.chain_broken}`]);
+    // The missing predecessor is a failure now, not a "linked statement not in bundle" flag.
+    expect(res.flags).not.toContainEqual({
+      flag: FLAGS.linked_statement_not_in_bundle,
+      subject: b.statements[1]!.previous_digest,
+    });
+  });
+
+  it("an edited predecessor fails its signature and breaks its successor's link", async () => {
+    const b = golden();
+    const edited = { ...b.statements[0]!, cost: { mu_millimu: 1 } };
+    const res = await verify({ ...b, statements: [edited, ...b.statements.slice(1)] }, jwks);
+    expect(res.reasons).toEqual([`0:${REASONS.signature_invalid}`, `1:${REASONS.chain_broken}`]);
+  });
+
+  it("does not check the chain of a bare statement", async () => {
+    const res = await verify(fixture("golden-conduct"), jwks);
+    expect(res.valid).toBe(true);
+  });
+
+  it("binds a bare PR record to the head too", async () => {
+    const pr = fixture<Record<string, unknown>>("golden-pr-record");
+    expect((await verify(pr, jwks, { expected_head_sha: HEAD })).valid).toBe(true);
+    expect((await verify(pr, jwks, { expected_head_sha: "1".repeat(40) })).reasons).toEqual([REASONS.head_mismatch]);
+  });
+
+  it("uses the latest PR record when there are several", async () => {
+    const b = golden();
+    const pr = b.statements[2]!;
+    const newer = await signStatement({
+      ...pr,
+      previous_digest: statementDigest(pr),
+      head_sha: "2".repeat(40),
+      built_at: "2026-10-23T20:00:00.000Z",
+    });
+    const statements = [...b.statements, newer];
+    expect((await verify({ ...b, statements }, jwks, { expected_head_sha: "2".repeat(40) })).valid).toBe(true);
+    expect((await verify({ ...b, statements }, jwks, { expected_head_sha: HEAD })).reasons).toEqual([REASONS.head_mismatch]);
+  });
+
+  it("an edited PR record head binds nothing: signature_invalid and head_unbound", async () => {
+    const b = golden();
+    const statements = [...b.statements];
+    statements[2] = { ...statements[2]!, head_sha: "a".repeat(40) };
+    const res = await verify({ ...b, statements }, jwks, { expected_head_sha: "a".repeat(40) });
+    expect(res.reasons).toEqual([`2:${REASONS.signature_invalid}`, REASONS.head_unbound]);
+  });
+
+  it("refuses a malformed expected head before reading the input", async () => {
+    for (const bad of ["F".repeat(40), "f".repeat(39), "", "HEAD"]) {
+      const res = await verify(golden(), jwks, { expected_head_sha: bad });
+      expect(res.reasons).toEqual([REASONS.expected_head_malformed]);
+      expect(res.statements).toEqual([]);
+    }
   });
 });
 

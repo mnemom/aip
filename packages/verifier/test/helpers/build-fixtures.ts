@@ -21,6 +21,8 @@ export interface TamperedCase {
   /** The exact `reasons` entry `verify` must return. */
   reason: string;
   input: unknown;
+  /** Passed to `verify` as `options.expected_head_sha` when present (K1.20). */
+  expected_head_sha?: string;
 }
 
 const ISSUED = "2026-10-23T18:00:00.000Z";
@@ -123,6 +125,17 @@ export async function buildFixtures(): Promise<Record<string, unknown>> {
     ],
   };
 
+  // K1.20: the previous_digest chain and the head binding.
+  const conduct2OtherLineage = await signStatement({ ...conduct2, lineage_key: "conv_" + "9".repeat(32) });
+  const conduct2Fork = await signStatement({ ...conduct2, built_at: "2026-10-23T18:31:00.000Z" });
+  const conduct1Again = await signStatement({ ...conduct1, built_at: "2026-10-23T18:45:00.000Z" });
+  const chainMissing = { typ: BUNDLE_TYP, statements: [conduct2, pr] };
+  const chainReordered = { typ: BUNDLE_TYP, statements: [conduct2, conduct1, pr] };
+  const chainOtherLineage = { typ: BUNDLE_TYP, statements: [conduct1, conduct2OtherLineage] };
+  const chainFork = { typ: BUNDLE_TYP, statements: [conduct1, conduct2, conduct2Fork] };
+  const chainTwoGenesis = { typ: BUNDLE_TYP, statements: [conduct1, conduct2, conduct1Again] };
+  const HEAD = "f".repeat(40);
+
   const tampered: TamperedCase[] = [
     { name: "tampered-cost", reason: `0:${REASONS.signature_invalid}`, input: tamperedCost },
     { name: "wrong-alg", reason: `0:${REASONS.unsupported_alg}`, input: wrongAlg },
@@ -134,6 +147,13 @@ export async function buildFixtures(): Promise<Record<string, unknown>> {
     { name: "card-estimate-line", reason: `0:${REASONS.card_line_class_not_allowed}`, input: cardEstimate },
     { name: "card-verdict-no-coverage", reason: `0:${REASONS.card_verdict_without_coverage}`, input: cardVerdictNoCoverage },
     { name: "bundle-wrong-link", reason: `1:${REASONS.linked_statement_wrong_typ}`, input: wrongLinkBundle },
+    { name: "chain-predecessor-missing", reason: `0:${REASONS.chain_broken}`, input: chainMissing },
+    { name: "chain-reordered", reason: `0:${REASONS.chain_broken}`, input: chainReordered },
+    { name: "chain-other-lineage", reason: `1:${REASONS.chain_broken}`, input: chainOtherLineage },
+    { name: "chain-fork", reason: `2:${REASONS.chain_broken}`, input: chainFork },
+    { name: "chain-second-genesis", reason: `2:${REASONS.chain_broken}`, input: chainTwoGenesis },
+    { name: "head-mismatch", reason: REASONS.head_mismatch, input: bundle, expected_head_sha: "a".repeat(40) },
+    { name: "head-unbound", reason: REASONS.head_unbound, input: { typ: BUNDLE_TYP, statements: [conduct1, conduct2] }, expected_head_sha: HEAD },
   ];
 
   const write = (name: string, value: unknown) => {

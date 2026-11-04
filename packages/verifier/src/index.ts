@@ -108,6 +108,7 @@ export type {
   StatementFlag,
   StatementVerificationResult,
   RecordVerificationResult,
+  RecordVerifyOptions,
 } from "./statements.js";
 
 export type { ClaimClass, ClaimField, ClaimTableEntry, Surface, Mode, GoalMode, ProtectionVerdict } from "./claim-table.js";

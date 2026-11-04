@@ -15,6 +15,11 @@
  * 5. Ed25519 over `canonicalJson(statement minus signature)`
  * 6. per-type rules (share card line classes, verdict coverage)
  * 7. flags on cited checkpoints (T12), which never change `valid`
+ *
+ * Across a bundle (K1.20): every link must name a statement of the right
+ * type, each record's `previous_digest` chain must hold inside the bundle
+ * (`chain_broken`), and, when the caller passes `expected_head_sha`, the
+ * latest PR record must name that head (`head_mismatch`, `head_unbound`).
  */
 
 import { verifyAsync } from "@noble/ed25519";
@@ -34,6 +39,7 @@ import {
   type RecordJwk,
   type RecordJwks,
   type RecordVerificationResult,
+  type RecordVerifyOptions,
   type ShareCardLine,
   type SignedStatement,
   type StatementFlag,
@@ -42,6 +48,8 @@ import {
 } from "./statements.js";
 
 const DIGEST_RE = /^[0-9a-f]{64}$/;
+/** A git commit id: sha1 (40) or sha256 (64) lowercase hex. */
+const GIT_SHA_RE = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/;
 
 function isObject(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
@@ -224,26 +232,96 @@ export async function verifyStatement(
   };
 }
 
-/** Which statement types a link field may point at. */
-const LINK_TARGETS: Record<string, readonly StatementTyp[] | "same"> = {
-  previous_digest: "same",
+/**
+ * Which statement types a link field may point at. `previous_digest` is not
+ * here: `chainReasons` checks it, and a broken chain fails rather than flags.
+ */
+const LINK_TARGETS: Record<string, readonly StatementTyp[]> = {
   conduct_digests: ["AAP-ConductRecord/v1"],
   pr_record_digest: ["AAP-PRRecord/v1"],
   source_digest: ["AAP-ConductRecord/v1", "AAP-PRRecord/v1", "AAP-Outcome/v1"],
 };
+
+/** One record's chain: statements of the same `typ` and `lineage_key`. */
+function chainKey(s: Record<string, unknown>): string {
+  return `${String(s.typ)}\u0000${typeof s.lineage_key === "string" ? s.lineage_key : ""}`;
+}
+
+/**
+ * The `previous_digest` chain inside a bundle (T2, K1.20). Only statements
+ * that carry the field take part; `null` is a genesis. For each one, by index:
+ * - a non-null `previous_digest` must name a statement earlier in the bundle
+ *   (build order) with the same `typ` and `lineage_key`;
+ * - no two statements of one chain may name the same predecessor, and a chain
+ *   has at most one genesis (a fork, or a spliced second history).
+ * A malformed `previous_digest` is `digest_malformed` (verifyStatement) and
+ * is skipped here. The App bundles a lineage from its genesis
+ * (app-bundle-source.ts), so a predecessor outside the bundle is a break.
+ */
+function chainReasons(raw: unknown[], digests: (string | null)[]): Map<number, Reason> {
+  const out = new Map<number, Reason>();
+  const indexOf = new Map<string, number>();
+  digests.forEach((d, i) => {
+    if (d && !indexOf.has(d)) indexOf.set(d, i);
+  });
+  const taken = new Set<string>();
+  raw.forEach((s, i) => {
+    if (!isObject(s) || !("previous_digest" in s)) return;
+    const prev = s.previous_digest;
+    const key = chainKey(s);
+    if (prev === null) {
+      if (taken.has(`${key}\u0000genesis`)) out.set(i, REASONS.chain_broken);
+      taken.add(`${key}\u0000genesis`);
+      return;
+    }
+    if (typeof prev !== "string" || !DIGEST_RE.test(prev)) return;
+    const j = indexOf.get(prev);
+    const target = j === undefined ? undefined : raw[j];
+    if (j === undefined || j >= i || !isObject(target) || chainKey(target) !== key) {
+      out.set(i, REASONS.chain_broken);
+      return;
+    }
+    if (taken.has(`${key}\u0000${prev}`)) out.set(i, REASONS.chain_broken);
+    taken.add(`${key}\u0000${prev}`);
+  });
+  return out;
+}
+
+/**
+ * The head binding (K1.20): the latest verified `AAP-PRRecord/v1` in build
+ * order must name `expected` as its `head_sha`. The PR record is signed, so
+ * an edited bundle cannot move it to another head without failing its
+ * signature.
+ */
+function headReason(
+  raw: unknown[],
+  statements: StatementVerificationResult[],
+  expected: string,
+): Reason | null {
+  for (let i = raw.length - 1; i >= 0; i--) {
+    const s = raw[i];
+    if (!statements[i]?.valid || !isObject(s) || s.typ !== "AAP-PRRecord/v1") continue;
+    if (typeof s.head_sha !== "string") continue;
+    return s.head_sha === expected ? null : REASONS.head_mismatch;
+  }
+  return REASONS.head_unbound;
+}
 
 /**
  * Verify a statement or a whole bundle against the published JWKS.
  *
  * For a bundle every statement is verified on its own, then the links
  * between them are checked: a digest that names a statement in the bundle
- * must name one of the right type. A digest that names nothing in the
- * bundle is flagged, not failed, because a long session's earlier
- * statements may live outside the bundle (design, open questions).
+ * must name one of the right type, and each record's `previous_digest`
+ * chain must hold (`chain_broken`). A `conduct_digests`, `pr_record_digest`
+ * or `source_digest` that names nothing in the bundle is flagged, not
+ * failed. With `options.expected_head_sha` the input must also bind to that
+ * PR head; the reasons for it are bundle-level, without an index prefix.
  */
 export async function verify(
   input: SignedStatement | RecordBundle | unknown,
   jwks: RecordJwks,
+  options: RecordVerifyOptions = {},
 ): Promise<RecordVerificationResult> {
   const verified_at = new Date().toISOString();
   const result = (
@@ -252,6 +330,11 @@ export async function verify(
     flags: StatementFlag[],
     statements: StatementVerificationResult[],
   ): RecordVerificationResult => ({ valid, reasons, flags, statements, verified_at });
+
+  const expected = options.expected_head_sha;
+  if (expected !== undefined && (typeof expected !== "string" || !GIT_SHA_RE.test(expected))) {
+    return result(false, [REASONS.expected_head_malformed], [], []);
+  }
 
   if (!isObject(input)) return result(false, [REASONS.bundle_not_an_object], [], []);
 
@@ -269,7 +352,10 @@ export async function verify(
   // A bare statement.
   if (input.typ !== BUNDLE_TYP) {
     const one = await verifyStatement(input, jwks);
-    return result(one.valid, one.reasons.map((r) => `0:${r}`), one.flags, [one]);
+    const reasons = one.reasons.map((r) => `0:${r}`);
+    const head = expected === undefined ? null : headReason([input], [one], expected);
+    if (head) reasons.push(head);
+    return result(reasons.length === 0, reasons, one.flags, [one]);
   }
 
   const rawStatements: unknown[] | null = Array.isArray(input.statements) ? input.statements : null;
@@ -285,10 +371,17 @@ export async function verify(
     if (s.digest) byDigest.set(s.digest, s);
   });
 
+  const chain = chainReasons(
+    rawStatements,
+    statements.map((s) => s.digest),
+  );
+
   const reasons: string[] = [];
   const flags: StatementFlag[] = [];
   statements.forEach((s, i) => {
     s.reasons.forEach((r) => reasons.push(`${i}:${r}`));
+    const broken = chain.get(i);
+    if (broken) reasons.push(`${i}:${broken}`);
     flags.push(...s.flags);
     const raw = rawStatements[i];
     if (!s.valid || !isObject(raw)) return;
@@ -302,13 +395,17 @@ export async function verify(
           flags.push({ flag: FLAGS.linked_statement_not_in_bundle, subject: d });
           continue;
         }
-        const allowed = targets === "same" ? [s.typ as StatementTyp] : targets;
-        if (!linked.typ || !allowed.includes(linked.typ as StatementTyp)) {
+        if (!linked.typ || !targets.includes(linked.typ as StatementTyp)) {
           reasons.push(`${i}:${REASONS.linked_statement_wrong_typ}`);
         }
       }
     }
   });
+
+  if (expected !== undefined) {
+    const head = headReason(rawStatements, statements, expected);
+    if (head) reasons.push(head);
+  }
 
   return result(reasons.length === 0, reasons, flags, statements);
 }
