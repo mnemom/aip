@@ -1,13 +1,13 @@
 name: Verifier npm bootstrap (one-shot)
 
-# One-shot first publish of @mnemom/aip-verifier 0.6.2 under npm tag `latest`
+# One-shot first publish of @mnemom/verify 0.6.2 under npm tag `latest`
 # (K4.1, Keith go 2026-10-28). npm only lets a Trusted Publisher be added to a
 # package that already exists, so the first version goes out with the org
 # NPM_TOKEN; every later version goes through publish.yml's
 # publish-verifier-npm job (OIDC, provenance).
 #
 # REMOVE THIS WORKFLOW the same day the Trusted Publisher for
-# @mnemom/aip-verifier (repo mnemom/aip, workflow publish.yml, environment
+# @mnemom/verify (repo mnemom/aip, workflow publish.yml, environment
 # production) is added on npmjs.com.
 #
 # Dispatch-only. It refuses to run if the package already exists on the
@@ -20,7 +20,7 @@ permissions: {}
 
 jobs:
   bootstrap:
-    name: First publish of @mnemom/aip-verifier (latest)
+    name: First publish of @mnemom/verify (latest)
     runs-on: ubuntu-latest
     environment: production
     permissions:
@@ -29,7 +29,7 @@ jobs:
       run:
         working-directory: packages/verifier
     env:
-      PACKAGE: "@mnemom/aip-verifier"
+      PACKAGE: "@mnemom/verify"
       VERSION: "0.6.2"
       NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
     steps:

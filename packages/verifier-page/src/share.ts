@@ -9,8 +9,8 @@
  * `renderLines` returns: no number, label or field is read from the card
  * directly. On any failure it draws the failure message and no card text.
  */
-import { renderLines } from "@mnemom/aip-verifier/render-lines";
-import type { RenderedLine } from "@mnemom/aip-verifier/render-lines";
+import { renderLines } from "@mnemom/verify/render-lines";
+import type { RenderedLine } from "@mnemom/verify/render-lines";
 
 import { PUBLISHED_JWKS } from "./keys.js";
 

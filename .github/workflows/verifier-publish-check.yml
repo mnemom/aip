@@ -1,7 +1,7 @@
 name: Verifier publish check
 
-# Record K1.15: on every PR that touches @mnemom/aip-verifier, prove that
-# `npm publish` would ship what publish.yml ships for an aip-verifier- release.
+# Record K1.15: on every PR that touches @mnemom/verify, prove that
+# `npm publish` would ship what publish.yml ships for a verify- release.
 # .github/scripts/check-verifier-publish.mjs runs `npm publish --dry-run` and
 # `npm pack` (the release-asset tarball, verifier-test) on the PR commit and
 # fails when their files or shasum differ, when the tarball holds a file outside
@@ -15,6 +15,7 @@ on:
     paths:
       - "packages/verifier/**"
       - ".github/scripts/check-verifier-publish*.mjs"
+      - ".github/scripts/check-verifier-release-tag*.sh"
       - ".github/workflows/verifier-publish-check.yml"
       - ".github/workflows/publish.yml"
   workflow_dispatch:
@@ -40,6 +41,14 @@ jobs:
 
       - name: Check script tests (fail on a mismatched tarball or gitHead)
         run: node --test .github/scripts/check-verifier-publish.test.mjs
+
+      - name: Release-tag guard tests (verify-v<version>, @mnemom/verify, aip-verifier- refused)
+        run: .github/scripts/check-verifier-release-tag.test.sh
+
+      - name: Release guard accepts this commit's verify-v<version> tag
+        run: |
+          v=$(node -p "require('./packages/verifier/package.json').version")
+          .github/scripts/check-verifier-release-tag.sh "verify-v$v" packages/verifier/package.json
 
       - name: Build
         working-directory: packages/verifier

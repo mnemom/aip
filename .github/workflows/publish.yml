@@ -28,7 +28,7 @@ on:
       npm-directory:
         # A choice, not a free string: a dispatch can never hand packages/verifier
         # to the npm reusable below. The verifier reaches npm only from an
-        # aip-verifier- release (publish-verifier-npm), behind the guard and gates.
+        # verify- release (publish-verifier-npm), behind the guard and gates.
         description: "Directory containing package.json to publish"
         required: false
         type: choice
@@ -41,15 +41,20 @@ permissions: {}
 jobs:
   # ── Release-triggered: validate → test → (publish-npm, publish-pypi) ──
   #
-  # SDK releases only. A tag starting with `aip-verifier-` is a verifier-only
+  # SDK releases only. A tag starting with `verify-` is a verifier-only
   # release (K4.1): these four jobs skip, so the SDK tag/version check never
   # fails and npm/PyPI are never touched, and only the verifier jobs below run.
   # The verifier jobs carry the inverse condition, so the two paths are disjoint.
+  # `aip-verifier-` is the verifier's retired tag form (the package was
+  # @mnemom/aip-verifier until the rename to @mnemom/verify, before any npm
+  # publish; releases aip-verifier-v0.6.0 and -v0.6.1 stay as they are). A
+  # release on that form runs neither path: the SDK jobs skip it here and the
+  # verifier jobs match only `verify-`.
 
   validate:
     permissions:
       contents: read
-    if: github.event_name == 'release' && !startsWith(github.event.release.tag_name, 'aip-verifier-')
+    if: github.event_name == 'release' && !startsWith(github.event.release.tag_name, 'verify-') && !startsWith(github.event.release.tag_name, 'aip-verifier-')
     name: Validate versions
     runs-on: ubuntu-latest
     steps:
@@ -80,7 +85,7 @@ jobs:
   test:
     permissions:
       contents: read
-    if: github.event_name == 'release' && !startsWith(github.event.release.tag_name, 'aip-verifier-')
+    if: github.event_name == 'release' && !startsWith(github.event.release.tag_name, 'verify-') && !startsWith(github.event.release.tag_name, 'aip-verifier-')
     name: Test
     runs-on: ubuntu-latest
     steps:
@@ -111,7 +116,7 @@ jobs:
   publish-pypi:
     name: Publish to PyPI
     needs: [validate, test]
-    if: github.event_name == 'release' && !startsWith(github.event.release.tag_name, 'aip-verifier-')
+    if: github.event_name == 'release' && !startsWith(github.event.release.tag_name, 'verify-') && !startsWith(github.event.release.tag_name, 'aip-verifier-')
     runs-on: ubuntu-latest
     permissions:
       id-token: write   # OIDC → PyPI Trusted Publisher
@@ -135,7 +140,7 @@ jobs:
 
   publish-npm:
     needs: [validate, test]
-    if: github.event_name == 'release' && !startsWith(github.event.release.tag_name, 'aip-verifier-')
+    if: github.event_name == 'release' && !startsWith(github.event.release.tag_name, 'verify-') && !startsWith(github.event.release.tag_name, 'aip-verifier-')
     permissions:
       contents: write   # for SBOM attach to GitHub Release
       id-token: write   # for npm OIDC Trusted Publisher
@@ -145,7 +150,7 @@ jobs:
       npm-directory: packages/typescript
       tag: latest
 
-  # ── Release-triggered: @mnemom/aip-verifier → GitHub release asset + npm `latest` (K4.1) ──
+  # ── Release-triggered: @mnemom/verify → GitHub release asset + npm `latest` (K4.1) ──
   #
   # Owner decision (2026-10-27): a release carries the packed tarball as a release
   # asset. Keith, 2026-10-28 (A-K-009): the package also goes to npm, through
@@ -158,7 +163,7 @@ jobs:
   #   3. upload-verifier-release attaches the tarball to the release with `gh`.
   #   4. publish-verifier-npm publishes packages/verifier to npm under `latest`
   #      through the org reusable npm-publish.yml.
-  # Verifier-only releases (tag `aip-verifier-v<version>`) only: an SDK `v*`
+  # Verifier-only releases (tag `verify-v<version>`) only: an SDK `v*`
   # release skips these four jobs and carries no verifier tarball.
   # Not wired into workflow_dispatch: dispatch-publish-npm stays typescript-only
   # (the `npm-directory` input is a choice with that one option).
@@ -166,7 +171,7 @@ jobs:
   verifier-guard:
     permissions:
       contents: read
-    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'aip-verifier-')
+    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'verify-')
     name: Verifier dist-tag guard
     runs-on: ubuntu-latest
     outputs:
@@ -188,7 +193,7 @@ jobs:
       contents: read
       id-token: write       # Sigstore signing for the build-provenance attestation
       attestations: write   # store the attestation on mnemom/aip
-    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'aip-verifier-')
+    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'verify-')
     name: Verifier CI gates + pack tarball
     needs: [verifier-guard]
     runs-on: ubuntu-latest
@@ -202,15 +207,13 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v6
         with:
           node-version: "24"
-      - name: Check tag against verifier version
+      # Tag is exactly verify-v<version>, the version is package.json's and
+      # the package is @mnemom/verify. Tested on every PR by
+      # verifier-publish-check.yml (check-verifier-release-tag.test.sh).
+      - name: Check tag against verifier name and version
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: |
-          VERIFIER_VERSION=$(node -p "require('./package.json').version")
-          if [ "${RELEASE_TAG#aip-verifier-v}" != "$VERIFIER_VERSION" ]; then
-            echo "ERROR: packages/verifier/package.json version ($VERIFIER_VERSION) != tag ($RELEASE_TAG)"
-            exit 1
-          fi
+        run: ../../.github/scripts/check-verifier-release-tag.sh "$RELEASE_TAG" package.json
       - run: npm ci
       - run: npm run typecheck
       - run: npm run build
@@ -239,7 +242,7 @@ jobs:
   upload-verifier-release:
     name: Attach verifier tarball to GitHub release
     needs: [verifier-guard, verifier-test]
-    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'aip-verifier-')
+    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'verify-')
     runs-on: ubuntu-latest
     permissions:
       contents: write   # gh release upload
@@ -268,7 +271,7 @@ jobs:
 
   publish-verifier-npm:
     needs: [verifier-guard, verifier-test]
-    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'aip-verifier-')
+    if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'verify-')
     permissions:
       contents: write   # the reusable attaches the SBOM to the release
       id-token: write   # OIDC -> npm Trusted Publisher; also signs the provenance
@@ -294,7 +297,7 @@ jobs:
 
   # The dispatch path publishes to npm `latest` for the SDK only. Refuse any
   # other directory: the verifier also takes npm `latest` (owner reversal of
-  # MNE-9044), but only from aip-verifier- releases above, which run the
+  # MNE-9044), but only from verify- releases above, which run the
   # dist-tag guard, tests and tarball attach; the dispatch path has none of those.
   dispatch-guard:
     name: Refuse npm-directory other than packages/typescript

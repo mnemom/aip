@@ -1,5 +1,5 @@
 {
-  "name": "@mnemom/aip-verifier",
+  "name": "@mnemom/verify",
   "version": "0.6.2",
   "description": "Offline verification of AIP integrity certificates — Ed25519 signatures, chain hashes, and Merkle proofs",
   "type": "module",

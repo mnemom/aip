@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { lintRendering } from "@mnemom/aip-verifier";
+import { lintRendering } from "@mnemom/verify";
 
 import { TEST_KID, signStatement, testJwks } from "../../verifier/test/helpers/sign.js";
 import { readOutcomes, readRecordRows, type Outcome } from "../src/adapter.js";

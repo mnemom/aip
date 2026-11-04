@@ -2,7 +2,7 @@
 
 A static page that verifies AAP record statements (`AAP-ConductRecord/v1`,
 `AAP-PRRecord/v1`, `AAP-Outcome/v1`, `AAP-ShareCard/v1`) and record bundles
-with `@mnemom/aip-verifier`, in the browser, with no network call. The
+with `@mnemom/verify`, in the browser, with no network call. The
 Content-Security-Policy has `connect-src 'none'`, so the page cannot phone
 home even by mistake.
 

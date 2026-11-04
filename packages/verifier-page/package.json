@@ -1,8 +1,8 @@
 {
-  "name": "@mnemom/aip-verifier-page",
+  "name": "@mnemom/verify-page",
   "version": "0.1.0",
   "private": true,
-  "description": "Static web page that verifies AAP record statements and bundles offline with @mnemom/aip-verifier",
+  "description": "Static web page that verifies AAP record statements and bundles offline with @mnemom/verify",
   "type": "module",
   "license": "Apache-2.0",
   "scripts": {
@@ -16,7 +16,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@mnemom/aip-verifier": "file:../verifier"
+    "@mnemom/verify": "file:../verifier"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",

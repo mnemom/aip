@@ -20,7 +20,7 @@
  * identifiers are never read, so the report cannot show them.
  */
 
-import { verifyStatement, type RecordJwks } from "@mnemom/aip-verifier";
+import { verifyStatement, type RecordJwks } from "@mnemom/verify";
 
 export type Arm = "treatment" | "control";
 

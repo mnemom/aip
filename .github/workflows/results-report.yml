@@ -43,7 +43,7 @@ jobs:
             packages/results-report/package-lock.json
 
       # The builder depends on the verifier by file: path, so build it first.
-      - name: Build @mnemom/aip-verifier
+      - name: Build @mnemom/verify
         working-directory: packages/verifier
         run: |
           npm ci

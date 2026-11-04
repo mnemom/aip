@@ -1,7 +1,7 @@
 /**
  * Threat model: packages/verifier-page/THREAT-MODEL.md
  *
- * @mnemom/aip-verifier
+ * @mnemom/verify
  *
  * Offline verification of AIP Integrity Certificates.
  * Given a trusted Ed25519 public key (and optionally a Merkle root),
