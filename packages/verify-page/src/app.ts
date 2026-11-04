@@ -18,6 +18,9 @@ interface RecordJwksLike {
 const REASON_TEXT: Record<string, string> = {
   [REASONS.not_an_object]: "The statement is not a JSON object.",
   [REASONS.unknown_typ]: "The statement's typ is not one the verifier knows.",
+  [REASONS.unsupported_expected_typ]: "The expected typ is not one the verifier knows.",
+  [REASONS.typ_mismatch]: "The statement is of another typ than the one expected.",
+  [REASONS.digest_mismatch]: "The statement's digest is not the digest handed over with it.",
   [REASONS.unsupported_alg]: "The signature algorithm is not EdDSA.",
   [REASONS.signing_key_id_missing]: "The statement names no signing key.",
   [REASONS.signature_missing]: "The statement carries no signature.",

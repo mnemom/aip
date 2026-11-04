@@ -99,6 +99,8 @@ export type {
   PRRecordStatement,
   OutcomeStatement,
   ShareCardStatement,
+  TransparencyRootStatement,
+  StatementVerifyOptions,
   ShareCardLine as RecordShareCardLine,
   CardLineClass,
   CheckpointCitation,

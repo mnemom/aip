@@ -45,6 +45,7 @@ import {
   type StatementFlag,
   type StatementTyp,
   type StatementVerificationResult,
+  type StatementVerifyOptions,
 } from "./statements.js";
 
 const DIGEST_RE = /^[0-9a-f]{64}$/;
@@ -169,10 +170,18 @@ function digestFieldsOf(statement: Record<string, unknown>): unknown[] {
 /**
  * Verify one signed statement against the published JWKS.
  * Never throws and never calls the network.
+ *
+ * `options.expectedTyp` and `options.expectedDigest` follow the SDK's
+ * `verifyStatement` (mnemom-platform shared/sdk/src/statement.ts): same
+ * reason strings and the same order. An expected `typ` outside
+ * `STATEMENT_TYPES` is `unsupported_expected_typ`, then `unknown_typ`, then
+ * `typ_mismatch`, all before any key is looked up. The digest is compared
+ * after the signature, exactly, and a mismatch is `digest_mismatch` alone.
  */
 export async function verifyStatement(
   statement: unknown,
   jwks: RecordJwks,
+  options: StatementVerifyOptions = {},
 ): Promise<StatementVerificationResult> {
   const fail = (
     reasons: Reason[],
@@ -192,10 +201,16 @@ export async function verifyStatement(
   const digest = statementDigest(statement);
   const kid = typeof statement.signing_key_id === "string" ? statement.signing_key_id : null;
   const base = { typ, digest, signing_key_id: kid };
+  const opts: StatementVerifyOptions = isObject(options) ? options : {};
 
+  const expected = opts.expectedTyp as unknown;
+  if (expected !== undefined && (typeof expected !== "string" || !(STATEMENT_TYPES as readonly string[]).includes(expected))) {
+    return fail([REASONS.unsupported_expected_typ], base);
+  }
   if (!typ || !(STATEMENT_TYPES as readonly string[]).includes(typ)) {
     return fail([REASONS.unknown_typ], base);
   }
+  if (expected !== undefined && typ !== expected) return fail([REASONS.typ_mismatch], base);
   // Algorithm-confusion guard: before any key lookup.
   if (statement.alg !== undefined && statement.alg !== "EdDSA") {
     return fail([REASONS.unsupported_alg], base);
@@ -222,6 +237,10 @@ export async function verifyStatement(
     sigOk = false;
   }
   if (!sigOk) return fail([REASONS.signature_invalid], base);
+
+  if (opts.expectedDigest !== undefined && opts.expectedDigest !== digest) {
+    return fail([REASONS.digest_mismatch], base);
+  }
 
   const reasons: Reason[] = [];
   for (const d of digestFieldsOf(statement)) {

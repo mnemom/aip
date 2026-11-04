@@ -1,5 +1,5 @@
 /**
- * Record statements: the four signed statement types the Mnemom record is
+ * Record statements: the five signed statement types the Mnemom record is
  * built from, their bundle, and the JWKS they verify against.
  *
  * Shape (design "The record", decisions T2, T3, T12):
@@ -53,6 +53,7 @@ export const STATEMENT_TYPES = [
   "AAP-PRRecord/v1",
   "AAP-Outcome/v1",
   "AAP-ShareCard/v1",
+  "AAP-TransparencyRoot/v1",
 ] as const;
 
 export type StatementTyp = (typeof STATEMENT_TYPES)[number];
@@ -132,11 +133,29 @@ export interface ShareCardStatement extends SignedStatementBase {
   lines?: ShareCardLine[];
 }
 
+/**
+ * The signed transparency-log root mnemom-api serves at
+ * `GET /v1/transparency/root` (src/transparency/root_publisher.ts). The
+ * signature is Ed25519 over `canonicalJson` of the five fields below, the
+ * same commitment as every other statement. It carries no `previous_digest`
+ * and links to nothing, so it never takes part in a bundle's chain checks.
+ */
+export interface TransparencyRootStatement extends SignedStatementBase {
+  typ: "AAP-TransparencyRoot/v1";
+  /** Leaves in the tree when the root was computed. Typed only: the verifier checks the signature, not the value. */
+  tree_size: number;
+  /** Merkle root, lowercase sha256 hex. Pass it as `merkleRoot` to `verifyCertificate`. */
+  root_hash: string;
+  /** ISO 8601 time the root was signed. */
+  published_at: string;
+}
+
 export type SignedStatement =
   | ConductRecordStatement
   | PRRecordStatement
   | OutcomeStatement
-  | ShareCardStatement;
+  | ShareCardStatement
+  | TransparencyRootStatement;
 
 /** A customer-held bundle: statements in build order. */
 export interface RecordBundle {
@@ -155,7 +174,11 @@ export interface RecordBundle {
  */
 export const REASONS = {
   not_an_object: "not_an_object",
+  /** `expectedTyp` was given but is not one of `STATEMENT_TYPES`. */
+  unsupported_expected_typ: "unsupported_expected_typ",
   unknown_typ: "unknown_typ",
+  /** `expectedTyp` was given and the statement is of another known `typ`. Checked before any key. */
+  typ_mismatch: "typ_mismatch",
   unsupported_alg: "unsupported_alg",
   signing_key_id_missing: "signing_key_id_missing",
   signature_missing: "signature_missing",
@@ -163,6 +186,8 @@ export const REASONS = {
   key_not_found: "key_not_found",
   key_not_ed25519: "key_not_ed25519",
   signature_invalid: "signature_invalid",
+  /** `expectedDigest` was given and the statement's digest is not that string, exactly. */
+  digest_mismatch: "digest_mismatch",
   bundle_not_an_object: "bundle_not_an_object",
   bundle_unknown_typ: "bundle_unknown_typ",
   bundle_statements_missing: "bundle_statements_missing",
@@ -218,6 +243,23 @@ export interface StatementVerificationResult {
   signing_key_id: string | null;
   reasons: Reason[];
   flags: StatementFlag[];
+}
+
+/** Options for `verifyStatement`. Both are optional, and leaving them out changes nothing. */
+export interface StatementVerifyOptions {
+  /**
+   * The `typ` the caller expects. A statement of another `typ` fails with
+   * `typ_mismatch` before any key is looked up, so a transparency root never
+   * passes where a conduct record is expected, and the reverse. A value
+   * outside `STATEMENT_TYPES` fails with `unsupported_expected_typ`.
+   */
+  expectedTyp?: StatementTyp;
+  /**
+   * The digest handed over beside the statement (lowercase sha256 hex of the
+   * commitment). Checked after the signature. A mismatch fails with
+   * `digest_mismatch`. Matched exactly, so an uppercase digest fails.
+   */
+  expectedDigest?: string;
 }
 
 /** Options for `verify`. */
