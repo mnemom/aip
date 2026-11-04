@@ -143,6 +143,31 @@ describe("verify: previous_digest chain and head binding (K1.20)", () => {
     expect(res.reasons).toEqual([`2:${REASONS.signature_invalid}`, REASONS.head_unbound]);
   });
 
+  it("reads head_sha from the PR record shape main signs (mnemom-api pr-record.ts)", async () => {
+    // Field set of record-sandbox#350's PR record at e05a9ffa: issued_at, both
+    // prev_digest and previous_digest, no repo or pr_number.
+    const b = golden();
+    const pr = await signStatement({
+      typ: "AAP-PRRecord/v1",
+      signing_key_id: TEST_KID,
+      issued_at: "2026-11-03T22:00:00.000Z",
+      built_at: "2026-11-03T22:00:00.000Z",
+      prev_digest: null,
+      previous_digest: null,
+      unit_kind: "pull_request",
+      head_sha: "4085847847e146869092d3948ed7a7136313ff6c",
+      conduct_digests: [statementDigest(b.statements[1]!)],
+      commits: { bound: 1, total: 1 },
+    });
+    const bundle = { ...b, statements: [b.statements[0]!, b.statements[1]!, pr] };
+    const head = "4085847847e146869092d3948ed7a7136313ff6c";
+    expect((await verify(bundle, jwks, { expected_head_sha: head })).reasons).toEqual([]);
+    // The bundle commit is not the bound head.
+    expect((await verify(bundle, jwks, { expected_head_sha: "e05a9ffa63b8981773cb8a0eb6dc4ea7bc4da8c2" })).reasons).toEqual([
+      REASONS.head_mismatch,
+    ]);
+  });
+
   it("refuses a malformed expected head before reading the input", async () => {
     for (const bad of ["F".repeat(40), "f".repeat(39), "", "HEAD"]) {
       const res = await verify(golden(), jwks, { expected_head_sha: bad });
