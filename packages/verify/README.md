@@ -138,7 +138,8 @@ const result = await verifyCertificate(certificate, {
   merkleRoot: signedRoot.root_hash,
 })
 ```
- It checks the verdict derivation journal when the certificate carries that proof. Each check is reported under `result.checks`, and a check that did not run is `null`.
+
+The certificate check also covers the verdict derivation journal when the certificate carries that proof. Each check is reported under `result.checks`, and a check that did not run is `null`.
 
 ## Render card lines (opt in)
 
