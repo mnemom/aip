@@ -132,6 +132,19 @@ function shareCardReasons(lines: unknown): Reason[] {
 }
 
 /**
+ * The predecessor link a statement names. `prev_digest` and `previous_digest`
+ * are signed aliases (lead pick 2026-10-29): `previous_digest` when present,
+ * else `prev_digest`, so a statement that carries only the short name gets the
+ * same chain checks. `undefined` when it carries neither (not a chain member).
+ * When both are present and differ, verifyStatement fails it as chain_broken.
+ */
+function predecessorOf(statement: Record<string, unknown>): unknown {
+  if ("previous_digest" in statement) return statement.previous_digest;
+  if ("prev_digest" in statement) return statement.prev_digest;
+  return undefined;
+}
+
+/**
  * Every digest reference a statement carries, as written. An absent field
  * is skipped, and `previous_digest: null` is the first build (T2); anything
  * else that is not a 64-hex string is reported as `digest_malformed` rather
@@ -140,9 +153,8 @@ function shareCardReasons(lines: unknown): Reason[] {
  */
 function digestFieldsOf(statement: Record<string, unknown>): unknown[] {
   const out: unknown[] = [];
-  if (statement.previous_digest !== undefined && statement.previous_digest !== null) {
-    out.push(statement.previous_digest);
-  }
+  const prev = predecessorOf(statement);
+  if (prev !== undefined && prev !== null) out.push(prev);
   if (statement.pr_record_digest !== undefined) out.push(statement.pr_record_digest);
   if (statement.source_digest !== undefined) out.push(statement.source_digest);
   if (statement.conduct_digests !== undefined) {
@@ -255,7 +267,8 @@ function chainKey(s: Record<string, unknown>): string {
 
 /**
  * The `previous_digest` chain inside a bundle (T2, K1.20). Only statements
- * that carry the field take part; `null` is a genesis. For each one, by index:
+ * that carry the field (or its alias `prev_digest`, see predecessorOf) take
+ * part; `null` is a genesis. For each one, by index:
  * - a non-null `previous_digest` must name a statement earlier in the bundle
  *   (build order) with the same `typ` and `lineage_key`;
  * - no two statements of one chain may name the same predecessor, and a chain
@@ -283,8 +296,9 @@ function chainReasons(
   const taken = new Set<string>();
   const seen = new Set<string>();
   raw.forEach((s, i) => {
-    if (!isObject(s) || !("previous_digest" in s)) return;
-    const prev = s.previous_digest;
+    if (!isObject(s)) return;
+    const prev = predecessorOf(s);
+    if (prev === undefined) return;
     const key = chainKey(s);
     const first = !seen.has(key);
     seen.add(key);

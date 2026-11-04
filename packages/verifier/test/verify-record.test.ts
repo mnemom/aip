@@ -277,6 +277,24 @@ describe("verify: previous_digest chain and head binding (K1.20)", () => {
     expect((await verify(bare, jwks, { expected_head_sha: HEAD })).reasons).toEqual([REASONS.head_unbound]);
   });
 
+  it("chains a statement that carries only prev_digest like one with previous_digest", async () => {
+    const b = golden();
+    const [c1, c2] = b.statements;
+    const onlyPrev = async (prev: unknown) => {
+      const s = { ...c2!, prev_digest: prev } as Record<string, unknown>;
+      delete s.previous_digest;
+      return signStatement(s);
+    };
+    const linked = await onlyPrev(statementDigest(c1!));
+    expect((await verify({ ...b, statements: [c1!, linked] }, jwks)).reasons).toEqual([]);
+    // Out of order, a mid-chain gap, and a malformed digest all fail as they do for previous_digest.
+    expect((await verify({ ...b, statements: [linked, c1!] }, jwks)).reasons).toEqual([`0:${REASONS.chain_broken}`]);
+    const gap = await onlyPrev("9".repeat(64));
+    expect((await verify({ ...b, statements: [c1!, gap] }, jwks)).reasons).toEqual([`1:${REASONS.chain_broken}`]);
+    const bad = await onlyPrev("not-a-digest");
+    expect((await verify({ ...b, statements: [c1!, bad] }, jwks)).reasons).toEqual([`1:${REASONS.digest_malformed}`]);
+  });
+
   it("refuses a malformed expected head before reading the input", async () => {
     const nonString = [42, null, ["f".repeat(40)]] as unknown as string[];
     for (const bad of ["F".repeat(40), "f".repeat(39), "", "HEAD", ...nonString]) {
