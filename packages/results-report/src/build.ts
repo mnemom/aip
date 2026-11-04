@@ -14,7 +14,7 @@
  *   - the word "saved" never appears
  */
 
-import { estimateQualifies, lintRendering, type RenderedLine } from "@mnemom/aip-verifier";
+import { estimateQualifies, lintRendering, type RenderedLine } from "@mnemom/verify";
 import type { Outcome } from "./adapter.js";
 
 interface Tally {

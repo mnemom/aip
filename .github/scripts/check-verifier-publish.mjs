@@ -2,7 +2,7 @@
 // check-verifier-publish.mjs: PR-time proof that packages/verifier publishes
 // what publish.yml would ship (Record K1.15).
 //
-// publish.yml ships @mnemom/aip-verifier two ways from the release commit:
+// publish.yml ships @mnemom/verify two ways from the release commit:
 // the `npm pack` tarball attached to the release (verifier-test) and
 // `npm publish` through the org reusable (publish-verifier-npm). This script
 // runs both locally, never touching the registry beyond a read:
@@ -10,7 +10,8 @@
 //   2. `npm pack --json`: the release-asset tarball;
 //   3. the manifest npm publish sends, read with npm's own package-json
 //      prepare() (the call `npm publish` makes), for its gitHead.
-// It fails when the two tarballs differ (files or shasum), when the tarball
+// It fails when the package is not named @mnemom/verify or the release tarball
+// is not mnemom-verify-<version>.tgz, when the two tarballs differ (files or shasum), when the tarball
 // holds a file outside package.json, LICENSE, README and dist/, when an entry
 // point named in package.json is missing from it, or when gitHead is not the
 // checked-out commit (`git rev-parse HEAD`) and, given --expect-sha, that sha.
@@ -26,6 +27,10 @@ import { fileURLToPath } from "node:url";
 
 const ALLOWED = /^(package\.json|LICENSE|README(\.md)?|dist\/.+)$/;
 const REQUIRED = ["package.json", "LICENSE"];
+/** The npm name packages/verifier publishes under (renamed from @mnemom/aip-verifier). */
+export const PACKAGE_NAME = "@mnemom/verify";
+/** The release-asset file name npm pack gives that package at a version. */
+export const tarballName = (version) => `mnemom-verify-${version}.tgz`;
 
 /** Every file path package.json names as an entry point (main, module, types, exports). */
 export function entryPoints(pkg) {
@@ -44,12 +49,15 @@ export function entryOf(json, name, what) {
   const e = Array.isArray(json) ? json.find((x) => x && x.name === name) : json && json[name];
   if (!e || !Array.isArray(e.files) || typeof e.shasum !== "string")
     throw new Error(`${what}: no files and shasum for ${name}`);
-  return { files: e.files.map((f) => f.path).sort(), shasum: e.shasum, integrity: e.integrity };
+  return { files: e.files.map((f) => f.path).sort(), shasum: e.shasum, integrity: e.integrity, filename: e.filename };
 }
 
 /** Every mismatch between what would be published and what publish.yml ships. */
 export function compare({ pkg, dryRun, packed, gitHead, headSha, expectSha }) {
   const errors = [];
+  if (pkg.name !== PACKAGE_NAME) errors.push(`package.json name is ${JSON.stringify(pkg.name)}, expected ${PACKAGE_NAME}`);
+  if (packed.filename !== tarballName(pkg.version))
+    errors.push(`release tarball is ${packed.filename}, expected ${tarballName(pkg.version)}`);
   const a = dryRun.files.join("\n");
   const b = packed.files.join("\n");
   if (a !== b) {

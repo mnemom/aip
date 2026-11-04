@@ -15,7 +15,7 @@
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@mnemom/aip-verifier": "file:../verifier"
+    "@mnemom/verify": "file:../verifier"
   },
   "devDependencies": {
     "@types/node": "^25.2.2",

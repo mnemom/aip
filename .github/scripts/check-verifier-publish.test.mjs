@@ -6,12 +6,13 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { compare, entryOf, entryPoints, parseArgs } from "./check-verifier-publish.mjs";
+import { PACKAGE_NAME, compare, entryOf, entryPoints, parseArgs, tarballName } from "./check-verifier-publish.mjs";
 
 const SCRIPT = fileURLToPath(new URL("./check-verifier-publish.mjs", import.meta.url));
 const SHA = "a".repeat(40);
 const PKG = {
-  name: "@mnemom/aip-verifier",
+  name: "@mnemom/verify",
+  version: "1.2.3",
   main: "./dist/index.cjs",
   types: "./dist/index.d.ts",
   exports: { ".": { import: { default: "./dist/index.js" }, require: { default: "./dist/index.cjs" } } },
@@ -20,7 +21,7 @@ const FILES = ["LICENSE", "dist/index.cjs", "dist/index.d.ts", "dist/index.js", 
 const good = (over = {}) => ({
   pkg: PKG,
   dryRun: { files: FILES, shasum: "s1" },
-  packed: { files: FILES, shasum: "s1" },
+  packed: { files: FILES, shasum: "s1", filename: "mnemom-verify-1.2.3.tgz" },
   gitHead: SHA,
   headSha: SHA,
   expectSha: SHA,
@@ -32,7 +33,7 @@ test("entryPoints: main, types and every exports target", () => {
 });
 
 test("entryOf: reads the package entry, refuses output without one", () => {
-  const out = { "@mnemom/aip-verifier": { files: [{ path: "b" }, { path: "a" }], shasum: "x" } };
+  const out = { "@mnemom/verify": { files: [{ path: "b" }, { path: "a" }], shasum: "x" } };
   assert.deepEqual(entryOf(out, PKG.name, "t").files, ["a", "b"]);
   assert.deepEqual(entryOf([{ name: PKG.name, files: [], shasum: "y" }], PKG.name, "t").shasum, "y");
   assert.throws(() => entryOf({}, PKG.name, "t"), /no files and shasum/);
@@ -44,24 +45,34 @@ test("compare: a matching publish passes", () => {
   assert.deepEqual(compare(good({ expectSha: undefined })), []);
 });
 
+test("compare: the package must be @mnemom/verify and pack to mnemom-verify-<version>.tgz", () => {
+  assert.equal(PACKAGE_NAME, "@mnemom/verify");
+  assert.equal(tarballName("0.6.2"), "mnemom-verify-0.6.2.tgz");
+  const old = { ...PKG, name: "@mnemom/aip-verifier" };
+  assert.match(compare(good({ pkg: old })).join("\n"), /name is "@mnemom\/aip-verifier", expected @mnemom\/verify/);
+  const oldTgz = { files: FILES, shasum: "s1", filename: "mnemom-aip-verifier-1.2.3.tgz" };
+  assert.match(compare(good({ packed: oldTgz })).join("\n"), /release tarball is mnemom-aip-verifier-1\.2\.3\.tgz, expected mnemom-verify-1\.2\.3\.tgz/);
+  assert.match(compare(good({ packed: { files: FILES, shasum: "s1" } })).join("\n"), /release tarball is undefined/);
+});
+
 test("compare: a tarball whose files differ from the release tarball fails", () => {
-  const errs = compare(good({ packed: { files: [...FILES, "dist/extra.js"], shasum: "s1" } }));
+  const errs = compare(good({ packed: { files: [...FILES, "dist/extra.js"], shasum: "s1", filename: "mnemom-verify-1.2.3.tgz" } }));
   assert.match(errs.join("\n"), /only in tarball \[dist\/extra\.js\]/);
 });
 
 test("compare: a tarball whose shasum differs from the release tarball fails", () => {
-  assert.match(compare(good({ packed: { files: FILES, shasum: "s2" } })).join("\n"), /shasum s1 != release tarball shasum s2/);
+  assert.match(compare(good({ packed: { files: FILES, shasum: "s2", filename: "mnemom-verify-1.2.3.tgz" } })).join("\n"), /shasum s1 != release tarball shasum s2/);
 });
 
 test("compare: a file outside package.json, LICENSE, README and dist/ fails", () => {
   const files = [...FILES, "src/index.ts"].sort();
-  const errs = compare(good({ dryRun: { files, shasum: "s1" }, packed: { files, shasum: "s1" } }));
+  const errs = compare(good({ dryRun: { files, shasum: "s1" }, packed: { files, shasum: "s1", filename: "mnemom-verify-1.2.3.tgz" } }));
   assert.match(errs.join("\n"), /tarball holds src\/index\.ts/);
 });
 
 test("compare: a missing LICENSE or entry point fails", () => {
   const files = FILES.filter((f) => f !== "LICENSE" && f !== "dist/index.js");
-  const errs = compare(good({ dryRun: { files, shasum: "s1" }, packed: { files, shasum: "s1" } })).join("\n");
+  const errs = compare(good({ dryRun: { files, shasum: "s1" }, packed: { files, shasum: "s1", filename: "mnemom-verify-1.2.3.tgz" } })).join("\n");
   assert.match(errs, /tarball has no LICENSE/);
   assert.match(errs, /names dist\/index\.js, which is not in the tarball/);
 });
@@ -75,9 +86,9 @@ test("compare: a gitHead that is not HEAD, not the expected sha, or missing fail
 });
 
 // End to end: a throwaway package in its own git repo, run through real npm.
-function fixture({ extraFile } = {}) {
+function fixture({ extraFile, name = "@mnemom/verify" } = {}) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "verifier-publish-"));
-  const pkg = { name: "@mnemom/aip-verifier", version: "0.0.0-test", main: "./dist/index.js", files: ["dist", "LICENSE"] };
+  const pkg = { name, version: "0.0.0-test", main: "./dist/index.js", files: ["dist", "LICENSE"] };
   if (extraFile) pkg.files.push(extraFile);
   fs.writeFileSync(path.join(dir, "package.json"), JSON.stringify(pkg));
   fs.writeFileSync(path.join(dir, "LICENSE"), "Apache-2.0\n");
@@ -110,6 +121,19 @@ test("end to end: the real npm run passes at HEAD and fails on a mismatched gitH
   const bad = runCheck("--dir", extra.dir, "--expect-sha", extra.head);
   assert.equal(bad.status, 1);
   assert.match(bad.stderr, /tarball holds secrets\.txt/);
+});
+
+test("end to end: real npm packs mnemom-verify-<version>.tgz; the old @mnemom/aip-verifier name fails", { timeout: 120_000 }, () => {
+  const ok = fixture();
+  const pass = runCheck("--dir", ok.dir, "--expect-sha", ok.head);
+  assert.equal(pass.status, 0, pass.stderr + pass.stdout);
+  assert.match(pass.stdout, /^@mnemom\/verify@0\.0\.0-test:/);
+
+  const old = fixture({ name: "@mnemom/aip-verifier" });
+  const bad = runCheck("--dir", old.dir, "--expect-sha", old.head);
+  assert.equal(bad.status, 1, bad.stderr + bad.stdout);
+  assert.match(bad.stderr, /name is "@mnemom\/aip-verifier", expected @mnemom\/verify/);
+  assert.match(bad.stderr, /release tarball is mnemom-aip-verifier-0\.0\.0-test\.tgz, expected mnemom-verify-0\.0\.0-test\.tgz/);
 });
 
 test("parseArgs: --dir and --expect-sha parse; no --dir or an unknown argument throws", () => {

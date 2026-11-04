@@ -2,11 +2,11 @@
  * Threat model: packages/verifier-page/THREAT-MODEL.md
  *
  * Verifier page. Paste or drop a signed statement or a record bundle, and
- * the page verifies it with @mnemom/aip-verifier against the key set in the
+ * the page verifies it with @mnemom/verify against the key set in the
  * second box. Everything runs in the browser; the page makes no requests.
  */
-import { verify, FLAGS, REASONS } from "@mnemom/aip-verifier";
-import type { RecordVerificationResult } from "@mnemom/aip-verifier";
+import { verify, FLAGS, REASONS } from "@mnemom/verify";
+import type { RecordVerificationResult } from "@mnemom/verify";
 
 import { PUBLISHED_JWKS, PUBLISHED_JWKS_TAKEN_ON } from "./keys.js";
 

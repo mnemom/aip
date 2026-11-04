@@ -1,7 +1,7 @@
 name: Verifier page
 
 # Build the static verifier page (packages/verifier-page) on top of
-# @mnemom/aip-verifier and prove it verifies a record bundle offline: the
+# @mnemom/verify and prove it verifies a record bundle offline: the
 # Playwright test opens dist/index.html from file:// in an offline browser
 # context, aborts and counts every non-file request, and asserts zero.
 #
@@ -42,7 +42,7 @@ jobs:
             packages/verifier-page/package-lock.json
 
       # The page depends on the verifier by file: path, so build it first.
-      - name: Build @mnemom/aip-verifier
+      - name: Build @mnemom/verify
         working-directory: packages/verifier
         run: |
           npm ci

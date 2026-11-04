@@ -9,7 +9,7 @@
  * empty, so a renderer that prints `result.lines` prints nothing.
  *
  * FLAG-GATED. This module is NOT re-exported from the package index. It is
- * reachable only via the `@mnemom/aip-verifier/render-lines` subpath, and even
+ * reachable only via the `@mnemom/verify/render-lines` subpath, and even
  * there it returns `render_lines_disabled` (no lines) unless the caller passes
  * `opts.enabled: true` or the environment sets `AIP_RENDER_LINES=1`. Default
  * behavior and the existing published API are unchanged.
