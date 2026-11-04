@@ -78,11 +78,32 @@ for (const tcase of tampered) {
     await expect(page.locator("#result")).toHaveAttribute("data-valid", "false");
     const li = page.locator(`#reasons li:has(code:text-is("${tcase.reason}"))`);
     await expect(li).toHaveCount(1);
-    // Every reason the verifier returns has an explanation on the page (REASON_TEXT).
-    expect(((await li.textContent()) ?? "").length).toBeGreaterThan(tcase.reason.length + 12);
+    // Every reason the verifier returns has an explanation on the page
+    // (REASON_TEXT): a sentence after the code and its "statement N: " prefix.
+    const index = /^(\d+):/.exec(tcase.reason)?.[1];
+    const where = index === undefined ? "" : `statement ${index}: `;
+    await expect(li).toHaveText(new RegExp(`^${tcase.reason} ${where}[A-Z][^]*\\.$`));
     expect(networkRequests).toEqual([]);
   });
 }
+
+test("a bundle cut by retention verifies and explains lineage_truncated", async ({ page }) => {
+  // mnemom-api retention deleted the oldest build; the first surviving build
+  // names it. The flag does not fail the bundle, and the page says why.
+  const { networkRequests } = await open(page);
+  const bundle = JSON.parse(goldenBundle) as { statements: Array<Record<string, unknown>> };
+  const absent = bundle.statements[1]?.previous_digest;
+  expect(typeof absent).toBe("string");
+  await verifyText(page, JSON.stringify({ ...bundle, statements: bundle.statements.slice(1) }));
+  await expect(page.locator("#verdict")).toHaveText("Verified");
+  const li = page.locator('#flags li[data-flag="lineage truncated"]');
+  await expect(li).toHaveCount(1);
+  await expect(li).toHaveText(
+    "lineage truncated The record's oldest builds are not in this bundle (removed by retention); " +
+      `the builds it holds still chain. (${String(absent)})`,
+  );
+  expect(networkRequests).toEqual([]);
+});
 
 test("a signature by a key outside the pasted key set is refused", async ({ page }) => {
   const { networkRequests } = await open(page);
