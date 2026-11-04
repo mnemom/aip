@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-// check-verifier-publish.mjs: PR-time proof that packages/verifier publishes
+// check-verify-publish.mjs: PR-time proof that packages/verify publishes
 // what publish.yml would ship (Record K1.15).
 //
 // publish.yml ships @mnemom/verify two ways from the release commit:
-// the `npm pack` tarball attached to the release (verifier-test) and
-// `npm publish` through the org reusable (publish-verifier-npm). This script
+// the `npm pack` tarball attached to the release (verify-test) and
+// `npm publish` through the org reusable (publish-verify-npm). This script
 // runs both locally, never touching the registry beyond a read:
 //   1. `npm publish --dry-run --json`: the files and shasum npm would upload;
 //   2. `npm pack --json`: the release-asset tarball;
@@ -16,7 +16,7 @@
 // point named in package.json is missing from it, or when gitHead is not the
 // checked-out commit (`git rev-parse HEAD`) and, given --expect-sha, that sha.
 //
-// Usage: node check-verifier-publish.mjs --dir packages/verifier [--expect-sha <sha>]
+// Usage: node check-verify-publish.mjs --dir packages/verify [--expect-sha <sha>]
 // Run it after `npm ci && npm run build`. Exit 0 pass, 1 mismatch, 2 could not run.
 import { execFileSync } from "node:child_process";
 import { createRequire } from "node:module";
@@ -27,7 +27,7 @@ import { fileURLToPath } from "node:url";
 
 const ALLOWED = /^(package\.json|LICENSE|README(\.md)?|dist\/.+)$/;
 const REQUIRED = ["package.json", "LICENSE"];
-/** The npm name packages/verifier publishes under (renamed from @mnemom/aip-verifier). */
+/** The npm name packages/verify publishes under (renamed from @mnemom/aip-verifier). */
 export const PACKAGE_NAME = "@mnemom/verify";
 /** The release-asset file name npm pack gives that package at a version. */
 export const tarballName = (version) => `mnemom-verify-${version}.tgz`;
@@ -106,7 +106,7 @@ async function main() {
     pkg.name,
     "npm publish --dry-run",
   );
-  const dest = fs.mkdtempSync(path.join(os.tmpdir(), "verifier-pack-"));
+  const dest = fs.mkdtempSync(path.join(os.tmpdir(), "verify-pack-"));
   const packed = entryOf(
     JSON.parse(run("npm", ["pack", "--json", "--ignore-scripts", "--pack-destination", dest], dir)),
     pkg.name,
@@ -131,7 +131,7 @@ async function main() {
 
 if (process.argv[1] && fs.realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch((e) => {
-    console.error(`check-verifier-publish: ${e && e.message}`);
+    console.error(`check-verify-publish: ${e && e.message}`);
     process.exit(2);
   });
 }

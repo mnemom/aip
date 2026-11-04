@@ -14,7 +14,7 @@ import { isShareMode } from "../src/mode.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "..");
-const fixtures = resolve(root, "..", "verifier", "test", "fixtures", "record");
+const fixtures = resolve(root, "..", "verify", "test", "fixtures", "record");
 const shareUrl = pathToFileURL(resolve(root, "dist-share", "index.html")).href;
 const pasteUrl = pathToFileURL(resolve(root, "dist", "index.html")).href;
 

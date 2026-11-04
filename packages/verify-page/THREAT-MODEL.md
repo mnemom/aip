@@ -5,12 +5,12 @@ its customer-facing surface; K-L09 runs the pentest, criterion K5.8).
 
 ## What the surface is
 
-- `packages/verifier`: the `@mnemom/verify` library. It checks Ed25519
+- `packages/verify`: the `@mnemom/verify` library. It checks Ed25519
   signatures on record statements and bundles against a JWKS the caller
   passes in, and makes no network calls.
-- `packages/verifier-page` (paste mode): a static page. The user pastes a
+- `packages/verify-page` (paste mode): a static page. The user pastes a
   statement or bundle and a JWKS, and the page shows a verdict.
-- `packages/verifier-page` (share mode, `VERIFIER_PAGE_MODE=true`): a static
+- `packages/verify-page` (share mode, `VERIFIER_PAGE_MODE=true`): a static
   page. A signed share card arrives in the URL fragment `#card=...`, and the
   page draws only the lines `renderLines` returns for a card that verifies
   against the key set built into the page.
@@ -35,15 +35,15 @@ Neither page has a server side. Both are served as static files.
 
 | # | Threat (STRIDE) | Control | Test |
 |---|---|---|---|
-| 1 | Spoofing: forged card shown as verified | Ed25519 check over canonical JSON. A statement `alg`, when present, must be exactly `EdDSA` before any key lookup (`verify-record.ts` `verifyStatement`); a statement may omit `alg`. The key must be declared `alg: EdDSA`, `kty: OKP`, `crv: Ed25519` (`selectKey`), and its `kid` must be in the key set | verifier tests, tampered fixtures in `packages/verifier/test/fixtures/record` |
+| 1 | Spoofing: forged card shown as verified | Ed25519 check over canonical JSON. A statement `alg`, when present, must be exactly `EdDSA` before any key lookup (`verify-record.ts` `verifyStatement`); a statement may omit `alg`. The key must be declared `alg: EdDSA`, `kty: OKP`, `crv: Ed25519` (`selectKey`), and its `kid` must be in the key set | verifier tests, tampered fixtures in `packages/verify/test/fixtures/record` |
 | 2 | Tampering: one field of a signed card altered | Signature over the whole canonical body minus `signature`; any change fails | tampered-fixture Playwright cases (K4.2) |
-| 3 | Tampering: an attacker-supplied JWKS in share mode | `share.html` has no key input; share mode verifies only against the key set built into the page | No browser test. CI guard in `.github/workflows/verifier-page.yml` (deployable build carries no fixture key, and is not the share page). Gap: pentest item |
+| 3 | Tampering: an attacker-supplied JWKS in share mode | `share.html` has no key input; share mode verifies only against the key set built into the page | No browser test. CI guard in `.github/workflows/verify-page.yml` (deployable build carries no fixture key, and is not the share page). Gap: pentest item |
 | 4 | Information disclosure: card contents leak to a server | Card is in the fragment, which browsers do not send; CSP `connect-src 'none'`; page makes zero requests | Playwright counts non-file requests and asserts zero (K4.2) |
 | 5 | Information disclosure: link-preview crawler reads the card | `og:image` / `twitter:image` are a generic image; crawlers do not run the fragment | `test/share-page.spec.ts` "the preview image is generic" |
-| 6 | Elevation: script injection through card text | Text is written with `textContent` only (`src/share.ts`); CSP `script-src 'self'`, no inline script, `base-uri 'none'`, `form-action 'none'` | No test puts markup in a card field. CI greps `connect-src 'none'` only (`verifier-page.yml`); `script-src`, `base-uri` and `form-action` are unchecked. Gap: pentest item |
+| 6 | Elevation: script injection through card text | Text is written with `textContent` only (`src/share.ts`); CSP `script-src 'self'`, no inline script, `base-uri 'none'`, `form-action 'none'` | No test puts markup in a card field. CI greps `connect-src 'none'` only (`verify-page.yml`); `script-src`, `base-uri` and `form-action` are unchecked. Gap: pentest item |
 | 7 | Denial of service: huge fragment hangs the tab | Fragment above the 64 KiB cap is refused before decoding (`src/share.ts`) | No test sends an oversized fragment. Gap: pentest item |
 | 8 | Repudiation: a claim of a class the card may not carry (a money estimate, a trust claim) | claim-lint refuses the line before rendering; `renderLines` draws only lint-clean lines | `claim-lint.test.ts`, `render-estimate.test.ts` (K4.3, K4.4) |
-| 9 | Supply chain: a malicious verifier build | Release tarball built in CI and attested with GitHub build provenance (`gh attestation verify`); npm publish via OIDC trusted publishing with provenance (A-K-009, A-K-012). Exception: the one-time bootstrap publish (`verifier-npm-bootstrap.yml`) uses the org `NPM_TOKEN`; later versions publish via OIDC. That workflow is to be deleted the day the Trusted Publisher for `@mnemom/verify` is added on npmjs.com (`verifier-npm-bootstrap.yml:9-11`) | Publish workflow; K5.4 gate |
+| 9 | Supply chain: a malicious verifier build | Release tarball built in CI and attested with GitHub build provenance (`gh attestation verify`); npm publish via OIDC trusted publishing with provenance (A-K-009, A-K-012). The only non-OIDC version is the deprecated placeholder 0.6.2-bootstrap.0, published by hand to create the package. 0.6.2 and later publish only through `publish.yml` in the `production` environment, which needs a reviewer | Publish workflow; K5.4 gate |
 | 10 | Stale keys: the built-in key snapshot misses a rotated key | Snapshot dated in `src/keys.ts`; a card signed by an unknown `kid` fails closed, never "verified" | verifier tests |
 
 ## Out of scope here

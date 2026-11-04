@@ -1,22 +1,22 @@
-name: Verifier publish check
+name: Verify publish check
 
 # Record K1.15: on every PR that touches @mnemom/verify, prove that
 # `npm publish` would ship what publish.yml ships for a verify- release.
-# .github/scripts/check-verifier-publish.mjs runs `npm publish --dry-run` and
-# `npm pack` (the release-asset tarball, verifier-test) on the PR commit and
+# .github/scripts/check-verify-publish.mjs runs `npm publish --dry-run` and
+# `npm pack` (the release-asset tarball, verify-test) on the PR commit and
 # fails when their files or shasum differ, when the tarball holds a file outside
 # package.json, LICENSE, README and dist/, when an entry point is missing, or
 # when the manifest's gitHead is not the commit under test (github.sha, the
 # commit actions/checkout put at HEAD). A dry run never uploads and needs no
-# token or OIDC. Node 24 is publish.yml's verifier-test version (npm 11).
+# token or OIDC. Node 24 is publish.yml's verify-test version (npm 11).
 
 on:
   pull_request:
     paths:
-      - "packages/verifier/**"
-      - ".github/scripts/check-verifier-publish*.mjs"
-      - ".github/scripts/check-verifier-release-tag*.sh"
-      - ".github/workflows/verifier-publish-check.yml"
+      - "packages/verify/**"
+      - ".github/scripts/check-verify-publish*.mjs"
+      - ".github/scripts/check-verify-release-tag*.sh"
+      - ".github/workflows/verify-publish-check.yml"
       - ".github/workflows/publish.yml"
   workflow_dispatch:
 
@@ -26,7 +26,7 @@ jobs:
   check:
     permissions:
       contents: read
-    name: Verifier publish dry-run
+    name: Verify publish dry-run
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -37,21 +37,21 @@ jobs:
         with:
           node-version: "24"
           cache: npm
-          cache-dependency-path: packages/verifier/package-lock.json
+          cache-dependency-path: packages/verify/package-lock.json
 
       - name: Check script tests (fail on a mismatched tarball or gitHead)
-        run: node --test .github/scripts/check-verifier-publish.test.mjs
+        run: node --test .github/scripts/check-verify-publish.test.mjs
 
       - name: Release-tag guard tests (verify-v<version>, @mnemom/verify, aip-verifier- refused)
-        run: .github/scripts/check-verifier-release-tag.test.sh
+        run: .github/scripts/check-verify-release-tag.test.sh
 
       - name: Release guard accepts this commit's verify-v<version> tag
         run: |
-          v=$(node -p "require('./packages/verifier/package.json').version")
-          .github/scripts/check-verifier-release-tag.sh "verify-v$v" packages/verifier/package.json
+          v=$(node -p "require('./packages/verify/package.json').version")
+          .github/scripts/check-verify-release-tag.sh "verify-v$v" packages/verify/package.json
 
       - name: Build
-        working-directory: packages/verifier
+        working-directory: packages/verify
         run: |
           npm ci
           npm run build
@@ -59,4 +59,4 @@ jobs:
       - name: npm publish --dry-run matches the release tarball, gitHead is this commit
         env:
           EXPECT_SHA: ${{ github.sha }}
-        run: node .github/scripts/check-verifier-publish.mjs --dir packages/verifier --expect-sha "$EXPECT_SHA"
+        run: node .github/scripts/check-verify-publish.mjs --dir packages/verify --expect-sha "$EXPECT_SHA"

@@ -6,7 +6,7 @@
 # CI checks green + labels the PR `agent`, then STOPS — a human reviews + merges. No
 # autonomous merge into the public SDK. (Same posture as the mnemom/aap precedent.)
 #
-# There is also a packages/verifier (TypeScript) — it has its own package.json/tsup/vitest
+# There is also a packages/verify (TypeScript) — it has its own package.json/tsup/vitest
 # config but is NOT wired into .github/workflows/ci.yml (that workflow only runs the
 # `typescript` and `python` jobs below). Out of scope for `commands`/`required_checks`
 # until it grows a CI job of its own; revisit this manifest if/when it does.

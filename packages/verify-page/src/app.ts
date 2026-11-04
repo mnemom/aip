@@ -1,5 +1,5 @@
 /**
- * Threat model: packages/verifier-page/THREAT-MODEL.md
+ * Threat model: packages/verify-page/THREAT-MODEL.md
  *
  * Verifier page. Paste or drop a signed statement or a record bundle, and
  * the page verifies it with @mnemom/verify against the key set in the

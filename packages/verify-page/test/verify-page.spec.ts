@@ -3,7 +3,7 @@
  *
  * The page is opened from file:// in a context with `offline: true`, and
  * every request that is not file:// is aborted and counted. The golden
- * bundle from packages/verifier must verify, every tampered fixture must
+ * bundle from packages/verify must verify, every tampered fixture must
  * fail with its named reason, and the request counter must stay at zero.
  */
 import { readFileSync } from "node:fs";
@@ -14,7 +14,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const dist = resolve(here, "..", "dist");
-const fixtures = resolve(here, "..", "..", "verifier", "test", "fixtures", "record");
+const fixtures = resolve(here, "..", "..", "verify", "test", "fixtures", "record");
 const pageUrl = pathToFileURL(resolve(dist, "index.html")).href;
 
 const read = (name: string) => readFileSync(resolve(fixtures, name), "utf8");

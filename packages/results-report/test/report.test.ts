@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { lintRendering } from "@mnemom/verify";
 
-import { TEST_KID, signStatement, testJwks } from "../../verifier/test/helpers/sign.js";
+import { TEST_KID, signStatement, testJwks } from "../../verify/test/helpers/sign.js";
 import { readOutcomes, readRecordRows, type Outcome } from "../src/adapter.js";
 import { buildReport } from "../src/build.js";
 
