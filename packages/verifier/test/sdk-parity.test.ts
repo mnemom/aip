@@ -260,7 +260,8 @@ describe("K4.5 parity with @mnemom/sdk: signature-path rejections", () => {
     const rest = tampered.filter((c) => !shared.has(c.name));
     expect(rest.length).toBeGreaterThan(0);
     for (const c of rest) {
-      const res = await verify(c.input, jwks);
+      const opts = c.expected_head_sha === undefined ? {} : { expected_head_sha: c.expected_head_sha };
+      const res = await verify(c.input, jwks, opts);
       expect(res.valid, c.name).toBe(false);
       expect(res.reasons, c.name).toEqual([c.reason]);
     }

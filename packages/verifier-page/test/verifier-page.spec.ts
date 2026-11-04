@@ -21,7 +21,12 @@ const read = (name: string) => readFileSync(resolve(fixtures, name), "utf8");
 const goldenBundle = read("golden-bundle.json");
 const goldenConduct = read("golden-conduct.json");
 const jwks = read("jwks.json");
-const tampered = JSON.parse(read("tampered.json")) as Array<{ name: string; reason: string; input: unknown }>;
+const tampered = JSON.parse(read("tampered.json")) as Array<{
+  name: string;
+  reason: string;
+  input: unknown;
+  expected_head_sha?: string;
+}>;
 
 async function open(page: Page): Promise<{ networkRequests: string[] }> {
   const networkRequests: string[] = [];
@@ -67,10 +72,14 @@ test("a single golden statement verifies", async ({ page }) => {
 for (const tcase of tampered) {
   test(`tampered fixture ${tcase.name} fails with ${tcase.reason}`, async ({ page }) => {
     const { networkRequests } = await open(page);
+    if (tcase.expected_head_sha) await page.fill("#expected-head", tcase.expected_head_sha);
     await verifyText(page, JSON.stringify(tcase.input));
     await expect(page.locator("#verdict")).toHaveText("Not verified");
     await expect(page.locator("#result")).toHaveAttribute("data-valid", "false");
-    await expect(page.locator(`#reasons li:has(code:text-is("${tcase.reason}"))`)).toHaveCount(1);
+    const li = page.locator(`#reasons li:has(code:text-is("${tcase.reason}"))`);
+    await expect(li).toHaveCount(1);
+    // Every reason the verifier returns has an explanation on the page (REASON_TEXT).
+    expect(((await li.textContent()) ?? "").length).toBeGreaterThan(tcase.reason.length + 12);
     expect(networkRequests).toEqual([]);
   });
 }

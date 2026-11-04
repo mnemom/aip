@@ -72,9 +72,236 @@ describe("verify: golden fixtures", () => {
 describe("verify: tampered fixtures fail closed with the named reason", () => {
   const cases = fixture<TamperedCase[]>("tampered");
   it.each(cases.map((c) => [c.name, c] as const))("%s", async (_name, c) => {
-    const res = await verify(c.input, jwks);
+    const res = await verify(
+      c.input,
+      jwks,
+      c.expected_head_sha === undefined ? {} : { expected_head_sha: c.expected_head_sha },
+    );
     expect(res.valid).toBe(false);
     expect(res.reasons).toContain(c.reason);
+  });
+});
+
+describe("verify: previous_digest chain and head binding (K1.20)", () => {
+  const golden = () => fixture<{ typ: string; statements: Record<string, unknown>[] }>("golden-bundle");
+  const HEAD = "f".repeat(40);
+
+  it("passes the golden bundle with its own head, and without the option", async () => {
+    expect((await verify(golden(), jwks, { expected_head_sha: HEAD })).reasons).toEqual([]);
+    expect((await verify(golden(), jwks)).valid).toBe(true);
+  });
+
+  it("flags a lineage truncated by retention: absent predecessor on the chain's first statement", async () => {
+    // Retention (mnemom-api record-retention.ts) deleted conduct1; the oldest
+    // surviving build names it. Honest bundle: valid, with a non-failing flag.
+    const b = golden();
+    const res = await verify({ ...b, statements: b.statements.slice(1) }, jwks, { expected_head_sha: HEAD });
+    expect(res.reasons).toEqual([]);
+    expect(res.valid).toBe(true);
+    expect(res.flags).toContainEqual({ flag: FLAGS.lineage_truncated, subject: b.statements[1]!.previous_digest });
+    // The predecessor is a chain question, never the generic link flag.
+    expect(res.flags.filter((f) => f.flag === FLAGS.linked_statement_not_in_bundle)).toEqual([]);
+  });
+
+  it("fails an absent predecessor mid-chain as chain_broken", async () => {
+    const b = golden();
+    const [c1, c2] = b.statements;
+    const c3 = await signStatement({ ...c2!, previous_digest: statementDigest(c2!), built_at: "2026-10-23T18:40:00.000Z" });
+    // c1 present, c2 missing, c3 names c2: a gap inside the bundle.
+    const gap = await verify({ ...b, statements: [c1!, c3] }, jwks);
+    expect(gap.reasons).toEqual([`1:${REASONS.chain_broken}`]);
+    expect(gap.flags.map((f) => f.flag)).not.toContain(FLAGS.lineage_truncated);
+    // Truncated head, then a gap: the first is a flag, the second still fails.
+    const c4 = await signStatement({ ...c3, previous_digest: "9".repeat(64), built_at: "2026-10-23T18:50:00.000Z" });
+    const both = await verify({ ...b, statements: [c2!, c4] }, jwks);
+    expect(both.reasons).toEqual([`1:${REASONS.chain_broken}`]);
+    expect(both.flags).toContainEqual({ flag: FLAGS.lineage_truncated, subject: c2!.previous_digest });
+    // A truncated root takes the chain's root: a later genesis is a second history.
+    const c1Again = await signStatement({ ...c1!, built_at: "2026-10-23T18:45:00.000Z" });
+    expect((await verify({ ...b, statements: [c2!, c1Again] }, jwks)).reasons).toEqual([`1:${REASONS.chain_broken}`]);
+  });
+
+  it("keeps the strict order rule: a predecessor later in the bundle fails, it is not truncation", async () => {
+    const b = golden();
+    const [c1, c2] = b.statements;
+    const res = await verify({ ...b, statements: [c2!, c1!] }, jwks);
+    expect(res.reasons).toEqual([`0:${REASONS.chain_broken}`]);
+    expect(res.flags.map((f) => f.flag)).not.toContain(FLAGS.lineage_truncated);
+  });
+
+  it("a byte-identical duplicate resolves links to its first copy and fails as a second root or fork", async () => {
+    const b = golden();
+    const [c1, c2] = b.statements;
+    // c2 binds to c1 at index 0 (the first copy). Were the later copy used,
+    // index 2 would be after c2 and c2 would fail order as well.
+    const lateDup = await verify({ ...b, statements: [c1!, c2!, c1!] }, jwks);
+    expect(lateDup.reasons).toEqual([`2:${REASONS.chain_broken}`]);
+    // A replayed successor names a predecessor already taken: a fork.
+    const replay = await verify({ ...b, statements: [c1!, c2!, c2!] }, jwks);
+    expect(replay.reasons).toEqual([`2:${REASONS.chain_broken}`]);
+  });
+
+  it("does not flag truncation on a statement that fails its signature", async () => {
+    const b = golden();
+    const edited = { ...b.statements[1]!, cost: { mu_millimu: 1 } };
+    const res = await verify({ ...b, statements: [edited, ...b.statements.slice(2)] }, jwks);
+    expect(res.reasons).toContain(`0:${REASONS.signature_invalid}`);
+    expect(res.flags.map((f) => f.flag)).not.toContain(FLAGS.lineage_truncated);
+  });
+
+  it("an edited predecessor fails its signature and breaks its successor's link", async () => {
+    const b = golden();
+    const edited = { ...b.statements[0]!, cost: { mu_millimu: 1 } };
+    const res = await verify({ ...b, statements: [edited, ...b.statements.slice(1)] }, jwks);
+    expect(res.reasons).toEqual([`0:${REASONS.signature_invalid}`, `1:${REASONS.chain_broken}`]);
+  });
+
+  it("does not check the chain of a bare statement", async () => {
+    const res = await verify(fixture("golden-conduct"), jwks);
+    expect(res.valid).toBe(true);
+  });
+
+  it("binds a bare PR record to the head too", async () => {
+    const pr = fixture<Record<string, unknown>>("golden-pr-record");
+    expect((await verify(pr, jwks, { expected_head_sha: HEAD })).valid).toBe(true);
+    expect((await verify(pr, jwks, { expected_head_sha: "1".repeat(40) })).reasons).toEqual([REASONS.head_mismatch]);
+  });
+
+  it("uses the latest PR record when there are several", async () => {
+    const b = golden();
+    const pr = b.statements[2]!;
+    const newer = await signStatement({
+      ...pr,
+      previous_digest: statementDigest(pr),
+      head_sha: "2".repeat(40),
+      built_at: "2026-10-23T20:00:00.000Z",
+    });
+    const statements = [...b.statements, newer];
+    expect((await verify({ ...b, statements }, jwks, { expected_head_sha: "2".repeat(40) })).valid).toBe(true);
+    expect((await verify({ ...b, statements }, jwks, { expected_head_sha: HEAD })).reasons).toEqual([REASONS.head_mismatch]);
+  });
+
+  it("an edited PR record head binds nothing: signature_invalid and head_unbound", async () => {
+    const b = golden();
+    const statements = [...b.statements];
+    statements[2] = { ...statements[2]!, head_sha: "a".repeat(40) };
+    const res = await verify({ ...b, statements }, jwks, { expected_head_sha: "a".repeat(40) });
+    expect(res.reasons).toEqual([`2:${REASONS.signature_invalid}`, REASONS.head_unbound]);
+  });
+
+  it("reads head_sha from the PR record shape main signs (mnemom-api pr-record.ts)", async () => {
+    // Field set of record-sandbox#350's PR record at e05a9ffa: issued_at, both
+    // prev_digest and previous_digest, no repo or pr_number.
+    const b = golden();
+    const pr = await signStatement({
+      typ: "AAP-PRRecord/v1",
+      signing_key_id: TEST_KID,
+      issued_at: "2026-11-03T22:00:00.000Z",
+      built_at: "2026-11-03T22:00:00.000Z",
+      prev_digest: null,
+      previous_digest: null,
+      unit_kind: "pull_request",
+      head_sha: "4085847847e146869092d3948ed7a7136313ff6c",
+      conduct_digests: [statementDigest(b.statements[1]!)],
+      commits: { bound: 1, total: 1 },
+    });
+    const bundle = { ...b, statements: [b.statements[0]!, b.statements[1]!, pr] };
+    const head = "4085847847e146869092d3948ed7a7136313ff6c";
+    expect((await verify(bundle, jwks, { expected_head_sha: head })).reasons).toEqual([]);
+    // The bundle commit is not the bound head.
+    expect((await verify(bundle, jwks, { expected_head_sha: "e05a9ffa63b8981773cb8a0eb6dc4ea7bc4da8c2" })).reasons).toEqual([
+      REASONS.head_mismatch,
+    ]);
+  });
+
+  it("fails a statement whose prev_digest and previous_digest aliases differ", async () => {
+    const b = golden();
+    const [c1, c2] = b.statements;
+    const prev = statementDigest(c1!);
+    const other = "9".repeat(64);
+    // Equal aliases (both null, or the same digest) pass.
+    const c1Both = await signStatement({ ...c1!, prev_digest: null });
+    const c2Both = await signStatement({ ...c2!, previous_digest: statementDigest(c1Both), prev_digest: statementDigest(c1Both) });
+    expect((await verify({ ...b, statements: [c1Both, c2Both] }, jwks)).reasons).toEqual([]);
+    // A differing pair fails as chain_broken, once, in a bundle and on its own.
+    const cases: [string, Record<string, unknown>, number][] = [
+      ["null vs digest", await signStatement({ ...c1!, prev_digest: prev }), 0],
+      ["digest vs null", await signStatement({ ...c2!, prev_digest: null }), 1],
+      ["two digests", await signStatement({ ...c2!, prev_digest: other }), 1],
+    ];
+    for (const [name, bad, i] of cases) {
+      const statements = i === 0 ? [bad, c2!] : [c1!, bad];
+      const inBundle = await verify({ ...b, statements }, jwks);
+      expect(inBundle.reasons.filter((r) => r.startsWith(`${i}:`)), name).toEqual([`${i}:${REASONS.chain_broken}`]);
+      expect((await verify(bad, jwks)).reasons, name).toEqual([`0:${REASONS.chain_broken}`]);
+    }
+  });
+
+  it("reports chain_broken once when an alias mismatch and a missing predecessor meet", async () => {
+    const b = golden();
+    // previous_digest names conduct1, which is not in the bundle; prev_digest disagrees too.
+    const c2 = await signStatement({ ...b.statements[1]!, prev_digest: "9".repeat(64) });
+    const res = await verify({ ...b, statements: [c2] }, jwks);
+    expect(res.reasons).toEqual([`0:${REASONS.chain_broken}`]);
+  });
+
+  it("a malformed previous_digest in a bundle is digest_malformed, not chain_broken", async () => {
+    const b = golden();
+    const c2 = await signStatement({ ...b.statements[1]!, previous_digest: "not-a-digest" });
+    const res = await verify({ ...b, statements: [b.statements[0]!, c2] }, jwks);
+    expect(res.reasons).toEqual([`1:${REASONS.digest_malformed}`]);
+  });
+
+  it("a non-object entry fails on its own and leaves the chain and head checks intact", async () => {
+    const b = golden();
+    for (const junk of [null, "x", 42]) {
+      // At the front it shifts every index; at the end it sits after the PR record.
+      const front = await verify({ ...b, statements: [junk, ...b.statements] }, jwks, { expected_head_sha: HEAD });
+      expect(front.reasons, String(junk)).toEqual([`0:${REASONS.not_an_object}`]);
+      const end = await verify({ ...b, statements: [...b.statements, junk] }, jwks, { expected_head_sha: HEAD });
+      expect(end.reasons, String(junk)).toEqual([`${b.statements.length}:${REASONS.not_an_object}`]);
+    }
+  });
+
+  it("skips a verified PR record with no string head_sha when binding the head", async () => {
+    const b = golden();
+    const pr = b.statements[2]!;
+    const noHead: Record<string, unknown> = { ...pr, previous_digest: statementDigest(pr), built_at: "2026-10-23T20:00:00.000Z" };
+    delete noHead.head_sha;
+    const latest = await signStatement(noHead);
+    // The earlier PR record still binds the head.
+    const res = await verify({ ...b, statements: [...b.statements, latest] }, jwks, { expected_head_sha: HEAD });
+    expect(res.reasons).toEqual([]);
+    // Alone, a PR record without a head binds nothing.
+    const bare = await signStatement({ ...noHead, previous_digest: null, head_sha: 7 });
+    expect((await verify(bare, jwks, { expected_head_sha: HEAD })).reasons).toEqual([REASONS.head_unbound]);
+  });
+
+  it("chains a statement that carries only prev_digest like one with previous_digest", async () => {
+    const b = golden();
+    const [c1, c2] = b.statements;
+    const onlyPrev = async (prev: unknown) => {
+      const s = { ...c2!, prev_digest: prev } as Record<string, unknown>;
+      delete s.previous_digest;
+      return signStatement(s);
+    };
+    const linked = await onlyPrev(statementDigest(c1!));
+    expect((await verify({ ...b, statements: [c1!, linked] }, jwks)).reasons).toEqual([]);
+    // Out of order, a mid-chain gap, and a malformed digest all fail as they do for previous_digest.
+    expect((await verify({ ...b, statements: [linked, c1!] }, jwks)).reasons).toEqual([`0:${REASONS.chain_broken}`]);
+    const gap = await onlyPrev("9".repeat(64));
+    expect((await verify({ ...b, statements: [c1!, gap] }, jwks)).reasons).toEqual([`1:${REASONS.chain_broken}`]);
+    const bad = await onlyPrev("not-a-digest");
+    expect((await verify({ ...b, statements: [c1!, bad] }, jwks)).reasons).toEqual([`1:${REASONS.digest_malformed}`]);
+  });
+
+  it("refuses a malformed expected head before reading the input", async () => {
+    const nonString = [42, null, ["f".repeat(40)]] as unknown as string[];
+    for (const bad of ["F".repeat(40), "f".repeat(39), "", "HEAD", ...nonString]) {
+      const res = await verify(golden(), jwks, { expected_head_sha: bad });
+      expect(res.reasons).toEqual([REASONS.expected_head_malformed]);
+      expect(res.statements).toEqual([]);
+    }
   });
 });
 

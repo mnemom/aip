@@ -15,6 +15,11 @@
  * 5. Ed25519 over `canonicalJson(statement minus signature)`
  * 6. per-type rules (share card line classes, verdict coverage)
  * 7. flags on cited checkpoints (T12), which never change `valid`
+ *
+ * Across a bundle (K1.20): every link must name a statement of the right
+ * type, each record's `previous_digest` chain must hold inside the bundle
+ * (`chain_broken`), and, when the caller passes `expected_head_sha`, the
+ * latest PR record must name that head (`head_mismatch`, `head_unbound`).
  */
 
 import { verifyAsync } from "@noble/ed25519";
@@ -34,6 +39,7 @@ import {
   type RecordJwk,
   type RecordJwks,
   type RecordVerificationResult,
+  type RecordVerifyOptions,
   type ShareCardLine,
   type SignedStatement,
   type StatementFlag,
@@ -42,6 +48,8 @@ import {
 } from "./statements.js";
 
 const DIGEST_RE = /^[0-9a-f]{64}$/;
+/** A git commit id: sha1 (40) or sha256 (64) lowercase hex. */
+const GIT_SHA_RE = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/;
 
 function isObject(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
@@ -124,6 +132,19 @@ function shareCardReasons(lines: unknown): Reason[] {
 }
 
 /**
+ * The predecessor link a statement names. `prev_digest` and `previous_digest`
+ * are signed aliases (lead pick 2026-10-29): `previous_digest` when present,
+ * else `prev_digest`, so a statement that carries only the short name gets the
+ * same chain checks. `undefined` when it carries neither (not a chain member).
+ * When both are present and differ, verifyStatement fails it as chain_broken.
+ */
+function predecessorOf(statement: Record<string, unknown>): unknown {
+  if ("previous_digest" in statement) return statement.previous_digest;
+  if ("prev_digest" in statement) return statement.prev_digest;
+  return undefined;
+}
+
+/**
  * Every digest reference a statement carries, as written. An absent field
  * is skipped, and `previous_digest: null` is the first build (T2); anything
  * else that is not a 64-hex string is reported as `digest_malformed` rather
@@ -132,9 +153,8 @@ function shareCardReasons(lines: unknown): Reason[] {
  */
 function digestFieldsOf(statement: Record<string, unknown>): unknown[] {
   const out: unknown[] = [];
-  if (statement.previous_digest !== undefined && statement.previous_digest !== null) {
-    out.push(statement.previous_digest);
-  }
+  const prev = predecessorOf(statement);
+  if (prev !== undefined && prev !== null) out.push(prev);
   if (statement.pr_record_digest !== undefined) out.push(statement.pr_record_digest);
   if (statement.source_digest !== undefined) out.push(statement.source_digest);
   if (statement.conduct_digests !== undefined) {
@@ -210,6 +230,12 @@ export async function verifyStatement(
       break;
     }
   }
+  // `prev_digest` and `previous_digest` are signed aliases (lead pick
+  // 2026-10-29): a statement that carries both with different values is
+  // internally inconsistent about its predecessor (K1.20).
+  if ("prev_digest" in statement && "previous_digest" in statement) {
+    if (statement.prev_digest !== statement.previous_digest) reasons.push(REASONS.chain_broken);
+  }
   if (typ === "AAP-ShareCard/v1") reasons.push(...shareCardReasons(statement.lines));
 
   const flags = typ === "AAP-ConductRecord/v1" ? checkpointFlags(statement.checkpoints) : [];
@@ -224,26 +250,118 @@ export async function verifyStatement(
   };
 }
 
-/** Which statement types a link field may point at. */
-const LINK_TARGETS: Record<string, readonly StatementTyp[] | "same"> = {
-  previous_digest: "same",
+/**
+ * Which statement types a link field may point at. `previous_digest` is not
+ * here: `chainReasons` checks it, and a broken chain fails rather than flags.
+ */
+const LINK_TARGETS: Record<string, readonly StatementTyp[]> = {
   conduct_digests: ["AAP-ConductRecord/v1"],
   pr_record_digest: ["AAP-PRRecord/v1"],
   source_digest: ["AAP-ConductRecord/v1", "AAP-PRRecord/v1", "AAP-Outcome/v1"],
 };
+
+/** One record's chain: statements of the same `typ` and `lineage_key`. */
+function chainKey(s: Record<string, unknown>): string {
+  return `${String(s.typ)}\u0000${typeof s.lineage_key === "string" ? s.lineage_key : ""}`;
+}
+
+/**
+ * The `previous_digest` chain inside a bundle (T2, K1.20). Only statements
+ * that carry the field (or its alias `prev_digest`, see predecessorOf) take
+ * part; `null` is a genesis. For each one, by index:
+ * - a non-null `previous_digest` must name a statement earlier in the bundle
+ *   (build order) with the same `typ` and `lineage_key`;
+ * - no two statements of one chain may name the same predecessor, and a chain
+ *   has at most one root (a fork, or a spliced second history).
+ * The one exception is retention: mnemom-api deletes a lineage's builds once
+ * they pass 30 days (record-retention.ts), so the FIRST statement of a chain
+ * in the bundle may name a predecessor the bundle does not hold. That is the
+ * non-failing `lineage_truncated` flag and it takes the chain's root, so a
+ * later genesis in the same chain still fails. A predecessor missing anywhere
+ * else is `chain_broken`, and so is one that is in the bundle but later
+ * (order is strict: the producer emits chain order).
+ * A malformed `previous_digest` is `digest_malformed` (verifyStatement) and
+ * is skipped here.
+ */
+function chainReasons(
+  raw: unknown[],
+  digests: (string | null)[],
+): { broken: Map<number, Reason>; truncated: Map<number, string> } {
+  const broken = new Map<number, Reason>();
+  const truncated = new Map<number, string>();
+  const indexOf = new Map<string, number>();
+  digests.forEach((d, i) => {
+    if (d && !indexOf.has(d)) indexOf.set(d, i);
+  });
+  const taken = new Set<string>();
+  const seen = new Set<string>();
+  raw.forEach((s, i) => {
+    if (!isObject(s)) return;
+    const prev = predecessorOf(s);
+    if (prev === undefined) return;
+    const key = chainKey(s);
+    const first = !seen.has(key);
+    seen.add(key);
+    const root = `${key}\u0000root`;
+    if (prev === null) {
+      if (taken.has(root)) broken.set(i, REASONS.chain_broken);
+      taken.add(root);
+      return;
+    }
+    if (typeof prev !== "string" || !DIGEST_RE.test(prev)) return;
+    const j = indexOf.get(prev);
+    if (j === undefined && first) {
+      truncated.set(i, prev);
+      taken.add(root);
+      return;
+    }
+    // A statement has a digest only when it is an object (verifyStatement),
+    // so raw[j] is one whenever j is found.
+    if (j === undefined || j >= i || chainKey(raw[j] as Record<string, unknown>) !== key) {
+      broken.set(i, REASONS.chain_broken);
+      return;
+    }
+    if (taken.has(`${key}\u0000${prev}`)) broken.set(i, REASONS.chain_broken);
+    taken.add(`${key}\u0000${prev}`);
+  });
+  return { broken, truncated };
+}
+
+/**
+ * The head binding (K1.20): the latest verified `AAP-PRRecord/v1` in build
+ * order must name `expected` as its `head_sha`. The PR record is signed, so
+ * an edited bundle cannot move it to another head without failing its
+ * signature.
+ */
+function headReason(
+  raw: unknown[],
+  statements: StatementVerificationResult[],
+  expected: string,
+): Reason | null {
+  for (let i = raw.length - 1; i >= 0; i--) {
+    const s = raw[i];
+    if (!statements[i]?.valid || !isObject(s) || s.typ !== "AAP-PRRecord/v1") continue;
+    if (typeof s.head_sha !== "string") continue;
+    return s.head_sha === expected ? null : REASONS.head_mismatch;
+  }
+  return REASONS.head_unbound;
+}
 
 /**
  * Verify a statement or a whole bundle against the published JWKS.
  *
  * For a bundle every statement is verified on its own, then the links
  * between them are checked: a digest that names a statement in the bundle
- * must name one of the right type. A digest that names nothing in the
- * bundle is flagged, not failed, because a long session's earlier
- * statements may live outside the bundle (design, open questions).
+ * must name one of the right type, and each record's `previous_digest`
+ * chain must hold (`chain_broken`). A `conduct_digests`, `pr_record_digest`
+ * or `source_digest` that names nothing in the bundle is flagged, not
+ * failed. With `options.expected_head_sha` the input must also bind to that
+ * PR head; the reasons for it are bundle-level, without an index prefix.
  */
 export async function verify(
   input: SignedStatement | RecordBundle | unknown,
   jwks: RecordJwks,
+  options: RecordVerifyOptions = {},
 ): Promise<RecordVerificationResult> {
   const verified_at = new Date().toISOString();
   const result = (
@@ -252,6 +370,11 @@ export async function verify(
     flags: StatementFlag[],
     statements: StatementVerificationResult[],
   ): RecordVerificationResult => ({ valid, reasons, flags, statements, verified_at });
+
+  const expected = options.expected_head_sha;
+  if (expected !== undefined && (typeof expected !== "string" || !GIT_SHA_RE.test(expected))) {
+    return result(false, [REASONS.expected_head_malformed], [], []);
+  }
 
   if (!isObject(input)) return result(false, [REASONS.bundle_not_an_object], [], []);
 
@@ -269,7 +392,10 @@ export async function verify(
   // A bare statement.
   if (input.typ !== BUNDLE_TYP) {
     const one = await verifyStatement(input, jwks);
-    return result(one.valid, one.reasons.map((r) => `0:${r}`), one.flags, [one]);
+    const reasons = one.reasons.map((r) => `0:${r}`);
+    const head = expected === undefined ? null : headReason([input], [one], expected);
+    if (head) reasons.push(head);
+    return result(reasons.length === 0, reasons, one.flags, [one]);
   }
 
   const rawStatements: unknown[] | null = Array.isArray(input.statements) ? input.statements : null;
@@ -285,11 +411,20 @@ export async function verify(
     if (s.digest) byDigest.set(s.digest, s);
   });
 
+  const chain = chainReasons(
+    rawStatements,
+    statements.map((s) => s.digest),
+  );
+
   const reasons: string[] = [];
   const flags: StatementFlag[] = [];
   statements.forEach((s, i) => {
     s.reasons.forEach((r) => reasons.push(`${i}:${r}`));
+    const broken = chain.broken.get(i);
+    if (broken && !s.reasons.includes(broken)) reasons.push(`${i}:${broken}`);
     flags.push(...s.flags);
+    const cut = chain.truncated.get(i);
+    if (cut && s.valid) flags.push({ flag: FLAGS.lineage_truncated, subject: cut });
     const raw = rawStatements[i];
     if (!s.valid || !isObject(raw)) return;
     for (const [field, targets] of Object.entries(LINK_TARGETS)) {
@@ -302,13 +437,17 @@ export async function verify(
           flags.push({ flag: FLAGS.linked_statement_not_in_bundle, subject: d });
           continue;
         }
-        const allowed = targets === "same" ? [s.typ as StatementTyp] : targets;
-        if (!linked.typ || !allowed.includes(linked.typ as StatementTyp)) {
+        if (!linked.typ || !targets.includes(linked.typ as StatementTyp)) {
           reasons.push(`${i}:${REASONS.linked_statement_wrong_typ}`);
         }
       }
     }
   });
+
+  if (expected !== undefined) {
+    const head = headReason(rawStatements, statements, expected);
+    if (head) reasons.push(head);
+  }
 
   return result(reasons.length === 0, reasons, flags, statements);
 }
