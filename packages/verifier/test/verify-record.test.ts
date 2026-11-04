@@ -129,6 +129,18 @@ describe("verify: previous_digest chain and head binding (K1.20)", () => {
     expect(res.flags.map((f) => f.flag)).not.toContain(FLAGS.lineage_truncated);
   });
 
+  it("a byte-identical duplicate resolves links to its first copy and fails as a second root or fork", async () => {
+    const b = golden();
+    const [c1, c2] = b.statements;
+    // c2 binds to c1 at index 0 (the first copy). Were the later copy used,
+    // index 2 would be after c2 and c2 would fail order as well.
+    const lateDup = await verify({ ...b, statements: [c1!, c2!, c1!] }, jwks);
+    expect(lateDup.reasons).toEqual([`2:${REASONS.chain_broken}`]);
+    // A replayed successor names a predecessor already taken: a fork.
+    const replay = await verify({ ...b, statements: [c1!, c2!, c2!] }, jwks);
+    expect(replay.reasons).toEqual([`2:${REASONS.chain_broken}`]);
+  });
+
   it("does not flag truncation on a statement that fails its signature", async () => {
     const b = golden();
     const edited = { ...b.statements[1]!, cost: { mu_millimu: 1 } };
