@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Tests for check-verifier-release-tag.sh, the verifier release-tag guard.
+# Tests for check-verify-release-tag.sh, the verifier release-tag guard.
 set -uo pipefail
 dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-guard="$dir/check-verifier-release-tag.sh"
+guard="$dir/check-verify-release-tag.sh"
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 fail=0
@@ -36,7 +36,7 @@ expect 2 ""
 expect 2
 
 # The real package: its own verify-v<version> tag passes.
-real="$dir/../../packages/verifier/package.json"
+real="$dir/../../packages/verify/package.json"
 v=$(node -p 'require(process.argv[1]).version' "$(cd "$(dirname "$real")" && pwd)/package.json")
 expect 0 "verify-v$v" "$real"
 expect 1 "aip-verifier-v$v" "$real"

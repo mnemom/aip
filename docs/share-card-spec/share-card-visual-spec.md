@@ -1,7 +1,7 @@
 # Signed share card: visual spec (MNE-9118)
 
 Status: defaults for review. Owner: Shraddha. Parent: MNE-9014. Reviewer: Keith (open questions at the end; not contacted).
-Checked against: `renderLines` at aip main `e417669` (`packages/verifier/src/render-lines.ts`, flag `AIP_RENDER_LINES=1`) run on the repo fixtures, and the live `/share` page (mnemom-website PR 3042, `client/pages/share/SharePage.tsx`).
+Checked against: `renderLines` at aip main `e417669` (`packages/verify/src/render-lines.ts`, flag `AIP_RENDER_LINES=1`) run on the repo fixtures, and the live `/share` page (mnemom-website PR 3042, `client/pages/share/SharePage.tsx`).
 Mock of every state, light and dark: [mock.html](./mock.html) (tokens copied from the website `global.css`).
 
 ## 1. Problem

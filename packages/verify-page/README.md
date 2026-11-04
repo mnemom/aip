@@ -20,8 +20,8 @@ npm run serve          # look at dist/ at http://localhost:8787/
 
 The Playwright test opens `dist/index.html` from `file://` in an offline
 context, aborts and counts every non-file request, verifies the golden
-bundle and every tampered fixture from `packages/verifier/test/fixtures/record`,
-and asserts the request count is zero. `.github/workflows/verifier-page.yml`
+bundle and every tampered fixture from `packages/verify/test/fixtures/record`,
+and asserts the request count is zero. `.github/workflows/verify-page.yml`
 runs it on every pull request.
 
 Host it over `https://` (or open it from `localhost` or a local file).

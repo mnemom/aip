@@ -26,9 +26,9 @@ on:
         required: false
         type: string
       npm-directory:
-        # A choice, not a free string: a dispatch can never hand packages/verifier
+        # A choice, not a free string: a dispatch can never hand packages/verify
         # to the npm reusable below. The verifier reaches npm only from an
-        # verify- release (publish-verifier-npm), behind the guard and gates.
+        # verify- release (publish-verify-npm), behind the guard and gates.
         description: "Directory containing package.json to publish"
         required: false
         type: choice
@@ -157,22 +157,22 @@ jobs:
   # the org reusable npm-publish.yml. Owner reversal (customers install
   # `latest`): the dist-tag is `latest`, not `next`
   # (npm Trusted Publisher, OIDC, with provenance). No npm token is stored or read.
-  #   1. verifier-guard keeps the existing guard script + self-test.
-  #   2. verifier-test re-runs the verifier CI gates (ci.yml `verifier` job) and
+  #   1. verify-guard keeps the existing guard script + self-test.
+  #   2. verify-test re-runs the verifier CI gates (ci.yml `verify` job) and
   #      packs the tarball, handed to the upload jobs as an artifact.
-  #   3. upload-verifier-release attaches the tarball to the release with `gh`.
-  #   4. publish-verifier-npm publishes packages/verifier to npm under `latest`
+  #   3. upload-verify-release attaches the tarball to the release with `gh`.
+  #   4. publish-verify-npm publishes packages/verify to npm under `latest`
   #      through the org reusable npm-publish.yml.
   # Verifier-only releases (tag `verify-v<version>`) only: an SDK `v*`
   # release skips these four jobs and carries no verifier tarball.
   # Not wired into workflow_dispatch: dispatch-publish-npm stays typescript-only
   # (the `npm-directory` input is a choice with that one option).
 
-  verifier-guard:
+  verify-guard:
     permissions:
       contents: read
     if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'verify-')
-    name: Verifier dist-tag guard
+    name: Verify dist-tag guard
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.guard.outputs.tag }}
@@ -188,20 +188,20 @@ jobs:
           .github/scripts/check-npm-dist-tag.sh "$VERIFIER_NPM_TAG"
           echo "tag=$VERIFIER_NPM_TAG" >> "$GITHUB_OUTPUT"
 
-  verifier-test:
+  verify-test:
     permissions:
       contents: read
       id-token: write       # Sigstore signing for the build-provenance attestation
       attestations: write   # store the attestation on mnemom/aip
     if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'verify-')
-    name: Verifier CI gates + pack tarball
-    needs: [verifier-guard]
+    name: Verify CI gates + pack tarball
+    needs: [verify-guard]
     runs-on: ubuntu-latest
     outputs:
       tarball-sha256: ${{ steps.pack.outputs.sha256 }}
     defaults:
       run:
-        working-directory: packages/verifier
+        working-directory: packages/verify
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v6
@@ -209,11 +209,11 @@ jobs:
           node-version: "24"
       # Tag is exactly verify-v<version>, the version is package.json's and
       # the package is @mnemom/verify. Tested on every PR by
-      # verifier-publish-check.yml (check-verifier-release-tag.test.sh).
+      # verify-publish-check.yml (check-verify-release-tag.test.sh).
       - name: Check tag against verifier name and version
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: ../../.github/scripts/check-verifier-release-tag.sh "$RELEASE_TAG" package.json
+        run: ../../.github/scripts/check-verify-release-tag.sh "$RELEASE_TAG" package.json
       - run: npm ci
       - run: npm run typecheck
       - run: npm run build
@@ -221,27 +221,27 @@ jobs:
       - name: Pack verifier tarball
         id: pack
         run: |
-          mkdir -p "$RUNNER_TEMP/verifier-pack"
-          npm pack --pack-destination "$RUNNER_TEMP/verifier-pack"
-          ls -l "$RUNNER_TEMP/verifier-pack"
-          set -- "$RUNNER_TEMP"/verifier-pack/*.tgz
+          mkdir -p "$RUNNER_TEMP/verify-pack"
+          npm pack --pack-destination "$RUNNER_TEMP/verify-pack"
+          ls -l "$RUNNER_TEMP/verify-pack"
+          set -- "$RUNNER_TEMP"/verify-pack/*.tgz
           if [ "$#" -ne 1 ]; then echo "ERROR: expected one tarball, found $#"; exit 1; fi
           echo "sha256=$(sha256sum "$1" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
-      # Build provenance for the exact bytes upload-verifier-release attaches:
+      # Build provenance for the exact bytes upload-verify-release attaches:
       # the subject is this .tgz, and the upload job refuses a tarball whose
       # sha256 differs from steps.pack.outputs.sha256.
       - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
-          subject-path: ${{ runner.temp }}/verifier-pack/*.tgz
+          subject-path: ${{ runner.temp }}/verify-pack/*.tgz
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: verifier-tarball
-          path: ${{ runner.temp }}/verifier-pack/*.tgz
+          name: verify-tarball
+          path: ${{ runner.temp }}/verify-pack/*.tgz
           if-no-files-found: error
 
-  upload-verifier-release:
+  upload-verify-release:
     name: Attach verifier tarball to GitHub release
-    needs: [verifier-guard, verifier-test]
+    needs: [verify-guard, verify-test]
     if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'verify-')
     runs-on: ubuntu-latest
     permissions:
@@ -249,13 +249,13 @@ jobs:
     steps:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: verifier-tarball
-          path: verifier-pack
+          name: verify-tarball
+          path: verify-pack
       - name: Check the tarball is the attested one
         env:
-          ATTESTED_SHA256: ${{ needs.verifier-test.outputs.tarball-sha256 }}
+          ATTESTED_SHA256: ${{ needs.verify-test.outputs.tarball-sha256 }}
         run: |
-          set -- verifier-pack/*.tgz
+          set -- verify-pack/*.tgz
           if [ "$#" -ne 1 ]; then echo "ERROR: expected one tarball, found $#"; exit 1; fi
           GOT=$(sha256sum "$1" | cut -d' ' -f1)
           if [ -z "$ATTESTED_SHA256" ] || [ "$GOT" != "$ATTESTED_SHA256" ]; then
@@ -267,27 +267,27 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           RELEASE_TAG: ${{ github.event.release.tag_name }}
-        run: gh release upload "$RELEASE_TAG" verifier-pack/*.tgz
+        run: gh release upload "$RELEASE_TAG" verify-pack/*.tgz
 
-  publish-verifier-npm:
-    needs: [verifier-guard, verifier-test]
+  publish-verify-npm:
+    needs: [verify-guard, verify-test]
     if: github.event_name == 'release' && startsWith(github.event.release.tag_name, 'verify-')
     permissions:
       contents: write   # the reusable attaches the SBOM to the release
       id-token: write   # OIDC -> npm Trusted Publisher; also signs the provenance
     # Keith, 2026-10-28: the verifier goes through the org reusable like every
     # other @mnemom package (ADR-020), not a hand-rolled npm publish. The
-    # reusable builds packages/verifier at the release commit, so this is not
+    # reusable builds packages/verify at the release commit, so this is not
     # byte-for-byte the release-asset tarball; npm provenance ties it to this
-    # run and commit instead. verifier-test has already checked the tag against
-    # packages/verifier/package.json and run the CI gates on that commit.
+    # run and commit instead. verify-test has already checked the tag against
+    # packages/verify/package.json and run the CI gates on that commit.
     # npm checks the Trusted Publisher against the CALLING workflow, so the
     # npmjs.com config names publish.yml (this file), environment production.
     # mnemom/.github @ scale/step-29-bump-node24-actions merge (ADR-020)
     uses: mnemom/.github/.github/workflows/npm-publish.yml@3b60e34e88113070235f2d55248a3455295be153
     with:
-      npm-directory: packages/verifier
-      tag: ${{ needs.verifier-guard.outputs.tag }}   # always `latest`; the guard refuses anything else
+      npm-directory: packages/verify
+      tag: ${{ needs.verify-guard.outputs.tag }}   # always `latest`; the guard refuses anything else
 
   # ── Orchestrator dispatch publishing ──
   #

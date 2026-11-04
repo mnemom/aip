@@ -1,21 +1,21 @@
 #!/usr/bin/env bash
-# Release guard for @mnemom/verify (packages/verifier): a verifier release tag
-# must be exactly `verify-v<version>`, where <version> is packages/verifier's
+# Release guard for @mnemom/verify (packages/verify): a verifier release tag
+# must be exactly `verify-v<version>`, where <version> is packages/verify's
 # package.json version, and the package must be named @mnemom/verify.
 # The retired `aip-verifier-v*` tag form (the package's old name, kept only on
 # the 0.6.0 and 0.6.1 GitHub releases) is refused, so it can never publish.
 #
-# Usage: check-verifier-release-tag.sh <tag> [<package.json>]
+# Usage: check-verify-release-tag.sh <tag> [<package.json>]
 # Exit 0 accept, 1 refuse, 2 bad usage.
 set -euo pipefail
 
 NAME="@mnemom/verify"
 PREFIX="verify-v"
 tag="${1-}"
-pkg="${2:-packages/verifier/package.json}"
+pkg="${2:-packages/verify/package.json}"
 
 if [ "$#" -lt 1 ] || [ "$#" -gt 2 ] || [ -z "$tag" ]; then
-  echo "usage: check-verifier-release-tag.sh <tag> [<package.json>]" >&2
+  echo "usage: check-verify-release-tag.sh <tag> [<package.json>]" >&2
   exit 2
 fi
 if [ ! -f "$pkg" ]; then

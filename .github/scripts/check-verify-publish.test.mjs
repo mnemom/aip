@@ -1,4 +1,4 @@
-// Tests for check-verifier-publish.mjs (Record K1.15). Run: node --test .github/scripts/
+// Tests for check-verify-publish.mjs (Record K1.15). Run: node --test .github/scripts/
 import test from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
@@ -6,9 +6,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { PACKAGE_NAME, compare, entryOf, entryPoints, parseArgs, tarballName } from "./check-verifier-publish.mjs";
+import { PACKAGE_NAME, compare, entryOf, entryPoints, parseArgs, tarballName } from "./check-verify-publish.mjs";
 
-const SCRIPT = fileURLToPath(new URL("./check-verifier-publish.mjs", import.meta.url));
+const SCRIPT = fileURLToPath(new URL("./check-verify-publish.mjs", import.meta.url));
 const SHA = "a".repeat(40);
 const PKG = {
   name: "@mnemom/verify",

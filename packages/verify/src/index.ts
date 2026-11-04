@@ -1,5 +1,5 @@
 /**
- * Threat model: packages/verifier-page/THREAT-MODEL.md
+ * Threat model: packages/verify-page/THREAT-MODEL.md
  *
  * @mnemom/verify
  *

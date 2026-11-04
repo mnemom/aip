@@ -18,5 +18,5 @@ id = "generic-api-key"
 [[rules.allowlists]]
 description = "RFC 8032 Ed25519 test vector 1 in the verifier signing helper"
 condition = "AND"
-paths = ['''(^|/)packages/verifier/test/helpers/sign\.ts$''']
+paths = ['''(^|/)packages/verify/test/helpers/sign\.ts$''']
 regexes = ['''^9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60$''']

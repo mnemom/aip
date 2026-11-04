@@ -43,14 +43,14 @@ jobs:
       - name: Build
         run: npm run build
 
-  verifier:
+  verify:
     permissions:
       contents: read
-    name: Verifier
+    name: Verify
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: packages/verifier
+        working-directory: packages/verify
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -59,7 +59,7 @@ jobs:
         with:
           node-version: "20"
           cache: npm
-          cache-dependency-path: packages/verifier/package-lock.json
+          cache-dependency-path: packages/verify/package-lock.json
 
       - run: npm ci
 
@@ -126,7 +126,7 @@ jobs:
     permissions:
       contents: read
     name: Trigger Deploy
-    needs: [typescript, verifier, python]
+    needs: [typescript, verify, python]
     if: >-
       always() &&
       github.event_name == 'push' &&

@@ -18,7 +18,7 @@ integrity verdicts in time to intervene.
 Tri-language workspace under `packages/`:
 - `packages/python/` — `agent-integrity-proto` on PyPI (reference)
 - `packages/typescript/` — `@mnemom/agent-integrity-protocol` on npm
-- `packages/verifier/` — verifier service
+- `packages/verify/` — verifier service
 
 Same Alignment Card as AAP, same AP-Trace shape — different timescale.
 License: **Apache-2.0** (forever — see commitment #6 on /for-agents).
@@ -27,7 +27,7 @@ License: **Apache-2.0** (forever — see commitment #6 on /for-agents).
 
 - **Python**: hatchling build, pydantic v2, pytest. Reference impl.
 - **TypeScript**: tsup bundler, vitest, strict tsconfig.
-- **Verifier**: separate package — see `packages/verifier/README.md`.
+- **Verifier**: separate package — see `packages/verify/README.md`.
 
 ## Install + dev — Python
 
@@ -62,7 +62,7 @@ packages/
     src/
     tests/
     package.json
-  verifier/                  # Verifier service (Python)
+  verify/                    # @mnemom/verify, offline verifier (TypeScript)
 docs/                        # Spec + integration guides (long-form)
 examples/                    # Working examples — used in docs
 ```
@@ -94,7 +94,7 @@ examples/                    # Working examples — used in docs
 | Tag | Publishes | Version check |
 |---|---|---|
 | `vX.Y.Z` | `packages/typescript` to npm `latest`, `packages/python` to PyPI | tag equals both SDK versions |
-| `verify-vX.Y.Z` | `packages/verifier` to npm `latest` as `@mnemom/verify` (Trusted Publisher, provenance), plus its tarball attached to the GitHub release; never PyPI | tag equals `packages/verifier/package.json` version |
+| `verify-vX.Y.Z` | `packages/verify` to npm `latest` as `@mnemom/verify` (Trusted Publisher, provenance), plus its tarball attached to the GitHub release; never PyPI | tag equals `packages/verify/package.json` version |
 
 - On a `verify-` tag the SDK validate, test, npm and PyPI jobs skip;
   on a `v*` tag the verifier jobs skip. Release steps are under
@@ -102,13 +102,13 @@ examples/                    # Working examples — used in docs
 - The `workflow_dispatch` path publishes `packages/typescript` to npm (and
   `packages/python` to PyPI); any other `npm-directory` is refused.
 
-### Releasing the verifier (`packages/verifier`)
+### Releasing the verifier (`packages/verify`)
 
 Nothing mints a `verify-v*` tag: `release-please-config.json` lists
 only `packages/typescript` and `packages/python`, and `github-release.yml`
 matches `vX.Y.Z-next` only. Cutting a verifier release is a manual step:
 
-1. Land the version bump in `packages/verifier/package.json` on `main`.
+1. Land the version bump in `packages/verify/package.json` on `main`.
 2. Create the release as a person (`gh` with your own login). A release
    made with `GITHUB_TOKEN` does not start `publish.yml`.
 
@@ -120,14 +120,14 @@ matches `vX.Y.Z-next` only. Cutting a verifier release is a manual step:
    ```
 
 3. The tag form is exactly `verify-v<version>`, where `<version>`
-   equals `packages/verifier/package.json`. `publish.yml` strips
+   equals `packages/verify/package.json`. `publish.yml` strips
    `verify-v` and fails the run on a mismatch, so
    `verify-0.6.0` (no `v`) fails.
 4. The verifier jobs attach `mnemom-verify-<version>.tgz`, with a
-   build-provenance attestation, to the release. `publish-verifier-npm`
+   build-provenance attestation, to the release. `publish-verify-npm`
    publishes `@mnemom/verify@<version>` to npm under `latest` with
    provenance through the org reusable `npm-publish.yml`; that is a fresh
-   build of `packages/verifier` at the release commit, not the attested
+   build of `packages/verify` at the release commit, not the attested
    tarball's bytes. The reusable also attaches
    `sbom-mnemom-verify-<version>.cdx.json` (CycloneDX) to the release.
    Consumers run `npm install @mnemom/verify`, or install the tarball from
@@ -135,7 +135,7 @@ matches `vX.Y.Z-next` only. Cutting a verifier release is a manual step:
 5. npm accepts the OIDC publish only once a Trusted Publisher (repo
    `mnemom/aip`, workflow `publish.yml`, environment `production`) is set on
    the package, and that needs the package to exist. Until then
-   `publish-verifier-npm` fails and the tarball upload still runs;
+   `publish-verify-npm` fails and the tarball upload still runs;
    `verifier-npm-bootstrap.yml` is the one-shot first publish.
 
 ## What you should NOT do
