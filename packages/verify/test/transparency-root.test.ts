@@ -191,4 +191,16 @@ describe("verifyStatement: expectedDigest", () => {
     const signed = await signStatement(rootBody());
     expect(await verifyStatement(signed, jwks, {})).toEqual(await verifyStatement(signed, jwks));
   });
+
+  it("a non-object options value from an untyped caller is read as no options", async () => {
+    const signed = await signStatement(rootBody());
+    const plain = await verifyStatement(signed, jwks);
+    expect(plain.valid).toBe(true);
+    // An array carrying option-like keys must not be read as options either.
+    const arrayish = Object.assign([], { expectedTyp: CONDUCT, expectedDigest: "0".repeat(64) });
+    for (const bad of [null, "AAP-ConductRecord/v1", 42, true, arrayish]) {
+      const res = await verifyStatement(signed, jwks, bad as unknown as Parameters<typeof verifyStatement>[2]);
+      expect(res, String(bad)).toEqual(plain);
+    }
+  });
 });
