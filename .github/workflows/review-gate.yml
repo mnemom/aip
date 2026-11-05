@@ -325,14 +325,65 @@ jobs:
           python-version: "3.12"
 
       - name: Install the mnemom-adw reviewer (+ Agent SDK)
-        # The worker library lives at packages/adw-worker in the mnemom-adw monorepo (that
-        # repo is a uv workspace; its root is not an installable package). Same install the
-        # ZTE workflow in this repo already performs, so it exercises no new credential path.
         if: steps.pr.outputs.skip != '1'
+        # PINNED (Doors W-L14, W4.5: zero git installs of the worker). When the repo sets
+        # vars.ADW_WORKER_RELEASE (a tag `adw-worker-<12 hex>` published by mnemom-adw's
+        # adw-worker-release.yml) and vars.ADW_WORKER_MANIFEST_SHA256 (that release's
+        # manifest.json sha256, the ONE pinned value), the worker installs from that release:
+        # the manifest must match the pin, the wheel and requirements.txt must match the
+        # manifest, dependencies install --require-hashes, the wheel --no-deps, all before
+        # anything runs. This mirrors packages/adw-worker/scripts/install-pinned-worker.sh.
+        # Setting only one of the two fails the job (never a silent fall back).
+        #
+        # Neither set: the legacy path, the worker installed from mnemom-adw main over git
+        # (repo root fallback for the pre-monorepo layout). It goes away once every fleet repo
+        # pins a release.
+        env:
+          ADW_WORKER_RELEASE: ${{ vars.ADW_WORKER_RELEASE }}
+          ADW_WORKER_MANIFEST_SHA256: ${{ vars.ADW_WORKER_MANIFEST_SHA256 }}
+          ADW_WORKER_REPO: ${{ github.repository_owner }}/mnemom-adw
+          GH_TOKEN: ${{ steps.app.outputs.token }}
         run: |
-          BASE="git+https://x-access-token:${{ steps.app.outputs.token }}@github.com/${{ github.repository_owner }}/mnemom-adw.git@main"
-          uv tool install --python 3.12 "mnemom-adw[sdk] @ ${BASE}#subdirectory=packages/adw-worker" \
-            || uv tool install --python 3.12 "mnemom-adw[sdk] @ ${BASE}"
+          if [ -n "$ADW_WORKER_RELEASE" ] || [ -n "$ADW_WORKER_MANIFEST_SHA256" ]; then
+            fail() { echo "::error::pinned worker: $*"; exit 1; }
+            [[ "$ADW_WORKER_RELEASE" =~ ^adw-worker-[0-9a-f]{12}$ ]] \
+              || fail "vars.ADW_WORKER_RELEASE must be adw-worker-<12 hex> (both pin vars are required)"
+            [[ "$ADW_WORKER_MANIFEST_SHA256" =~ ^[0-9a-f]{64}$ ]] \
+              || fail "vars.ADW_WORKER_MANIFEST_SHA256 must be 64 lowercase hex (both pin vars are required)"
+            DIR="$RUNNER_TEMP/adw-worker-release"
+            VENV="$RUNNER_TEMP/adw-worker-venv"
+            gh release download "$ADW_WORKER_RELEASE" -R "$ADW_WORKER_REPO" -D "$DIR" \
+              -p manifest.json -p requirements.txt -p 'mnemom_adw-*.whl' \
+              || fail "could not download release $ADW_WORKER_RELEASE"
+            sha() { sha256sum "$1" | cut -d' ' -f1; }
+            [ "$(sha "$DIR/manifest.json")" = "$ADW_WORKER_MANIFEST_SHA256" ] \
+              || fail "manifest.json does not match the pinned sha256"
+            read -r WHEEL WHEEL_SHA REQS REQS_SHA < <(python3 - "$DIR/manifest.json" <<'PY'
+          import json, re, sys
+          m = json.load(open(sys.argv[1]))
+          assert m.get("schema") == "mnemom-adw-pinned/v1", "unknown manifest schema"
+          name_re = re.compile(r"^[A-Za-z0-9_.+-]+$")
+          for k in ("wheel", "requirements"):
+              assert isinstance(m.get(k), str) and name_re.match(m[k]) and "/" not in m[k], f"bad {k}"
+          for k in ("wheel_sha256", "requirements_sha256"):
+              assert isinstance(m.get(k), str) and re.fullmatch(r"[0-9a-f]{64}", m[k]), f"bad {k}"
+          print(m["wheel"], m["wheel_sha256"], m["requirements"], m["requirements_sha256"])
+          PY
+            ) || fail "manifest.json is malformed"
+            [ -f "$DIR/$WHEEL" ] && [ "$(sha "$DIR/$WHEEL")" = "$WHEEL_SHA" ] \
+              || fail "wheel does not match the manifest"
+            [ -f "$DIR/$REQS" ] && [ "$(sha "$DIR/$REQS")" = "$REQS_SHA" ] \
+              || fail "requirements do not match the manifest"
+            uv venv -q --no-config --python 3.12 "$VENV"
+            VIRTUAL_ENV="$VENV" uv pip install -q --no-config --require-hashes -r "$DIR/$REQS"
+            VIRTUAL_ENV="$VENV" uv pip install -q --no-config --no-deps "$DIR/$WHEEL"
+            echo "$VENV/bin" >> "$GITHUB_PATH"
+            echo "pinned worker: $ADW_WORKER_RELEASE (manifest $ADW_WORKER_MANIFEST_SHA256)"
+          else
+            BASE="git+https://x-access-token:${{ steps.app.outputs.token }}@github.com/${{ github.repository_owner }}/mnemom-adw.git@main"
+            uv tool install --python 3.12 "mnemom-adw[sdk] @ ${BASE}#subdirectory=packages/adw-worker" \
+              || uv tool install --python 3.12 "mnemom-adw[sdk] @ ${BASE}"
+          fi
 
       - name: Run ADW review gate
         if: steps.pr.outputs.skip != '1'
