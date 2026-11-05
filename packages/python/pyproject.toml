@@ -11,7 +11,7 @@
 # fine, but re-verify (build + `twine check --strict`) first — an unbounded
 # `requires` is what let a hatchling release silently regress this in the first
 # place.
-requires = ["hatchling==1.32.4"]
+requires = ["hatchling==1.33.0"]
 build-backend = "hatchling.build"
 
 [project]
@@ -64,7 +64,7 @@ dev = [
     "pytest-cov>=5.0",
     "respx>=0.22",
     "mypy>=1.10",
-    "ruff==0.15.15",
+    "ruff==0.17.3",
 ]
 
 [tool.hatch.build.targets.wheel]
