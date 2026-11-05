@@ -34,7 +34,7 @@ The result holds:
 
 ### Statement types
 
-Four signed statement types are accepted, listed in `STATEMENT_TYPES`:
+Five signed statement types are accepted, listed in `STATEMENT_TYPES`:
 
 | `typ` | What it records |
 |---|---|
@@ -42,10 +42,27 @@ Four signed statement types are accepted, listed in `STATEMENT_TYPES`:
 | `AAP-PRRecord/v1` | A pull request: its head commit, the conduct records behind it and how many commits they bind |
 | `AAP-Outcome/v1` | What happened to a merged pull request after a fixed window |
 | `AAP-ShareCard/v1` | The lines a share card may show, each tied to a signed source |
+| `AAP-TransparencyRoot/v1` | A signed transparency log root: `tree_size`, `root_hash` and `published_at` |
 
 Each statement is signed with Ed25519 over its canonical JSON minus `signature`. The key is looked up by `signing_key_id` in the JWKS. A statement that names an `alg` other than `EdDSA` fails before any key lookup, and a key is used only when it is an Ed25519 OKP key declared `EdDSA`.
 
 A bundle is `{ "typ": "AAP-RecordBundle/v1", "statements": [...] }`.
+
+### Check one statement
+
+`verifyStatement(statement, jwks, options)` checks a single statement. It takes two optional checks, with the same reason strings and order as `verifyStatement` in `@mnemom/sdk`:
+
+```ts
+import { verifyStatement } from "@mnemom/verify"
+
+const result = await verifyStatement(statement, jwks, {
+  expectedTyp: "AAP-TransparencyRoot/v1", // optional
+  expectedDigest: "<64 hex digest>", // optional
+})
+```
+
+- `expectedTyp` refuses a statement of any other type with `typ_mismatch`, before any key lookup. A value outside `STATEMENT_TYPES` fails with `unsupported_expected_typ`.
+- `expectedDigest` is compared with the statement digest after the signature check. Any other value fails with `digest_mismatch`.
 
 ### Bundle chain and head checks
 
@@ -70,7 +87,9 @@ A bare statement is checked on its own. Chain checks apply only to bundles.
 | Code | Meaning |
 |---|---|
 | `not_an_object` | The statement is not a JSON object |
-| `unknown_typ` | `typ` is not one of the four statement types |
+| `unknown_typ` | `typ` is not one of the five statement types |
+| `unsupported_expected_typ` | `expectedTyp` is not one of the five statement types |
+| `typ_mismatch` | The statement is not of the `expectedTyp` type |
 | `unsupported_alg` | The statement names an `alg` other than `EdDSA` |
 | `signing_key_id_missing` | The statement names no key |
 | `signature_missing` | The statement has no signature |
@@ -78,6 +97,7 @@ A bare statement is checked on its own. Chain checks apply only to bundles.
 | `key_not_found` | The JWKS has no key with that id |
 | `key_not_ed25519` | The key is not an Ed25519 OKP key declared `EdDSA` |
 | `signature_invalid` | The signature does not match the statement |
+| `digest_mismatch` | The statement digest is not `expectedDigest` |
 | `bundle_not_an_object` | The input is not a JSON object |
 | `bundle_unknown_typ` | The bundle `typ` is not `AAP-RecordBundle/v1` |
 | `bundle_statements_missing` | The bundle has no `statements` array |
@@ -105,7 +125,21 @@ const result = await verifyCertificate(certificate, {
 })
 ```
 
-It checks the signature and the chain hash. It checks the Merkle inclusion proof when the certificate carries one and you pass `merkleRoot`. It checks the verdict derivation journal when the certificate carries that proof. Each check is reported under `result.checks`, and a check that did not run is `null`.
+It checks the signature and the chain hash. It checks the Merkle inclusion proof when the certificate carries one and you pass `merkleRoot`.
+
+`merkleRoot` is a bare string, so take it from a signed root. Verify the `AAP-TransparencyRoot/v1` statement first, then pass its `root_hash`:
+
+```ts
+const root = await verifyStatement(signedRoot, jwks, { expectedTyp: "AAP-TransparencyRoot/v1" })
+if (!root.valid) throw new Error(root.reasons.join(", "))
+
+const result = await verifyCertificate(certificate, {
+  publicKey: "<hex public key>",
+  merkleRoot: signedRoot.root_hash,
+})
+```
+
+The certificate check also covers the verdict derivation journal when the certificate carries that proof. Each check is reported under `result.checks`, and a check that did not run is `null`.
 
 ## Render card lines (opt in)
 

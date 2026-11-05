@@ -1,6 +1,6 @@
 {
   "name": "@mnemom/verify",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "description": "Offline verifier for Mnemom signed records and AIP integrity certificates: Ed25519 signatures, digest chains, and Merkle proofs.",
   "type": "module",
   "main": "./dist/index.cjs",
