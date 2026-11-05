@@ -14,6 +14,7 @@
  * five fields.
  */
 
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -102,6 +103,62 @@ describe("AAP-TransparencyRoot/v1", () => {
     const signed = await signStatement({ ...rootBody(), typ: "AAP-Transparencyroot/v1" });
     expect((await verifyStatement(signed, jwks)).reasons).toEqual([REASONS.unknown_typ]);
     expect((await verifyStatement(signed, jwks, { expectedTyp: ROOT })).reasons).toEqual([REASONS.unknown_typ]);
+  });
+});
+
+// A root signed by mnemom-api itself, not by this suite. The cases above build the root
+// and its commitment here, so a drift between this package and the publisher would move
+// both sides together. This fixture is the output of mnemom-api
+// src/transparency/root_publisher.ts `publishSignedRoot` at SOURCE.commit (its own
+// canonicalJson and WebCrypto Ed25519), run with the test key in helpers/sign.ts, a cached
+// tree of size 1337 and a fixed clock. Ed25519 is deterministic, so a rerun is byte for
+// byte the same. aip CI cannot read mnemom-api (private), so the copy is pinned by source
+// commit and sha256, as golden-renderings.test.ts does; a hand edit fails the first test.
+// When root_publisher.ts changes the signed shape, regenerate the root there and bring it
+// back here with a new pin in the same PR.
+const API_ROOT_SOURCE = {
+  repo: "mnemom/mnemom-api",
+  commit: "0b06f5bae65d7317bd99ee9456c86fcfd691a613",
+  path: "src/transparency/root_publisher.ts",
+  sha256: "68592d83ea558000769403fac5357b30d69b9e0ede853fefc1706fe4eec8f6da",
+} as const;
+
+describe("AAP-TransparencyRoot/v1 signed by mnemom-api root_publisher.ts", () => {
+  const raw = readFileSync(resolve(here, "fixtures/record/api-transparency-root.json"));
+  const apiRoot = JSON.parse(raw.toString("utf8")) as Record<string, unknown>;
+
+  it("fixture is the pinned output of root_publisher.ts", () => {
+    expect(createHash("sha256").update(raw).digest("hex")).toBe(API_ROOT_SOURCE.sha256);
+    expect(Object.keys(apiRoot)).toEqual(["typ", "tree_size", "root_hash", "published_at", "signing_key_id", "signature"]);
+  });
+
+  it("this package rebuilds the exact bytes the publisher signed", () => {
+    expect(statementCommitment(apiRoot)).toBe(
+      '{"published_at":"2026-11-04T12:00:00.000Z",' +
+        '"root_hash":"50f6e8195e4b8d6c953dcef21d85e2f341cd792bf603bdaa6c577d6661038df4",' +
+        '"signing_key_id":"aap-test-record-2026-10","tree_size":1337,"typ":"AAP-TransparencyRoot/v1"}',
+    );
+  });
+
+  it("verifies under expectedTyp and its digest, bare and inside a bundle", async () => {
+    const digest = statementDigest(apiRoot);
+    expect(await verifyStatement(apiRoot, jwks, { expectedTyp: ROOT, expectedDigest: digest })).toEqual({
+      valid: true,
+      typ: ROOT,
+      digest,
+      signing_key_id: TEST_KID,
+      reasons: [],
+      flags: [],
+    });
+    expect((await verify({ typ: "AAP-RecordBundle/v1", statements: [apiRoot] }, jwks)).reasons).toEqual([]);
+  });
+
+  it("an edited field of the publisher's root reads signature_invalid", async () => {
+    for (const edit of [{ tree_size: 1338 }, { root_hash: "e".repeat(64) }, { published_at: "2026-11-04T12:00:00.001Z" }]) {
+      expect((await verifyStatement({ ...apiRoot, ...edit }, jwks, { expectedTyp: ROOT })).reasons).toEqual([
+        REASONS.signature_invalid,
+      ]);
+    }
   });
 });
 
