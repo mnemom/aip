@@ -48,8 +48,11 @@ on:
   workflow_dispatch:
     inputs:
       issue_number:
-        description: "Issue number to run on"
-        required: true
+        # Optional only for the served path (vars.ADW_SERVED_MODE == 'on'): dispatch's
+        # wake-up (mnemom-api W4.12) sends no inputs, and the claim names the issue.
+        # Everywhere else an empty issue_number fails the job in "Resolve context".
+        description: "Issue number to run on (optional only when vars.ADW_SERVED_MODE is on)"
+        required: false
       adw_id:
         description: "Existing ADW id (optional, to resume)"
         required: false
@@ -593,7 +596,7 @@ jobs:
       - name: Mint GitHub App token
         id: app
         if: vars.ADW_APP_ID != ''
-        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           client-id: ${{ vars.ADW_APP_ID }}
           private-key: ${{ secrets.ADW_APP_PRIVATE_KEY }}
@@ -722,6 +725,17 @@ jobs:
       # not accessible by integration"); the worker now aborts-to-human on a failed
       # critical-gate publish, and this scope is the root-cause fix so the post succeeds.
       statuses: write
+      # id-token: write — the served claim's GitHub OIDC exchange (mnemom-api
+      # /v1/executor/oidc/exchange, Doors W-L14). The claim step is the only intended
+      # consumer, and the API mints an executor key only for a workflow_dispatch on the
+      # default branch of an enrolled repo. The JOB, not the step, is the security boundary
+      # today: GitHub cannot scope this permission to one step, and the worker step's unset of
+      # ACTIONS_ID_TOKEN_REQUEST_URL/_TOKEN only stops child processes inheriting them
+      # (/proc/<pid>/environ still holds both), so the worker's agent could mint its own
+      # executor key. The served-claim state file (0600, RUNNER_TEMP) adds no exposure beyond
+      # that. Containment: mnemom/mnemom-test#1331 (Worker step can mint executor keys, OIDC
+      # containment) and #1330 (one live lease per OIDC executor).
+      id-token: write
     concurrency:
       # ONE group per issue across EVERY trigger type — a check_suite resume
       # (issue number recovered by the gate from the branch token) can never run
@@ -737,7 +751,10 @@ jobs:
       # the two number spaces overlap but the `pr-` segment keeps them disjoint. Every
       # other trigger keeps the per-issue group `adw-zte-<issue>`. cancel-in-progress stays
       # false on both (a kill mid-merge is dangerous; MNE-444).
-      group: adw-zte-${{ needs.gate.outputs.pr_number != '' && format('pr-{0}', needs.gate.outputs.pr_number) || (needs.gate.outputs.resume_issue || github.event.issue.number || github.event.inputs.issue_number || github.event.client_payload.issue_number) }}
+      # A served run dispatched with no issue (the claim names it) takes its own group
+      # `adw-zte-run-<run id>`: sharing one empty-issue group would let GitHub supersede
+      # queued wake-ups. Two served runs can never work one issue: the lease is exclusive.
+      group: adw-zte-${{ needs.gate.outputs.pr_number != '' && format('pr-{0}', needs.gate.outputs.pr_number) || (needs.gate.outputs.resume_issue || github.event.issue.number || github.event.inputs.issue_number || github.event.client_payload.issue_number || format('run-{0}', github.run_id)) }}
       cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -757,7 +774,7 @@ jobs:
       # ID as the JWT `iss`, so this variable's value stays valid under the new key.
       - name: Mint GitHub App token
         id: app
-        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
           client-id: ${{ vars.ADW_APP_ID }}
           private-key: ${{ secrets.ADW_APP_PRIVATE_KEY }}
@@ -778,7 +795,7 @@ jobs:
           fetch-depth: 0
           token: ${{ steps.app.outputs.token }}
 
-      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           # Cache uv's wheel/source store across runs: the worker install below
           # re-resolves mnemom-adw@main every run (correct — it must track main),
@@ -795,14 +812,83 @@ jobs:
           git config user.email "wintermute-eng-fleet[bot]@users.noreply.github.com"
 
       - name: Install the mnemom-adw worker (+ Agent SDK)
-        # The worker library lives at packages/adw-worker in the mnemom-adw monorepo (the repo
-        # is a uv workspace; its root is not an installable package). Install from that
-        # subdirectory, falling back to the repo root for the brief transition window before
-        # the monorepo split landed (the fallback is a no-op once main carries the new layout).
+        # PINNED (Doors W-L14, W4.5: zero git installs of the worker). When the repo sets
+        # vars.ADW_WORKER_RELEASE (a tag `adw-worker-<12 hex>` published by mnemom-adw's
+        # adw-worker-release.yml) and vars.ADW_WORKER_MANIFEST_SHA256 (that release's
+        # manifest.json sha256, the ONE pinned value), the worker installs from that release:
+        # the manifest must match the pin, the wheel and requirements.txt must match the
+        # manifest, dependencies install --require-hashes, the wheel --no-deps, all before
+        # anything runs. This mirrors packages/adw-worker/scripts/install-pinned-worker.sh.
+        # Setting only one of the two fails the job (never a silent fall back).
+        #
+        # Neither set: the legacy path, the worker installed from mnemom-adw main over git
+        # (repo root fallback for the pre-monorepo layout). It goes away once every fleet repo
+        # pins a release.
+        env:
+          ADW_WORKER_RELEASE: ${{ vars.ADW_WORKER_RELEASE }}
+          ADW_WORKER_MANIFEST_SHA256: ${{ vars.ADW_WORKER_MANIFEST_SHA256 }}
+          ADW_WORKER_REPO: ${{ github.repository_owner }}/mnemom-adw
+          GH_TOKEN: ${{ steps.app.outputs.token }}
         run: |
-          BASE="git+https://x-access-token:${{ steps.app.outputs.token }}@github.com/${{ github.repository_owner }}/mnemom-adw.git@main"
-          uv tool install --python 3.12 "mnemom-adw[sdk] @ ${BASE}#subdirectory=packages/adw-worker" \
-            || uv tool install --python 3.12 "mnemom-adw[sdk] @ ${BASE}"
+          if [ -n "$ADW_WORKER_RELEASE" ] || [ -n "$ADW_WORKER_MANIFEST_SHA256" ]; then
+            fail() { echo "::error::pinned worker: $*"; exit 1; }
+            [[ "$ADW_WORKER_RELEASE" =~ ^adw-worker-[0-9a-f]{12}$ ]] \
+              || fail "vars.ADW_WORKER_RELEASE must be adw-worker-<12 hex> (both pin vars are required)"
+            [[ "$ADW_WORKER_MANIFEST_SHA256" =~ ^[0-9a-f]{64}$ ]] \
+              || fail "vars.ADW_WORKER_MANIFEST_SHA256 must be 64 lowercase hex (both pin vars are required)"
+            DIR="$RUNNER_TEMP/adw-worker-release"
+            VENV="$RUNNER_TEMP/adw-worker-venv"
+            gh release download "$ADW_WORKER_RELEASE" -R "$ADW_WORKER_REPO" -D "$DIR" \
+              -p manifest.json -p requirements.txt -p 'mnemom_adw-*.whl' \
+              || fail "could not download release $ADW_WORKER_RELEASE"
+            sha() { sha256sum "$1" | cut -d' ' -f1; }
+            [ "$(sha "$DIR/manifest.json")" = "$ADW_WORKER_MANIFEST_SHA256" ] \
+              || fail "manifest.json does not match the pinned sha256"
+            read -r WHEEL WHEEL_SHA REQS REQS_SHA < <(python3 - "$DIR/manifest.json" <<'PY'
+          import json, re, sys
+          m = json.load(open(sys.argv[1]))
+          assert m.get("schema") == "mnemom-adw-pinned/v1", "unknown manifest schema"
+          name_re = re.compile(r"^[A-Za-z0-9_.+-]+$")
+          for k in ("wheel", "requirements"):
+              assert isinstance(m.get(k), str) and name_re.match(m[k]) and "/" not in m[k], f"bad {k}"
+          for k in ("wheel_sha256", "requirements_sha256"):
+              assert isinstance(m.get(k), str) and re.fullmatch(r"[0-9a-f]{64}", m[k]), f"bad {k}"
+          print(m["wheel"], m["wheel_sha256"], m["requirements"], m["requirements_sha256"])
+          PY
+            ) || fail "manifest.json is malformed"
+            [ -f "$DIR/$WHEEL" ] && [ "$(sha "$DIR/$WHEEL")" = "$WHEEL_SHA" ] \
+              || fail "wheel does not match the manifest"
+            [ -f "$DIR/$REQS" ] && [ "$(sha "$DIR/$REQS")" = "$REQS_SHA" ] \
+              || fail "requirements do not match the manifest"
+            uv venv -q --no-config --python 3.12 "$VENV"
+            VIRTUAL_ENV="$VENV" uv pip install -q --no-config --require-hashes -r "$DIR/$REQS"
+            VIRTUAL_ENV="$VENV" uv pip install -q --no-config --no-deps "$DIR/$WHEEL"
+            echo "$VENV/bin" >> "$GITHUB_PATH"
+            echo "pinned worker: $ADW_WORKER_RELEASE (manifest $ADW_WORKER_MANIFEST_SHA256)"
+          else
+            BASE="git+https://x-access-token:${{ steps.app.outputs.token }}@github.com/${{ github.repository_owner }}/mnemom-adw.git@main"
+            uv tool install --python 3.12 "mnemom-adw[sdk] @ ${BASE}#subdirectory=packages/adw-worker" \
+              || uv tool install --python 3.12 "mnemom-adw[sdk] @ ${BASE}"
+          fi
+
+      # Served path (Doors W4.6, dark until a repo sets vars.ADW_SERVED_MODE to "on"): a
+      # workflow_dispatch claims a ready session from mnemom-api before anything else runs.
+      # `mnemom-adw served-claim` exchanges this job's OIDC token for an executor key,
+      # claims one session, and stages the signed prompt bundle, its JWKS and the expected
+      # binding as files (ADW_SERVED_BUNDLE*, via $GITHUB_ENV) that the worker verifies and
+      # then reads as its only prompt source. The claim names the issue (its seal's
+      # source_ref, ruling Q50 -> A): the dispatch's own issue_number is only a preference
+      # hint, never trusted. It exits 0 with no issue_number output when nothing is ready or
+      # the session is another repo's (that lease is released), so the job then does nothing.
+      # Any refusal exits 1: the job fails red with no comment, because no issue was claimed.
+      - name: Claim a served session
+        id: claim
+        if: vars.ADW_SERVED_MODE == 'on' && github.event_name == 'workflow_dispatch'
+        env:
+          MNEMOM_API_URL: ${{ vars.MNEMOM_API_URL }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          ADW_TRIGGER_ISSUE: ${{ github.event.inputs.issue_number }}
+        run: mnemom-adw served-claim
 
       - name: Resolve context
         id: ctx
@@ -836,7 +922,33 @@ jobs:
           # Label-derived modes (issues / issue_comment carry the issue's labels).
           HAS_SHIP_LABEL: ${{ contains(github.event.issue.labels.*.name, 'adw:ship') }}
           HAS_SYNC_LABEL: ${{ contains(github.event.issue.labels.*.name, 'adw:sync') || contains(github.event.issue.labels.*.name, 'adw:rebase') }}
+          SERVED_CLAIM_RAN: ${{ steps.claim.outcome == 'success' }}
+          CLAIMED_ISSUE: ${{ steps.claim.outputs.issue_number }}
         run: |
+          # A served run works the claimed issue, fresh, and nothing else. No claimed issue
+          # (nothing ready, or another repo's session) means served_idle: every later step skips.
+          if [ "$SERVED_CLAIM_RAN" = "true" ]; then
+            idle=false
+            [ -n "$CLAIMED_ISSUE" ] || idle=true
+            {
+              echo "served_idle=$idle"
+              echo "issue=$CLAIMED_ISSUE"
+              echo "adw_id="
+              echo "ship_pr="
+              echo "sync_pr="
+              echo "ship_only=false"
+              echo "sync_only=false"
+              echo "force_fresh=true"
+              echo "resume_design_gate=false"
+            } >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # issue_number became optional for the served path; every other run still needs one.
+          if [ -z "$ISSUE_NUMBER$RESUME_ISSUE$PR_NUMBER_CTX" ]; then
+            echo "::error title=ADW: no issue::issue_number is required unless vars.ADW_SERVED_MODE is on."
+            exit 1
+          fi
+
           # PR-rooted (MNE-915 / MNE-1619): the gate resolved a PR number (an `adw:ship`
           # PR label, or an `adw ship` / `adw sync` / `adw rebase` PR comment). Route to
           # `mnemom-adw --ship-pr <n>` or `--sync-pr <n>` — no issue positional, no other
@@ -968,6 +1080,9 @@ jobs:
       # script straight out of this file and execute it against fixture directories.
       - name: Detect the target repo's Node toolchain
         id: node
+        # An idle served run (nothing claimed) skips the detector, so `manager` is empty and
+        # every Node step below, all gated on it, skips too.
+        if: steps.ctx.outputs.served_idle != 'true'
         run: |
           MANAGER=none
           REASON="no root package.json"
@@ -1035,7 +1150,7 @@ jobs:
 
       - name: Set up Node
         if: steps.node.outputs.manager == 'pnpm' || steps.node.outputs.manager == 'npm'
-        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ steps.node.outputs.node-version }}
 
@@ -1110,6 +1225,7 @@ jobs:
 
       - name: Run the worker
         id: worker
+        if: steps.ctx.outputs.served_idle != 'true'
         # Per-phase/whole-worker timeout BUDGET (MNE-338): the step's own cap is set
         # BELOW the job's timeout-minutes (90) so a hung/over-budget worker is killed
         # at the STEP boundary — leaving the always() finalizer step below enough of
@@ -1213,6 +1329,24 @@ jobs:
           # it up. See src/mnemom_adw/event_stream.py.
           ADW_EVENT_INGEST_URL: ${{ vars.ADW_EVENT_INGEST_URL }}
           ADW_EVENT_INGEST_TOKEN: ${{ secrets.ADW_EVENT_INGEST_TOKEN }}
+          # Record source (Keith: Record, K1.11 / T5) — OFF unless the repo variable
+          # MNEMOM_RECORD_WORKER reads exactly `on`. Unset, empty or any other value
+          # reads off, and an off run is byte-identical to today: no gateway routing,
+          # no conversation header, no commit trailer, no commit report. With it on,
+          # each phase's SDK traffic routes through the Mnemom gateway at
+          # MNEMOM_RECORD_GATEWAY_URL with `x-mnemom-conversation-id: adw-<adw_id>`
+          # (never `x-mnemom-contract`), commits carry a `Mnemom-Conversation` trailer
+          # and are reported best-effort to the record commit index at
+          # MNEMOM_RECORD_INDEX_URL with the MNEMOM_RECORD_API_KEY secret. A gateway
+          # 5xx, timeout or no connection falls back to api.anthropic.com for that
+          # phase (commits unbound) so phase result and exit code match an unrouted
+          # run; a failed report never fails a phase. Rolled out one internal-cohort
+          # repo at a time by setting the variable, never by editing this file.
+          # See src/mnemom_adw/record_worker.py.
+          MNEMOM_RECORD_WORKER: ${{ vars.MNEMOM_RECORD_WORKER }}
+          MNEMOM_RECORD_GATEWAY_URL: ${{ vars.MNEMOM_RECORD_GATEWAY_URL }}
+          MNEMOM_RECORD_INDEX_URL: ${{ vars.MNEMOM_RECORD_INDEX_URL }}
+          MNEMOM_RECORD_API_KEY: ${{ secrets.MNEMOM_RECORD_API_KEY }}
           # The issue number, adw id, and repo slug reach the worker only as quoted
           # shell vars — never interpolated into the command body (they can carry
           # attacker-controlled input on workflow_dispatch / repository_dispatch).
@@ -1253,6 +1387,11 @@ jobs:
           # (no user data), so they stay as conditional flag-selection expressions;
           # --adw-id and --dry-run are gated on the boolean env vars above and pass the
           # adw-id VALUE only as a quoted shell var.
+          # The job holds `id-token: write` for the served claim. GitHub cannot scope a
+          # permission to one step, so drop the token-request pair here. This only stops child
+          # processes inheriting it: /proc/<pid>/environ still holds both values, so the job,
+          # not this step, is the boundary today (mnemom/mnemom-test#1331, OIDC containment).
+          unset ACTIONS_ID_TOKEN_REQUEST_URL ACTIONS_ID_TOKEN_REQUEST_TOKEN
           adw_id_flag=""
           [ "$WANT_ADW_ID" = "true" ] && adw_id_flag="--adw-id"
           dry_run_flag=""
@@ -1261,6 +1400,14 @@ jobs:
           [ "$WANT_FORCE_FRESH" = "true" ] && force_fresh_flag="--force-fresh"
           resume_design_gate_flag=""
           [ "$WANT_RESUME_DESIGN_GATE" = "true" ] && resume_design_gate_flag="--resume-design-gate"
+          # Served path (Doors W-L14): served-claim exported ADW_SERVED_STATE, so the worker runs
+          # under served-heartbeat, which says hello and renews the lease every third of its
+          # length. A refused renewal stops the worker before it pushes (exit 3). Unset: no wrap.
+          # Exit 3 makes the finalizer below post its abort-to-human ON PURPOSE: a lost lease means
+          # the server fenced this executor (or was unreachable for two thirds of the lease) and the
+          # worker was cut off mid-job, possibly with a pushed branch or open PR. Not routine.
+          served=()
+          [ -n "${ADW_SERVED_STATE:-}" ] && served=(mnemom-adw served-heartbeat --)
           # PR-rooted ship (MNE-915): shepherd the PR directly — no issue positional, no
           # other mode flag, always LIVE. SHIP_PR is non-empty ONLY for an `adw:ship` PR
           # label / `adw ship` PR comment (the ctx step gates every other path off it).
@@ -1269,11 +1416,11 @@ jobs:
           # this same resync-only companion) — checked first since SHIP_PR and SYNC_PR
           # are mutually exclusive by construction.
           if [ -n "$SHIP_PR" ]; then
-            mnemom-adw --ship-pr "$SHIP_PR" --repo "$GITHUB_REPOSITORY"
+            "${served[@]}" mnemom-adw --ship-pr "$SHIP_PR" --repo "$GITHUB_REPOSITORY"
           elif [ -n "$SYNC_PR" ]; then
-            mnemom-adw --sync-pr "$SYNC_PR" --repo "$GITHUB_REPOSITORY"
+            "${served[@]}" mnemom-adw --sync-pr "$SYNC_PR" --repo "$GITHUB_REPOSITORY"
           else
-            mnemom-adw "$ISSUE" --repo "$GITHUB_REPOSITORY" \
+            "${served[@]}" mnemom-adw "$ISSUE" --repo "$GITHUB_REPOSITORY" \
               ${adw_id_flag:+"$adw_id_flag" "$ADW_ID"} \
               ${{ steps.ctx.outputs.ship_only == 'true' && '--ship-only' || '' }} \
               ${{ steps.ctx.outputs.sync_only == 'true' && '--sync-only' || '' }} \
@@ -1305,7 +1452,9 @@ jobs:
       # backstop), so it can never turn a green run red.
       - name: Finalize terminal status (silent-death guard)
         id: finalize
-        if: always() && steps.worker.outcome != 'success'
+        # Not for an idle served run (nothing claimed) or a failed claim (no claimed issue
+        # to comment on; the dispatch's issue_number is untrusted).
+        if: always() && steps.worker.outcome != 'success' && steps.ctx.outputs.served_idle != 'true' && steps.claim.outcome != 'failure'
         env:
           # Fallback credential ONLY (the App token may be dead after a runner kill) —
           # the same independent-lifetime token the worker's MNE-393 last-gasp uses.
@@ -1331,3 +1480,14 @@ jobs:
           mnemom-adw --finalize \
             --issue "$FINALIZE_ISSUE" \
             --job-status "$WORKER_OUTCOME"
+
+      # Served path (Doors W-L14, mnemom-test#1327): hand the lease back once the worker is done,
+      # on every exit path. Without it the session stays running until its lease lapses and any
+      # pool claim can take it and redo the job. Release parks the session, and a pool claim never
+      # takes a parked one. served-claim exported ADW_SERVED_STATE; with no claim (idle run) the
+      # verb finds no state file and exits 0. A failed release exits 1, turning the job red.
+      - name: Release the served lease
+        if: always() && steps.claim.outcome == 'success'
+        env:
+          ADW_SERVED_RESULT: ${{ steps.worker.outcome }}
+        run: mnemom-adw served-finish
