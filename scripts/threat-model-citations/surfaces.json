@@ -1,0 +1,16 @@
+{
+  "repo": "mnemom/aip",
+  "surfaces": [
+    {
+      "id": "verifier",
+      "doc": "packages/verify-page/THREAT-MODEL.md",
+      "former_docs": ["packages/verifier-page/THREAT-MODEL.md"],
+      "paths": [
+        "packages/verifier/",
+        "packages/verifier-page/",
+        "packages/verify/",
+        "packages/verify-page/"
+      ]
+    }
+  ]
+}

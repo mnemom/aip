@@ -1,0 +1,62 @@
+# threat-model-citations: fail a PR that changes a threat-model surface without citing its doc.
+#
+# The surfaces (scripts/threat-model-citations/surfaces.json) and the rules
+# (citation.js, pr-check.js) are vendored byte for byte from mnemom/deploy
+# gates/threat-model-links/, the K-L07 gate (K5.8) that grades merged PRs the same way. The gate
+# counts PRs merged at or after this check merged (enforced_since in mnemom/deploy
+# registry/threshold-registry.json) and fails a surface whose vendored copy differs. Edit the
+# files there first, then copy them here.
+#
+# Plain pull_request trigger: read-only GITHUB_TOKEN, no secrets. The check reads the PR body
+# and its changed files live, so `edited` re-runs it after a body edit. It runs the base
+# branch's copy of the check, so a PR cannot loosen the rule it is graded by. A PR on a base
+# with no copy yet (the PR that adds this workflow) runs its own copy.
+name: threat-model-citations
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: threat-model-citations-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions: {}
+
+jobs:
+  cite:
+    name: Threat model citations
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: base
+          persist-credentials: false
+          sparse-checkout: scripts/threat-model-citations
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 20
+      - name: Unit tests (scripts/threat-model-citations)
+        run: node --test scripts/threat-model-citations/__tests__/
+      - name: Check the PR body cites each threat model it touches
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          check=base/scripts/threat-model-citations/pr-check.js
+          if [ ! -f "$check" ]; then
+            echo "The base branch has no PR-time check yet: running this PR's copy."
+            check=scripts/threat-model-citations/pr-check.js
+          fi
+          node "$check" --repo "$REPO" --pr "$PR"
