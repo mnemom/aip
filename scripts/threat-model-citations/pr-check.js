@@ -181,10 +181,17 @@ function loadSurfaces(text, repo) {
   return j.surfaces;
 }
 
-/** Up to SHOWN file names, then how many more. */
+/**
+ * Text escaped the way the runner reads workflow command data (%, CR, LF). File names come from
+ * the PR author, and git allows a newline in one: unescaped, it could start a workflow command
+ * of its own (`::add-mask::`, `::stop-commands::`, ...) in the job log.
+ */
+const esc = (v) => String(v).replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
+
+/** Up to SHOWN file names, escaped, then how many more. */
 const SHOWN = 5;
 const named = (files) =>
-  files.slice(0, SHOWN).join(", ") +
+  files.slice(0, SHOWN).map(esc).join(", ") +
   (files.length > SHOWN ? ` and ${files.length - SHOWN} more` : "");
 
 /** The report lines for graded surfaces, and the exit code: 1 when one is not cited. */
@@ -225,7 +232,7 @@ async function main(argv, { env, fetchImpl, log, dir = __dirname }) {
     return code;
   } catch (e) {
     const why = String((e && e.message) || e).split("\n")[0];
-    log(`::error title=Threat model check could not run::${why}`);
+    log(`::error title=Threat model check could not run::${esc(why)}`);
     return 2;
   }
 }
