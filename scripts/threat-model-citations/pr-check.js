@@ -128,7 +128,14 @@ async function readTemplates(get, repo) {
   return out;
 }
 
-/** The PR's body as it is now and its changed files. */
+/** The paths one entry of a PR's files list touches: its name, and the name it had before when
+ * it was renamed, so a file moved off a surface still touches that surface. */
+const touchedPaths = (f) =>
+  f && typeof f.previous_filename === "string" && f.previous_filename !== f.filename
+    ? [f.filename, f.previous_filename]
+    : [f && f.filename];
+
+/** The PR's body as it is now and its changed files, a renamed file under both names. */
 async function readPr(get, repo, number) {
   const { json } = await get(`${API}/repos/${repo}/pulls/${number}`);
   if (!json || json.number !== number) throw new Error(`${repo}#${number}: not a pull request`);
@@ -141,7 +148,7 @@ async function readPr(get, repo, number) {
     throw new Error(`${repo}#${number} files: a file without filename`);
   return {
     body: typeof json.body === "string" ? json.body : "",
-    files: files.map((f) => f.filename),
+    files: files.flatMap(touchedPaths),
   };
 }
 
@@ -239,6 +246,7 @@ module.exports = {
   templateLocation,
   templatePaths,
   readTemplates,
+  touchedPaths,
   readPr,
   loadSurfaces,
   report,

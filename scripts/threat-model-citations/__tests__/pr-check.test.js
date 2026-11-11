@@ -237,6 +237,23 @@ test("readPr reads the live body and every changed file; a null body reads as em
   await assert.rejects(pc.readPr(get(nul), REPO, 7), /a file without filename/);
 });
 
+test("readPr counts a renamed file under its old name too, so a move off a surface touches it", async () => {
+  const moved = [
+    {
+      filename: "lib/index.ts",
+      previous_filename: "packages/verify/src/index.ts",
+      status: "renamed",
+    },
+    { filename: "README.md" },
+  ];
+  const r = { ...routes(), [files(7)]: () => res(200, moved) };
+  assert.deepEqual((await pc.readPr(pc.githubGet(fake(r).fetchImpl, "t"), REPO, 7)).files, [
+    "lib/index.ts",
+    "packages/verify/src/index.ts",
+    "README.md",
+  ]);
+});
+
 test("loadSurfaces keeps a well-formed file for the repo, and refuses anything else", () => {
   assert.deepEqual(pc.loadSurfaces(SURFACES, REPO), [SURFACE, OTHER]);
   const bad = (surfaces) => JSON.stringify({ repo: REPO, surfaces });
@@ -315,6 +332,14 @@ test("main fails a PR that leaves the template line as it came, and passes it on
   assert.match(kept.logs[0], /surface verifier\) and its body does not cite/);
   const edited = `${TEMPLATE.slice(0, TEMPLATE.lastIndexOf("Threat model:"))}Threat model: ${DOC} (row 6)\n`;
   assert.equal((await runMain(t, ARGV, { r: routes({ body: edited }) })).code, 0);
+});
+
+test("main fails a PR that moves a surface file off the surface without a citation", async (t) => {
+  const moved = [{ filename: "lib/index.ts", previous_filename: "packages/verify/src/index.ts" }];
+  const r = { ...routes({ body: "" }), [files(7)]: () => res(200, moved) };
+  const { code, logs } = await runMain(t, ARGV, { r });
+  assert.equal(code, 1);
+  assert.match(logs[0], /changes packages\/verify\/src\/index\.ts \(surface verifier\)/);
 });
 
 test("main passes a PR off every surface without a citation", async (t) => {
