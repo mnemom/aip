@@ -284,6 +284,16 @@ test("report names up to five changed files, then how many more", () => {
   assert.doesNotMatch(line(7), /f5/);
 });
 
+test("report escapes changed file names, so a newline in one cannot start a workflow command", () => {
+  const files = ["packages/verify/a\n::add-mask::x", "packages/verify/b\r\n::error::100% bad"];
+  const [line] = pc.report([{ surface: SURFACE, files, cited: false }]).lines;
+  assert.doesNotMatch(line, /[\r\n]/);
+  assert.match(
+    line,
+    /changes packages\/verify\/a%0A::add-mask::x, packages\/verify\/b%0D%0A::error::100%25 bad \(surface verifier\)/,
+  );
+});
+
 test("parseArgv needs --repo owner/name and a positive --pr, and nothing else", () => {
   assert.deepEqual(pc.parseArgv(ARGV), { repo: REPO, pr: 7 });
   assert.throws(() => pc.parseArgv([...ARGV, "--x"]), /unknown argument --x/);
@@ -333,6 +343,19 @@ test("main exits 2, never 0, when it cannot check", async (t) => {
     dir: dirWith(t),
   });
   assert.equal(thrown, 2);
+  const logs = [];
+  const escaped = await pc.main(ARGV, {
+    env: { GH_TOKEN: "t" },
+    fetchImpl: async () => {
+      throw new Error("50% offline\r::add-mask::x\nsecond line");
+    },
+    log: (m) => logs.push(m),
+    dir: dirWith(t),
+  });
+  assert.equal(escaped, 2);
+  assert.deepEqual(logs, [
+    "::error title=Threat model check could not run::50%25 offline%0D::add-mask::x",
+  ]);
 });
 
 test("the CLI sets exit code 2 on a bad argument, before any read", () => {
