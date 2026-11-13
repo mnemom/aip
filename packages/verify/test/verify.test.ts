@@ -191,3 +191,27 @@ describe("verifyCertificate", () => {
     expect(result.checks.signature.valid).toBe(false);
   });
 });
+
+describe("verifyCertificate: strict Ed25519 (follow-up to mnemom-website#3269)", () => {
+  // Small-order forgery: all-zero public key (a point of order 4), R = identity
+  // (0x01 then zeros), S = 0. Under ZIP-215 it verifies for any message.
+  const smallOrderKeyHex = "00".repeat(32);
+  const forgedSig = (() => {
+    const s = new Uint8Array(64);
+    s[0] = 1;
+    return s;
+  })();
+
+  it("the library default accepts the forgery (the weakness this guards)", async () => {
+    const { verifyAsync } = await import("@noble/ed25519");
+    expect(await verifyAsync(forgedSig, utf8ToBytes("any message"), new Uint8Array(32))).toBe(true);
+  });
+
+  it("rejects a certificate signed by the small-order forgery", async () => {
+    const { cert } = await buildCertificate();
+    cert.proofs.signature.value = toBase64(forgedSig);
+    const result = await verifyCertificate(cert, { publicKey: smallOrderKeyHex });
+    expect(result.checks.signature.valid).toBe(false);
+    expect(result.valid).toBe(false);
+  });
+});

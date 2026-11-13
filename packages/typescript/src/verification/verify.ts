@@ -113,7 +113,9 @@ async function verifySignature(
     }
     const signatureBytes = base64ToUint8(certificate.proofs.signature.value);
     const messageBytes = encoder.encode(expected);
-    const valid = await ed.verifyAsync(signatureBytes, messageBytes, publicKey);
+    // Strict RFC 8032 rules: the library default (ZIP-215) accepts a small-order
+    // public key, for which a trivial signature verifies over any message.
+    const valid = await ed.verifyAsync(signatureBytes, messageBytes, publicKey, { zip215: false });
 
     return {
       valid,

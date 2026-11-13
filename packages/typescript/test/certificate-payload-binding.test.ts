@@ -141,3 +141,23 @@ describe("verifyCertificate payload binding (MNE-9159)", () => {
     expect(r.checks.signature.valid).toBe(false);
   });
 });
+
+describe("verifyCertificate: strict Ed25519 (follow-up to mnemom-website#3269)", () => {
+  // Small-order forgery: all-zero public key (a point of order 4), R = identity
+  // (0x01 then zeros), S = 0. Under ZIP-215 it verifies for any message.
+  const smallOrderKey = new Uint8Array(32);
+  const forgedSig = new Uint8Array(64);
+  forgedSig[0] = 1;
+
+  it("the library default accepts the forgery (the weakness this guards)", async () => {
+    expect(await ed.verifyAsync(forgedSig, enc.encode("any message"), smallOrderKey)).toBe(true);
+  });
+
+  it("rejects a certificate signed by the small-order forgery", async () => {
+    const { cert } = await build();
+    cert.proofs.signature.value = b64(forgedSig);
+    const r = await verifyCertificate(cert, smallOrderKey);
+    expect(r.checks.signature.valid).toBe(false);
+    expect(r.valid).toBe(false);
+  });
+});

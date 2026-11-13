@@ -232,7 +232,8 @@ export async function verifyStatement(
 
   let sigOk = false;
   try {
-    sigOk = await verifyAsync(sig, utf8ToBytes(statementCommitment(statement)), selected.key);
+    // Strict RFC 8032 rules, as in sharecard.ts: ZIP-215 accepts a small-order key.
+    sigOk = await verifyAsync(sig, utf8ToBytes(statementCommitment(statement)), selected.key, { zip215: false });
   } catch {
     sigOk = false;
   }
