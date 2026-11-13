@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { canonicalJson } from "../src/canonical.js";
 import { FLAGS, REASONS, type RecordJwks } from "../src/statements.js";
 import { statementDigest, verify, verifyStatement } from "../src/verify-record.js";
-import { RETIRED_KID, RETIRED_PRIVATE_KEY_HEX, TEST_KID, retiredJwk, signStatement, testJwk } from "./helpers/sign.js";
+import { RETIRED_KID, RETIRED_PRIVATE_KEY_HEX, TEST_KID, base64url, retiredJwk, signStatement, testJwk } from "./helpers/sign.js";
 import type { TamperedCase } from "./helpers/build-fixtures.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -430,5 +430,32 @@ describe("key rotation: statements signed by a retired key", () => {
     const res = await verifyStatement(await oldStatement(), { keys: [await testJwk()] });
     expect(res.valid).toBe(false);
     expect(res.reasons).toEqual([REASONS.key_not_found]);
+  });
+});
+
+describe("verifyStatement: strict Ed25519 (follow-up to mnemom-website#3269)", () => {
+  // Small-order forgery: all-zero public key (a point of order 4), R = identity
+  // (0x01 then zeros), S = 0. Under ZIP-215 it verifies for any message.
+  const forgedSig = new Uint8Array(64);
+  forgedSig[0] = 1;
+  const smallOrderJwks: RecordJwks = {
+    keys: [{ kty: "OKP", crv: "Ed25519", x: base64url(new Uint8Array(32)), kid: TEST_KID, alg: "EdDSA", use: "sig" }],
+  };
+
+  it("the library default accepts the forgery (the weakness this guards)", async () => {
+    const { verifyAsync } = await import("@noble/ed25519");
+    expect(await verifyAsync(forgedSig, new Uint8Array([1, 2, 3]), new Uint8Array(32))).toBe(true);
+  });
+
+  it("rejects a statement signed by the small-order forgery as signature_invalid", async () => {
+    const forged = { ...fixture<Record<string, unknown>>("golden-conduct"), signature: base64url(forgedSig) };
+    const res = await verifyStatement(forged, smallOrderJwks);
+    expect(res.valid).toBe(false);
+    expect(res.reasons).toEqual([REASONS.signature_invalid]);
+  });
+
+  it("still verifies the genuine golden statement", async () => {
+    const res = await verifyStatement(fixture("golden-conduct"), jwks);
+    expect(res.valid).toBe(true);
   });
 });

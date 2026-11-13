@@ -63,7 +63,9 @@ export async function verifySignature(
   try {
     const sigBytes = base64ToUint8(signature);
     const msgBytes = utf8ToBytes(payload);
-    return await verifyAsync(sigBytes, msgBytes, publicKey);
+    // Strict RFC 8032 rules: the library default (ZIP-215) accepts a small-order
+    // public key, for which a trivial signature verifies over any message.
+    return await verifyAsync(sigBytes, msgBytes, publicKey, { zip215: false });
   } catch {
     return false;
   }
