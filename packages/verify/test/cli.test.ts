@@ -11,6 +11,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
+import { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -19,6 +20,8 @@ import {
   EXIT_ERROR,
   EXIT_INVALID,
   EXIT_VALID,
+  FETCH_TIMEOUT_MS,
+  MAX_INPUT_BYTES,
   NO_STATEMENTS,
   commitsLine,
   parseCliArgs,
@@ -449,6 +452,141 @@ describe("mnemom-verify: usage and IO errors exit 2", () => {
       bundle: "-odd.json",
       jwks: "k.json",
       json: true,
+    });
+  });
+});
+
+describe("mnemom-verify: branches the main cases do not reach", () => {
+  const goldenJwks = () => fixtureText("jwks");
+
+  it("a JWKS fetch that never answers is aborted after FETCH_TIMEOUT_MS: `no answer within 15s`, exit 2", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      let fetchStarted!: () => void;
+      const started = new Promise<void>((r) => {
+        fetchStarted = r;
+      });
+      const hang = (_url: string, init?: { signal: AbortSignal }): Promise<FetchResponseLike> =>
+        new Promise((_resolve, reject) => {
+          fetchStarted();
+          init?.signal.addEventListener("abort", () => reject(new Error("This operation was aborted")));
+        });
+      let stderr = "";
+      const io: CliIo = {
+        ...processIo(),
+        stdout: () => {},
+        stderr: (t) => {
+          stderr += t;
+        },
+        readFile: async () => fixtureText("golden-bundle"),
+        fetch: (url, init) => hang(url, init),
+      };
+      const pending = runCli([BUNDLE_PATH], io);
+      await started; // the 15s timer is armed before fetch is called
+      await vi.advanceTimersByTimeAsync(FETCH_TIMEOUT_MS);
+      expect(await pending).toBe(EXIT_ERROR);
+      expect(stderr).toBe(`mnemom-verify: JWKS fetch from ${DEFAULT_JWKS_URL} failed: no answer within 15s\n`);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("a fetch that rejects with a non-Error value reports String(value), exit 2", async () => {
+    const r = await run([BUNDLE_PATH], {
+      fetch: async () => {
+        throw "plain string failure"; // eslint-disable-line @typescript-eslint/only-throw-error
+      },
+    });
+    expect(r.code).toBe(EXIT_ERROR);
+    expect(r.stderr).toBe(`mnemom-verify: JWKS fetch from ${DEFAULT_JWKS_URL} failed: plain string failure\n`);
+  });
+
+  it("plain-http --jwks-url is accepted for localhost, 127.0.0.1 and [::1]", async () => {
+    for (const url of [
+      "http://localhost:8787/v1/.well-known/jwks.json",
+      "http://127.0.0.1:8787/v1/.well-known/jwks.json",
+      "http://[::1]:8787/v1/.well-known/jwks.json",
+    ]) {
+      expect(parseCliArgs([BUNDLE_PATH, "--jwks-url", url])).toMatchObject({ jwksUrl: url });
+      const r = await run([BUNDLE_PATH, "--jwks-url", url], { fetch: serve(goldenJwks()) });
+      expect(r.code, r.stderr).toBe(EXIT_VALID);
+      expect(r.fetchCalls).toEqual([url]);
+      expect(r.stdout.split("\n")[0]).toBe(`JWKS: ${url} (fetched)`);
+    }
+  });
+
+  it("a bundle whose top-level JSON is a string, number, boolean or null is invalid (bundle_not_an_object), exit 1", async () => {
+    for (const text of ['"a string"', "42", "true", "false", "null"]) {
+      const r = await run([writeTmp("scalar.json", text), "--jwks", JWKS_PATH]);
+      expect(r.code, text).toBe(EXIT_INVALID);
+      expect(r.stdout.trim().split("\n").pop(), text).toBe("invalid: bundle_not_an_object");
+    }
+  });
+
+  it("a bundle or JWKS file over MAX_INPUT_BYTES exits 2 before parsing", async () => {
+    const big = "x".repeat(MAX_INPUT_BYTES + 1);
+    let stderr = "";
+    const io = (files: Record<string, string>): CliIo => ({
+      ...processIo(),
+      stdout: () => {},
+      stderr: (t) => {
+        stderr += t;
+      },
+      readFile: async (p) => files[p] ?? "",
+    });
+    expect(await runCli(["b.json", "--jwks", "j.json"], io({ "b.json": big, "j.json": goldenJwks() }))).toBe(EXIT_ERROR);
+    expect(stderr).toBe(`mnemom-verify: b.json is larger than ${MAX_INPUT_BYTES} bytes\n`);
+    stderr = "";
+    expect(await runCli(["b.json", "--jwks", "j.json"], io({ "b.json": fixtureText("golden-bundle"), "j.json": big }))).toBe(EXIT_ERROR);
+    expect(stderr).toBe(`mnemom-verify: j.json is larger than ${MAX_INPUT_BYTES} bytes\n`);
+    // A fetched JWKS body is checked the same way.
+    const r = await run([BUNDLE_PATH], { fetch: serve(big) });
+    expect(r.code).toBe(EXIT_ERROR);
+    expect(r.stderr).toBe(`mnemom-verify: ${DEFAULT_JWKS_URL} is larger than ${MAX_INPUT_BYTES} bytes\n`);
+  });
+
+  it("a statement with no typ renders `(no typ)` and no signing_key_id renders `(no signing_key_id)`", async () => {
+    const r = await run([writeTmp("no-typ-kid.json", {}), "--jwks", JWKS_PATH]);
+    expect(r.code).toBe(EXIT_INVALID);
+    const line = r.stdout.split("\n").find((l) => l.startsWith("[0] "));
+    expect(line).toBe("[0] (no typ)  (no signing_key_id)  unknown_typ");
+  });
+
+  describe("processIo().readStdin driven with a fake stdin", () => {
+    const original = Object.getOwnPropertyDescriptor(process, "stdin")!;
+    const withStdin = async <T>(stream: Readable, fn: () => Promise<T>): Promise<T> => {
+      Object.defineProperty(process, "stdin", { value: stream, configurable: true });
+      try {
+        return await fn();
+      } finally {
+        Object.defineProperty(process, "stdin", original);
+      }
+    };
+
+    it("joins string chunks (stream with an encoding set)", async () => {
+      const stream = Readable.from(["{\"a\":", "1}"], { objectMode: true });
+      expect(await withStdin(stream, () => processIo().readStdin())).toBe('{"a":1}');
+    });
+
+    it("joins Buffer chunks", async () => {
+      const stream = Readable.from([Buffer.from("héllo "), Buffer.from("wörld")], { objectMode: true });
+      expect(await withStdin(stream, () => processIo().readStdin())).toBe("héllo wörld");
+    });
+
+    it("rejects once stdin exceeds MAX_INPUT_BYTES, and runCli exits 2 with the message", async () => {
+      const half = Buffer.alloc(MAX_INPUT_BYTES / 2 + 1);
+      const stream = Readable.from([half, half], { objectMode: true });
+      let stderr = "";
+      const io: CliIo = {
+        ...processIo(),
+        stdout: () => {},
+        stderr: (t) => {
+          stderr += t;
+        },
+      };
+      const code = await withStdin(stream, () => runCli(["-", "--jwks", JWKS_PATH], io));
+      expect(code).toBe(EXIT_ERROR);
+      expect(stderr).toBe(`mnemom-verify: cannot read stdin: stdin is larger than ${MAX_INPUT_BYTES} bytes\n`);
     });
   });
 });
