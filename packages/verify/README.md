@@ -1,6 +1,6 @@
 # @mnemom/verify
 
-Offline verifier for Mnemom signed records and AIP integrity certificates. It checks Ed25519 signatures, digest chains and Merkle proofs against keys you supply. It makes no network calls.
+Offline verifier for Mnemom signed records and AIP integrity certificates. It checks Ed25519 signatures, digest chains and Merkle proofs against keys you supply. The library makes no network calls. The `mnemom-verify` command checks a record bundle from your terminal, with no code to write.
 
 ## Install
 
@@ -10,7 +10,86 @@ npm install @mnemom/verify
 
 The package ships ESM and CommonJS builds with TypeScript types. It needs Node.js 18 or later and also runs in browsers and Workers.
 
-## Verify a record
+## Verify a record bundle from the command line
+
+A pull request with a Mnemom record carries its signed bundle at `.mnemom/records/<pr>.json`. Check it with one command:
+
+```sh
+npx @mnemom/verify .mnemom/records/3238.json
+```
+
+```text
+JWKS: https://api.mnemom.ai/v1/.well-known/jwks.json (fetched)
+[0] AAP-ConductRecord/v1  aap-prod-2026-05-23  ok
+[1] AAP-PRRecord/v1  aap-prod-2026-05-23  ok  (2 of 2 commits from recorded sessions)
+note: this proves Mnemom signed these statements, unchanged, with their chain and links intact.
+      It does not prove the code is correct or that every commit came from a recorded session.
+valid, with flags: card hash not recorded (x27)
+```
+
+The first line names the key set the command used. Then there is one line per statement: its `typ`, its `signing_key_id`, and `ok` or the reasons it failed. A PR record line also shows how many of the pull request's commits came from recorded sessions. A valid result adds a two-line note on what the check does not prove. The verdict is always the last line, so `tail -1` reads it. It is one of:
+
+- `valid`: every statement and every bundle check holds.
+- `valid, with flags: <flags>`: valid, with notes that weaken a binding but never change the verdict. Every checkpoint in today's bundles carries `card hash not recorded`. See [Reason codes](#reason-codes) for the flags.
+- `invalid: <reasons>`: the reasons, as listed under [Reason codes](#reason-codes). The command adds one reason of its own, `no_statements`, for a bundle whose `statements` array is empty: nothing was checked, so it does not pass. The library `verify()` still returns `valid: true` for such a bundle.
+
+```text
+npx @mnemom/verify <bundle.json | -> [--jwks <file>] [--jwks-url <url>] [--expected-head-sha <sha>] [--json]
+```
+
+| Option | What it does |
+|---|---|
+| `<bundle.json>` or `-` | The bundle (or one signed statement) to check. `-` reads it from stdin. |
+| `--jwks <file>` | Verify against a JWKS saved on disk. The command makes no network call. |
+| `--jwks-url <url>` | Fetch the JWKS from this URL instead of the default. It must be `https` (plain `http` only to localhost). |
+| `--expected-head-sha <sha>` | Fail with `head_mismatch` or `head_unbound` unless the latest PR record names this head commit. |
+| `--json` | Print the result (`valid`, `reasons`, `flags`, `statements`, `verified_at`) as JSON on stdout. It is the library result, except that an empty bundle has `valid: false` and the reason `no_statements`. The JWKS line goes to stderr. |
+
+Exit codes: `0` valid (flags included), `1` invalid, `2` a usage error, a file that cannot be read or is not JSON, or a JWKS fetch that failed.
+
+Bundles can reach about 2 MB, since a long session carries many checkpoints. The command reads the whole file before it checks it.
+
+### Where the keys come from
+
+Mnemom publishes its signing keys as a JWKS at `GET /v1/.well-known/jwks.json` on the cell's API host. For the production cell that is:
+
+```text
+https://api.mnemom.ai/v1/.well-known/jwks.json
+```
+
+Without `--jwks`, the command fetches that URL, makes no other request and prints the URL it used. For a bundle from another cell, pass that cell's URL with `--jwks-url`.
+
+### Verify offline
+
+To check a bundle with no network at all, install the package and save the key set first, while you are online:
+
+```sh
+npm i @mnemom/verify
+curl -o jwks.json https://api.mnemom.ai/v1/.well-known/jwks.json
+```
+
+Then, offline:
+
+```sh
+npx @mnemom/verify .mnemom/records/3238.json --jwks jwks.json
+```
+
+With `--jwks` the command reads keys only from that file. `npx` runs the installed copy. Without the install, `npx` downloads the package from npm first.
+
+A key set you saved is only as good as the place you got it from. Fetch it over https from the cell's API host, and fetch it again after a key rotation: a statement signed by a key your file does not hold fails with `key_not_found`.
+
+## What this check does not prove
+
+A `valid` verdict proves that Mnemom signed these statements, that none of them changed after signing, and that the chain between the records and the links between the statements hold.
+
+It does not prove:
+
+- that the code is correct. The record says how the work was done, not whether the result is right.
+- that every commit came from a recorded session. Read the "N of M commits from recorded sessions" on the PR record line. A commit outside a recorded session has no conduct record behind it.
+- that protection caught everything. A protection verdict covers what the checks saw, nothing more.
+- that the goal was met beyond the judged turns. A goal verdict covers the turns that were judged, not the whole session.
+
+## Verify a record in code
 
 `verify(input, jwks, options?)` takes one signed statement or a record bundle, plus the published JWKS. It returns a result and never throws on bad input.
 
@@ -156,10 +235,11 @@ Every line comes from a statement that verified. Only measured, outcome and verd
 
 ## Guarantees
 
-- No network. The verifier makes no network calls. You supply the JWKS or public key.
+- No network in the library. `verify`, `verifyStatement` and `verifyCertificate` make no network calls. You supply the JWKS or public key.
+- One request from the command, at most. `mnemom-verify` makes one GET, for the JWKS, and none when you pass `--jwks`.
 - No child processes. Nothing is spawned.
 - No private keys. The package only verifies and holds no signing key.
-- No bin. The package installs no command.
+- One bin. The package installs one command, `mnemom-verify`.
 
 ## License
 

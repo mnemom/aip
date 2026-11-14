@@ -8,6 +8,11 @@ its customer-facing surface; K-L09 runs the pentest, criterion K5.8).
 - `packages/verify`: the `@mnemom/verify` library. It checks Ed25519
   signatures on record statements and bundles against a JWKS the caller
   passes in, and makes no network calls.
+- `packages/verify` bin, `mnemom-verify` (`npx @mnemom/verify <bundle>`,
+  `src/cli.ts`, `src/cli-run.ts`): a command that reads a bundle from a file
+  or stdin and calls the library. It makes one network call, a GET of the
+  JWKS from `https://api.mnemom.ai/v1/.well-known/jwks.json` (or
+  `--jwks-url`), and none with `--jwks <file>`.
 - `packages/verify-page` (paste mode): a static page. The user pastes a
   statement or bundle and a JWKS, and the page shows a verdict.
 - `packages/verify-page` (share mode, `VERIFIER_PAGE_MODE=true`): a static
@@ -29,6 +34,9 @@ Neither page has a server side. Both are served as static files.
 - URL fragment and pasted input: untrusted, attacker-controlled.
 - JWKS: trusted only as the key set built into the page (share mode), or as
   the visitor chooses to trust it (paste mode).
+- JWKS for the command: trusted as served over TLS by the cell's API host
+  (default URL or `--jwks-url`), or as the user chooses to trust a saved file
+  (`--jwks`).
 - The static host: trusted to serve the built files unmodified.
 
 ## Threats and controls
@@ -45,6 +53,8 @@ Neither page has a server side. Both are served as static files.
 | 8 | Repudiation: a claim of a class the card may not carry (a money estimate, a trust claim) | claim-lint refuses the line before rendering; `renderLines` draws only lint-clean lines | `claim-lint.test.ts`, `render-estimate.test.ts` (K4.3, K4.4) |
 | 9 | Supply chain: a malicious verifier build | Release tarball built in CI and attested with GitHub build provenance (`gh attestation verify`); npm publish via OIDC trusted publishing with provenance (A-K-009, A-K-012). The only non-OIDC version is the deprecated placeholder 0.6.2-bootstrap.0, published by hand to create the package. 0.6.2 and later publish only through `publish.yml` in the `production` environment, which needs a reviewer | Publish workflow; K5.4 gate |
 | 10 | Stale keys: the built-in key snapshot misses a rotated key | Snapshot dated in `src/keys.ts`; a card signed by an unknown `kid` fails closed, never "verified" | verifier tests |
+| 11 | Spoofing and information disclosure: the command's JWKS fetch. A network attacker serves their own key set so a forged bundle verifies, or learns that the user is verifying | One GET, of the JWKS only, never of the bundle: the default URL is `https://api.mnemom.ai/v1/.well-known/jwks.json`, a `--jwks-url` must be `https` (plain `http` only to localhost), and the command prints the URL it used. `--jwks <file>` makes no network call, for an air-gapped check against a key set saved beforehand. A fetch that fails, times out (15 s) or returns something other than a key set exits 2, never "valid" | `test/cli.test.ts`: `--jwks` with global `fetch` stubbed to throw, the default URL, `--jwks-url` scheme checks, fetch failures exit 2 |
+| 12 | Spoofing: a forged bundle redraws the command's report. `typ` and `signing_key_id` reach the report as the bundle gives them, even when the statement fails, so control characters there (ESC sequences, a newline, a C1 CSI, a bidi override) could print a fake `valid` line and conceal the real reason and verdict | Everything the command prints that it did not write itself goes through `terminalSafe` (`src/cli-run.ts`): C0 controls, DEL, C1 controls, U+2028/U+2029 and the bidi controls become visible `\uXXXX` text. That covers bundle fields, the bundle and JWKS paths, the JWKS URL, and IO and `JSON.parse` error text (which quotes bundle bytes). `--json` output also escapes the DEL, C1, separator and bidi characters `JSON.stringify` leaves raw. Each statement stays one line and the verdict line is the last line printed, after the statements and after the note a valid result adds, so `tail -1` reads it | `test/cli.test.ts` "bundle text cannot drive the terminal": a kid with ESC and `\n` still gives one line per statement ending in `invalid:`, in-process and through `dist/cli.js`; "mnemom-verify: valid bundles" checks the verdict comes after the note on a valid result |
 
 ## Out of scope here
 

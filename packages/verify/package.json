@@ -1,11 +1,14 @@
 {
   "name": "@mnemom/verify",
-  "version": "0.6.3",
+  "version": "0.7.0",
   "description": "Offline verifier for Mnemom signed records and AIP integrity certificates: Ed25519 signatures, digest chains, and Merkle proofs.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "mnemom-verify": "dist/cli.js"
+  },
   "exports": {
     ".": {
       "import": {
@@ -34,7 +37,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsup",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
     "test": "vitest run",
     "test:watch": "vitest",

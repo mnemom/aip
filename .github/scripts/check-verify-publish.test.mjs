@@ -32,6 +32,24 @@ test("entryPoints: main, types and every exports target", () => {
   assert.deepEqual(entryPoints(PKG), ["dist/index.cjs", "dist/index.d.ts", "dist/index.js"]);
 });
 
+test("entryPoints: the bin is an entry point, in its object and string forms", () => {
+  assert.deepEqual(entryPoints({ ...PKG, bin: { "mnemom-verify": "dist/cli.js" } }), [
+    "dist/cli.js",
+    "dist/index.cjs",
+    "dist/index.d.ts",
+    "dist/index.js",
+  ]);
+  assert.deepEqual(entryPoints({ main: "./dist/index.cjs", bin: "./dist/cli.js" }), ["dist/cli.js", "dist/index.cjs"]);
+});
+
+test("compare: a bin missing from the tarball fails", () => {
+  const pkg = { ...PKG, bin: { "mnemom-verify": "dist/cli.js" } };
+  assert.match(compare(good({ pkg })).join("\n"), /names dist\/cli\.js, which is not in the tarball/);
+  const files = [...FILES, "dist/cli.js"].sort();
+  const withBin = good({ pkg, dryRun: { files, shasum: "s1" }, packed: { files, shasum: "s1", filename: "mnemom-verify-1.2.3.tgz" } });
+  assert.deepEqual(compare(withBin), []);
+});
+
 test("entryOf: reads the package entry, refuses output without one", () => {
   const out = { "@mnemom/verify": { files: [{ path: "b" }, { path: "a" }], shasum: "x" } };
   assert.deepEqual(entryOf(out, PKG.name, "t").files, ["a", "b"]);
