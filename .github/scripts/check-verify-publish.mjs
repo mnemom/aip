@@ -13,8 +13,9 @@
 // It fails when the package is not named @mnemom/verify or the release tarball
 // is not mnemom-verify-<version>.tgz, when the two tarballs differ (files or shasum), when the tarball
 // holds a file outside package.json, LICENSE, README and dist/, when an entry
-// point named in package.json is missing from it, or when gitHead is not the
-// checked-out commit (`git rev-parse HEAD`) and, given --expect-sha, that sha.
+// point named in package.json (main, module, types, bin, exports) is missing
+// from it, or when gitHead is not the checked-out commit (`git rev-parse HEAD`)
+// and, given --expect-sha, that sha.
 //
 // Usage: node check-verify-publish.mjs --dir packages/verify [--expect-sha <sha>]
 // Run it after `npm ci && npm run build`. Exit 0 pass, 1 mismatch, 2 could not run.
@@ -32,14 +33,14 @@ export const PACKAGE_NAME = "@mnemom/verify";
 /** The release-asset file name npm pack gives that package at a version. */
 export const tarballName = (version) => `mnemom-verify-${version}.tgz`;
 
-/** Every file path package.json names as an entry point (main, module, types, exports). */
+/** Every file path package.json names as an entry point (main, module, types, bin, exports). */
 export function entryPoints(pkg) {
   const out = new Set();
   const walk = (v) => {
     if (typeof v === "string") out.add(v.replace(/^\.\//, ""));
     else if (v && typeof v === "object") Object.values(v).forEach(walk);
   };
-  for (const k of ["main", "module", "types"]) walk(pkg[k]);
+  for (const k of ["main", "module", "types", "bin"]) walk(pkg[k]);
   walk(pkg.exports);
   return [...out].sort();
 }
