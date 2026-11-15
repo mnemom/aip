@@ -1,0 +1,120 @@
+# Record K1.15 rules (a) and (b): the per-PR test-shape check.
+#
+# (a) A parser test per flag read, with an unknown value. (b) A fault test per Mnemom call
+# site. Rule (c), a direct test per added branch, is graded by record-branch-test in
+# mnemom-adw, not here. Only Record-lane PRs are graded (head `record/<lane>/<slug>` or the
+# `record-lane` label). Any other PR passes with `in_scope: false`.
+#
+# The checker is a byte-identical copy of mnemom/deploy gates/record-test-shape/check.js at
+# .github/record-test-shape/check.cjs, with flags.json made by its --emit-flags. Edit the
+# file in mnemom/deploy first, then copy it here. The deploy-side drift check compares the
+# copies.
+#
+# SECURITY: `pull_request`, a read-only token and no secrets. The checker and flags.json are
+# read from the BASE commit, so a PR cannot weaken the check that grades it. The PR is read
+# only as a diff. Its code is never checked out and never run. Bootstrap only: when the base
+# commit has no checker (the PR that adds it), the copy at the PR head is used.
+#
+# The job fails closed: exit 1 is a failed rule, exit 2 is "could not check", and a failed
+# API read or fetch stops the job. None of them reads green.
+name: record-test-shape
+
+on:
+  pull_request:
+    # labeled/unlabeled: `record-lane` changes the PR's scope and
+    # `record-test-shape-waive` changes the verdict.
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: record-test-shape-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  record-test-shape:
+    name: record-test-shape
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      HEAD_REF: ${{ github.event.pull_request.head.ref }}
+      PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+    steps:
+      - name: Checkout base (trusted)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Never the PR head: the checker that grades the PR comes from the base commit.
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+
+      - name: Build the PR diff
+        run: |
+          set -euo pipefail
+          merge_base="$(gh api "repos/${GH_REPO}/compare/${BASE_SHA}...${HEAD_SHA}" --jq .merge_base_commit.sha)"
+          case "$merge_base" in
+            ''|*[!0-9a-f]*) echo "no merge base for ${BASE_SHA}...${HEAD_SHA}" >&2; exit 2;;
+          esac
+          auth="$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 | tr -d '\n')"
+          echo "::add-mask::${auth}"
+          git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${auth}" \
+            fetch --no-tags --depth=1 origin "$merge_base" "$HEAD_SHA"
+          # Same content as `git diff --unified=0 <base>...<head>`: merge base against head.
+          git diff --unified=0 "$merge_base" "$HEAD_SHA" > "$RUNNER_TEMP/pr.diff"
+          echo "merge base ${merge_base}, head ${HEAD_SHA}, $(wc -c < "$RUNNER_TEMP/pr.diff") diff bytes"
+
+      - name: Read labels and the waiver
+        id: meta
+        run: |
+          set -euo pipefail
+          labels="$(gh api "repos/${GH_REPO}/issues/${PR_NUMBER}/labels" --paginate --jq '.[].name' | paste -sd, -)"
+          # Read from the API on every run: a later push is a `synchronize` event and does
+          # not name who applied the label.
+          waiver="$(gh api "repos/${GH_REPO}/issues/${PR_NUMBER}/events" --paginate \
+            --jq '.[] | select(.event == "labeled" and .label.name == "record-test-shape-waive") | [.actor.login, .actor.type] | @tsv' \
+            | tail -n 1)"
+          {
+            echo "labels=${labels}"
+            echo "waived_by=$(printf '%s' "$waiver" | cut -f1)"
+            echo "waived_by_type=$(printf '%s' "$waiver" | cut -s -f2)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Run the check
+        env:
+          LABELS: ${{ steps.meta.outputs.labels }}
+          WAIVED_BY: ${{ steps.meta.outputs.waived_by }}
+          WAIVED_BY_TYPE: ${{ steps.meta.outputs.waived_by_type }}
+        run: |
+          set -euo pipefail
+          check=.github/record-test-shape/check.cjs
+          flags=.github/record-test-shape/flags.json
+          if [ ! -f "$check" ] || [ ! -f "$flags" ]; then
+            # Bootstrap: the base commit has no checker, so this PR is the one adding it.
+            mkdir -p "$RUNNER_TEMP/record-test-shape"
+            git show "${HEAD_SHA}:${check}" > "$RUNNER_TEMP/record-test-shape/check.cjs"
+            git show "${HEAD_SHA}:${flags}" > "$RUNNER_TEMP/record-test-shape/flags.json"
+            check="$RUNNER_TEMP/record-test-shape/check.cjs"
+            flags="$RUNNER_TEMP/record-test-shape/flags.json"
+            echo "::notice::no checker on the base commit, using the copy at the PR head (bootstrap)"
+          fi
+          code=0
+          # The `=` form keeps an empty value (no labels, no waiver) from reading as a
+          # missing one, which the checker treats as "could not check".
+          node "$check" \
+            --diff="$RUNNER_TEMP/pr.diff" \
+            --flags="$flags" \
+            --head-ref="$HEAD_REF" \
+            --labels="$LABELS" \
+            --pr-author="$PR_AUTHOR" \
+            --waived-by="$WAIVED_BY" \
+            --waived-by-type="$WAIVED_BY_TYPE" \
+            --out="$RUNNER_TEMP/record-test-shape-report.json" \
+            --summary="$GITHUB_STEP_SUMMARY" || code=$?
+          cat "$RUNNER_TEMP/record-test-shape-report.json"
+          exit "$code"

@@ -1,0 +1,426 @@
+{
+  "flags": {
+    "RECORD_INPUTS_MODE": [
+      "off",
+      "on"
+    ],
+    "RECORD_COHORT": [
+      "31f363d9e5750c2a,e7786559d310670e,87f40eda74e23eb6,89e45c55f9d0fece,b61a3d197670f0ea,d4cc97c9b4bf2c1c,*",
+      "none",
+      "off",
+      "on"
+    ],
+    "RECORD_COHORT_ORGS": [
+      "none",
+      "off",
+      "on",
+      "org-d33031e1"
+    ],
+    "RECORD_BUILDER_MODE": [
+      "off",
+      "on"
+    ],
+    "RECORD_BUILDER_COHORT": [
+      "none",
+      "off",
+      "on",
+      "org-cc71855b,org-sandbox",
+      "org-d33031e1"
+    ],
+    "RECORD_COHORT_FOLLOWS_DURABLE": [
+      "off",
+      "on"
+    ],
+    "RECORD_ACCUMULATOR_MODE": [
+      "off",
+      "on",
+      "true"
+    ],
+    "RECORD_DELTA_RATE_CAP": [
+      "5",
+      "none",
+      "off",
+      "on"
+    ],
+    "RECORD_ACCUMULATOR_COHORT": [
+      "none",
+      "off",
+      "on",
+      "org-cc71855b,org-sandbox,*",
+      "org-d33031e1"
+    ],
+    "RECORD_ACCUMULATOR_COHORT_BY_ORG": [
+      "off",
+      "on",
+      "true"
+    ],
+    "RECORD_APP_ID": [
+      "5501040",
+      "5672504",
+      "none",
+      "off",
+      "on"
+    ],
+    "RECORD_APP_CLIENT_ID": [
+      "Iv23li7q7txalOTbckvD",
+      "Iv23liMlkI0SuEOnvLo6",
+      "none",
+      "off",
+      "on"
+    ],
+    "RECORD_RETENTION_MODE": [
+      "dry_run",
+      "enforce",
+      "off",
+      "on"
+    ],
+    "RECORD_APP_EVENTS_RETENTION_MODE": [
+      "dry_run",
+      "enforce",
+      "off",
+      "on"
+    ],
+    "RECORD_ACCUMULATOR_RETENTION_MODE": [
+      "dry_run",
+      "enforce",
+      "off",
+      "on"
+    ],
+    "RECORD_ACCUMULATOR_RETENTION_MAX_BATCH": [
+      "1",
+      "none",
+      "off",
+      "on"
+    ],
+    "METERING_RETENTION_MODE": [
+      "dry_run",
+      "enforce",
+      "off",
+      "on"
+    ],
+    "RECORD_APP_MODE": [
+      "off",
+      "on"
+    ],
+    "RECORD_APP_REPOS": [
+      "mnemom/.github,mnemom/aap,mnemom/aip,mnemom/aip-otel-exporter,mnemom/bing-website,mnemom/cards-action,mnemom/chain45-door2,mnemom/coherence,mnemom/composio-ao,mnemom/deploy,mnemom/docs,mnemom/isittrustready,mnemom/keystone,mnemom/limelight,mnemom/mcp,mnemom/mnemom-adw,mnemom/mnemom-aegis-engine,mnemom/mnemom-api,mnemom/mnemom-billing,mnemom/mnemom-contracts,mnemom/mnemom-dogfood,mnemom/mnemom-infra,mnemom/mnemom-investor-updates,mnemom/mnemom-kb,mnemom/mnemom-packages,mnemom/mnemom-platform,mnemom/mnemom-prover,mnemom/mnemom-reputation,mnemom/mnemom-research-grade,mnemom/mnemom-risk,mnemom/mnemom-samples,mnemom/mnemom-test,mnemom/mnemom-types,mnemom/mnemom-website,mnemom/orchestrator-poc,mnemom/policies,mnemom/public-protocols,mnemom/qar,mnemom/record-sandbox,mnemom/record-sandbox-w412,mnemom/reputation-check,mnemom/safe-house-aegis,mnemom/safe-house-hardening,mnemom/scale,mnemom/war-engine",
+      "mnemom/mnemom-api,mnemom/mnemom-platform,mnemom/mnemom-website,mnemom/mnemom-test,mnemom/mnemom-packages,mnemom/mnemom-adw",
+      "none",
+      "off",
+      "on"
+    ],
+    "RECORD_APP_MINT_CAP_HOURLY": [
+      "1000",
+      "none",
+      "off",
+      "on"
+    ],
+    "RECORD_APP_BUILD_CAP_HOURLY": [
+      "120",
+      "none",
+      "off",
+      "on"
+    ],
+    "RECORD_READ_CAP_HOURLY": [
+      "4320",
+      "none",
+      "off",
+      "on"
+    ],
+    "RECORD_CANON_OUTCOME_MODE": [
+      "off",
+      "on"
+    ],
+    "RECORD_CANON_OUTCOME_ORGS": [
+      "none",
+      "off",
+      "on",
+      "org-cc71855b",
+      "org-d33031e1"
+    ],
+    "RECORD_APP_OUTCOME_WINDOW_OVERRIDES": [
+      "mnemom/record-sandbox=600,mnemom/record-sandbox-w412=600",
+      "none",
+      "off",
+      "on"
+    ],
+    "MNEMOM_RECORD_WORKER": [
+      "off",
+      "on"
+    ],
+    "CHECKPOINT_CARD_HASH_WRITE": [
+      "off",
+      "on"
+    ],
+    "BILLING_SHARE_EVENTS": [
+      "false",
+      "off",
+      "on",
+      "true"
+    ],
+    "RECORD_SHARE_URL": [
+      "https://api-az-test.mnemom.ai",
+      "https://api-us2.mnemom.ai",
+      "none",
+      "off",
+      "on"
+    ],
+    "GOAL_INTENT_ENABLED": [
+      "off",
+      "on",
+      "true"
+    ],
+    "VERIFIER_PAGE_MODE": [
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_MODE": [
+      "off",
+      "on",
+      "true"
+    ],
+    "CONTRACT_STEP_MODE": [
+      "off",
+      "on"
+    ],
+    "CONTRACT_STEP_ORG_ALLOWLIST": [
+      "none",
+      "off",
+      "on",
+      "org-cc71855b,org-afd781ed,org-7270bf3e",
+      "org-d33031e1"
+    ],
+    "CONTRACT_STEP_FOLLOWS_DURABLE": [
+      "off",
+      "on"
+    ],
+    "EVENT_ROUTER_MODE": [
+      "off",
+      "on"
+    ],
+    "CONTRACT_STEP_ISSUE_REPOS": [
+      "mnemom/mnemom-api=org-d33031e1,mnemom/mnemom-platform=org-d33031e1,mnemom/mnemom-website=org-d33031e1,mnemom/mnemom-test=org-d33031e1,mnemom/mnemom-packages=org-d33031e1,mnemom/mnemom-adw=org-d33031e1",
+      "mnemom/record-sandbox=org-cc71855b,mnemom/record-sandbox-w412=org-cc71855b,mnemom/chain45-door2=org-cc71855b",
+      "none",
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_SIGNED_REPORT_MODE": [
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_ORG_ALLOWLIST": [
+      "none",
+      "off",
+      "on",
+      "org-cc71855b"
+    ],
+    "ORG_SCAN_EMAIL_LIVE": [
+      "off",
+      "on",
+      "true"
+    ],
+    "ORG_SCAN_REPORT_BASE_URL": [
+      "https://api-az-test.mnemom.ai",
+      "none",
+      "off",
+      "on"
+    ],
+    "DURABLE_SESSIONS_ENABLED": [
+      "off",
+      "on",
+      "true"
+    ],
+    "CANON_LIFECYCLE_HOOK_ENABLED": [
+      "off",
+      "on",
+      "true"
+    ],
+    "CANON_SERVICE_TENANT_WRITE_MODE": [
+      "off",
+      "on"
+    ],
+    "DURABLE_SWEEP_ENABLED": [
+      "false",
+      "off",
+      "on",
+      "true"
+    ],
+    "DURABLE_POOL_CLAIM": [
+      "none",
+      "off",
+      "on",
+      "org-cc71855b,org-7270bf3e",
+      "org-d33031e1"
+    ],
+    "DURABLE_OIDC_EXCHANGE_MODE": [
+      "off",
+      "on"
+    ],
+    "RUNNER_GITHUB_PUSH_MODE": [
+      "off",
+      "on"
+    ],
+    "SERVED_PHASES_MODE": [
+      "off",
+      "on"
+    ],
+    "SERVED_PROMPTS_COHORT": [
+      "none",
+      "off",
+      "on",
+      "org-cc71855b"
+    ],
+    "DISPATCH_MODE": [
+      "off",
+      "on"
+    ],
+    "DISPATCH_COHORT": [
+      "none",
+      "off",
+      "on",
+      "org-cc71855b,org-7270bf3e",
+      "org-d33031e1"
+    ],
+    "DISPATCH_COHORT_FOLLOWS_DURABLE": [
+      "off",
+      "on"
+    ],
+    "DISPATCH_WAKEUP_MODE": [
+      "off",
+      "on"
+    ],
+    "DURABLE_OIDC_WORKFLOWS": [
+      "mnemom-agent-run.yml,adw-zte.yml",
+      "none",
+      "off",
+      "on"
+    ],
+    "DISPATCH_WAKEUP_WORKFLOW": [
+      "mnemom-agent-run.yml",
+      "none",
+      "off",
+      "on"
+    ],
+    "DISPATCH_WAKEUP_SESSION_INPUT": [
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_METHOD_URL": [
+      "https://www.mnemom.ai/org-scan-method",
+      "none",
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_APP_URL": [
+      "https://mnemom.ai",
+      "https://test.mnemom.ai",
+      "none",
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_ISSUER": [
+      "https://id-test.mnemom.ai",
+      "none",
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_KID": [
+      "397016896722973258",
+      "none",
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_VERDICT_JSON": [
+      "none",
+      "off",
+      "on",
+      "{\"schema_version\":1,\"precision\":0.8671875,\"recall\":0.8473282442748091,\"threshold\":0.8,\"threshold_source\":\"registry\",\"green\":true,\"evaluated_at\":\"2026-10-29T06:29:01.280Z\",\"dataset_as_of\":\"2026-10-25T18:40:00Z\",\"samples\":271}"
+    ],
+    "ORG_SCAN_FINDER_PRECISION_THRESHOLD": [
+      "0.8",
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_SELFTEST_ENABLED": [
+      "off",
+      "on",
+      "true"
+    ],
+    "ORG_SCAN_EXPECTED_ORGS": [
+      "none",
+      "off",
+      "on",
+      "org-cc71855b",
+      "org-d33031e1"
+    ],
+    "ORG_SCAN_EXPECTED_MODE": [
+      "off",
+      "on",
+      "true"
+    ],
+    "ORG_SCAN_SELFTEST_ORG_ID": [
+      "none",
+      "off",
+      "on",
+      "org-cc71855b"
+    ],
+    "ORG_SCAN_SELFTEST_REPOS": [
+      "[\"mnemom/reputation-check\"]",
+      "none",
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_SELFTEST_RANGES": [
+      "none",
+      "off",
+      "on",
+      "{\"pr_count\":[1,60],\"revert_count\":[0,10],\"tokens_total\":[0,1000000000],\"cost_cents_total\":[0,10000000]}"
+    ],
+    "RECORD_SHARE_V1_REJECT": [
+      "off",
+      "on",
+      "true"
+    ],
+    "RECORD_TOTALS_READ_V2": [
+      "off",
+      "on",
+      "true"
+    ],
+    "RECORD_GOAL_SEAL_MODE": [
+      "off",
+      "on"
+    ]
+  },
+  "patterns": [
+    "^RECORD_[A-Z0-9_]+$",
+    "^MNEMOM_RECORD_[A-Z0-9_]+$",
+    "^CHECKPOINT_CARD_HASH_WRITE$",
+    "^BILLING_SHARE_EVENTS$",
+    "^GOAL_INTENT_ENABLED$",
+    "^VERIFIER_PAGE_MODE$",
+    "^ORG_SCAN_[A-Z0-9_]+$",
+    "^DURABLE_SESSIONS_ENABLED$",
+    "^DURABLE_SWEEP_ENABLED$",
+    "^DURABLE_POOL_CLAIM$",
+    "^DURABLE_OIDC_EXCHANGE_MODE$",
+    "^DURABLE_OIDC_WORKFLOWS$",
+    "^RUNNER_GITHUB_PUSH_MODE$",
+    "^SERVED_PHASES_MODE$",
+    "^SERVED_PROMPTS_COHORT$",
+    "^DISPATCH_MODE$",
+    "^DISPATCH_COHORT$",
+    "^DISPATCH_COHORT_FOLLOWS_DURABLE$",
+    "^DISPATCH_WAKEUP_MODE$",
+    "^DISPATCH_WAKEUP_WORKFLOW$",
+    "^DISPATCH_WAKEUP_SESSION_INPUT$",
+    "^CANON_LIFECYCLE_HOOK_ENABLED$",
+    "^CANON_SERVICE_TENANT_WRITE_MODE$",
+    "^CONTRACT_STEP_MODE$",
+    "^CONTRACT_STEP_ORG_ALLOWLIST$",
+    "^CONTRACT_STEP_FOLLOWS_DURABLE$",
+    "^CONTRACT_STEP_ISSUE_REPOS$",
+    "^EVENT_ROUTER_MODE$",
+    "^METERING_RETENTION_MODE$"
+  ]
+}
