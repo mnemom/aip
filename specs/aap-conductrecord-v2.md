@@ -468,7 +468,7 @@ Each object carries at least one of `checkpoints` and `acts`. Objects that name 
 - The result gains `lists_checked: {statement_digest, part, ok, mismatch?, not_supplied?}[]`: one entry per header failure, and for each statement a lists object reached, one entry per part. A part no object carried is `{ok:false, not_supplied:true}` with no mismatch: not proven, and not a reason. Without `lists`, the result has no `lists_checked`.
 - The CLI status line for a valid v2 statement reads `N checkpoints (T in bundle), A acts in G groups, lists: <status>`. The status is `checked` only when both parts were supplied and passed, `mismatch` when any check failed, `not supplied` when no object named the statement, and otherwise per part, for example `checkpoints checked, acts not supplied`. `flagSummary` adds up each flag's `count`.
 
-**Export:** `checkConductLists(statement, lists, jwks) → Promise<{ok:true} | {ok:false, part, mismatch} | {ok:false, part, not_supplied:true}>`. It verifies the statement against `jwks` first: a statement that does not verify is `statement_invalid` whatever the lists say, because anyone can build a statement and lists that agree. `ok:true` only when both lists were supplied and fold to the signed digests.
+**Export:** `checkConductLists(statement, lists, jwks) → Promise<{ok:true} | {ok:false, part, mismatch} | {ok:false, part, not_supplied:true}>`. It verifies the statement against `jwks` first: a statement that does not verify is `statement_invalid` whatever the lists say, because anyone can build a statement and lists that agree. `ok:true` only when both lists were supplied and fold to the signed digests; with no lists object at all the result is `{ok:false, part:"checkpoints", not_supplied:true}`.
 
 ### 11.5 SDK parity
 

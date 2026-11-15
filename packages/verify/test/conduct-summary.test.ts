@@ -184,6 +184,18 @@ describe("tuple shapes", () => {
     expect(isActTuple({ ...a1, verdict: "flagged" })).toBe(false);
     expect(isActTuple({ ...a1, decision_id: "x" })).toBe(false);
     expect(isActTuple({ ...a1, decision_id: "x" }, true)).toBe(true);
+    expect(isActTuple({ ...a1, decision_id: "" }, true)).toBe(false);
+    expect(isActTuple({ ...a1, decision_id: "d".repeat(256) }, true)).toBe(true);
+    expect(isActTuple({ ...a1, decision_id: "d".repeat(257) }, true)).toBe(false);
+    expect(isActTuple({ ...a1, decision_id: 7 }, true)).toBe(false);
+    expect(isActTuple({ ...a1, decision_ref: a1.decision_ref.toUpperCase() })).toBe(false);
+    expect(isActTuple({ ...a1, decision_ref: "ab" })).toBe(false);
+    for (const junk of [null, "a", 1, [a1]]) expect(isActTuple(junk)).toBe(false);
+    // Unbound with a key id, and a key id that is not an id.
+    const t2 = vectors.checkpoint_tuples.t2 as CheckpointTuple;
+    expect(isCheckpointTuple({ ...t2, commitment_key_id: "key-001" })).toBe(false);
+    expect(isCheckpointTuple({ ...t1, commitment_key_id: "key 001" })).toBe(false);
+    expect(isCheckpointTuple({ ...t1, commitment_key_id: null })).toBe(true);
   });
 });
 
@@ -296,6 +308,12 @@ describe("conductSummaryReasons (§11.1)", () => {
     expect(reasons((s) => (s.protection.by[0].count += 1))).toEqual(INC);
     expect(reasons((s) => (s.protection.tools_folded = s.protection.acts_total))).toEqual(INC);
     expect(reasons((s) => (s.protection = { acts_total: 0, acts_digest: "0".repeat(64), by: [], tools_folded: 0, tool_names_withheld: 0 }))).toEqual(INC);
+    // Acts counted but the digest is the seed (the fold over no acts).
+    expect(reasons((s) => (s.protection.acts_digest = ACTS_SEED_HEX))).toEqual(INC);
+    // A tail longer than the count, within the 32 cap.
+    const five = buildConductV2({ lineage_key: "l", built_at: "2026-11-14T10:00:00.000Z", previous_digest: null, checkpoints: citations(5), acts: [] }) as any;
+    five.checkpoints.count = 4;
+    expect(conductSummaryReasons(five)).toEqual(INC);
     expect(reasons((s) => (s.checkpoints.bound_count = s.checkpoints.count + 1))).toEqual(INC);
     expect(reasons((s) => (s.checkpoints.card_hash_count = s.checkpoints.count + 1))).toEqual(INC);
     // More bound citations in the tail than bound_count allows.
@@ -342,6 +360,20 @@ describe("conductSummaryReasons (§11.1)", () => {
     expect(reasons((s) => (s.door2 = { siblings: [{ job_id: "has spaces" }] }))).toEqual(INC);
     expect(reasons((s) => (s.door2 = { siblings: [{ job_id: "job-1", repo: "o/r", pr_number: 3 }] }))).toEqual([]);
     expect(reasons((s) => (s.runner = { kind: "hosted", cluster: "c1", cell: "us-2" }))).toEqual([]);
+    // Nested allowlisted objects (door2 usage and totals) are walked too.
+    const usage = { wakes: 2, totals: { input_tokens: 10, output_tokens: 5 }, per_wake: [{ wake: 1, input_tokens: 10 }] };
+    expect(reasons((s) => (s.door2 = { usage }))).toEqual([]);
+    expect(reasons((s) => (s.door2 = { usage: { ...usage, totals: { input_tokens: 10, note: "x" } } }))).toEqual(INC);
+    expect(reasons((s) => (s.door2 = { usage: { ...usage, totals: [{ input_tokens: 1 }] } }))).toEqual(INC);
+    expect(reasons((s) => (s.door2 = { usage: { ...usage, per_wake: [7] } }))).toEqual(INC);
+    expect(reasons((s) => (s.door2 = { siblings: { job_id: "j" } }))).toEqual(INC);
+    // Nesting is capped: nine levels of allowlisted objects fail.
+    let deep: Record<string, unknown> = { input_tokens: 1 };
+    for (let i = 0; i < 9; i++) deep = { usage: deep };
+    expect(reasons((s) => (s.door2 = deep))).toEqual(INC);
+    let shallow: Record<string, unknown> = { input_tokens: 1 };
+    for (let i = 0; i < 3; i++) shallow = { usage: shallow };
+    expect(reasons((s) => (s.door2 = shallow))).toEqual([]);
   });
 
   it("closes the lines: fixed wording, one line per line-bearing group, at most 72", () => {

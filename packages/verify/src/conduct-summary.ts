@@ -185,7 +185,8 @@ const NO_CONTENT_BLOCKS: Readonly<Record<string, RegExp | "number" | "object" | 
 /** True when `v` (an object or array inside a v1-shaped block) holds only `NO_CONTENT_BLOCKS` shapes. */
 function noContent(v: unknown, depth = 0): boolean {
   if (depth > 8) return false;
-  if (Array.isArray(v)) return v.every((x) => isObject(x) && noContent(x, depth + 1));
+  // An array holds objects only (no bare values, no nested arrays).
+  if (Array.isArray(v)) return v.every((x) => !Array.isArray(x) && noContent(x, depth + 1));
   if (!isObject(v)) return false;
   for (const [k, x] of Object.entries(v)) {
     const shape = Object.prototype.hasOwnProperty.call(NO_CONTENT_BLOCKS, k) ? NO_CONTENT_BLOCKS[k] : undefined;
@@ -194,7 +195,7 @@ function noContent(v: unknown, depth = 0): boolean {
     if (shape === "number") {
       if (!isCount(x)) return false;
     } else if (shape === "object") {
-      if (!isObject(x) || !noContent(x, depth + 1)) return false;
+      if (Array.isArray(x) || !noContent(x, depth + 1)) return false;
     } else if (shape === "array") {
       if (!Array.isArray(x) || !noContent(x, depth + 1)) return false;
     } else if (typeof x !== "string" || !shape.test(x)) {

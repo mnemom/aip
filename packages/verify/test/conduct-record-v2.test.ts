@@ -301,6 +301,9 @@ describe("AAP-ConductRecord/v2: lists check (§11.4)", () => {
     });
     const { acts: _a, ...onlyCheckpoints } = lists;
     expect(await checkConductLists(s, onlyCheckpoints as RecordLists, jwks)).toEqual({ ok: false, part: "acts", not_supplied: true });
+    // No lists at all: not supplied, not malformed.
+    expect(await checkConductLists(s, undefined, jwks)).toEqual({ ok: false, part: "checkpoints", not_supplied: true });
+    expect(await checkConductLists(s, [], jwks)).toEqual({ ok: false, part: "checkpoints", not_supplied: true });
     // Pages naming the same statement continue its lists.
     const pages = [
       { ...lists, checkpoints: lists.checkpoints!.slice(0, 20), acts: undefined },

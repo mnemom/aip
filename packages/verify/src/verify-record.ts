@@ -491,7 +491,8 @@ export async function checkConductLists(
       ? { ok: false, part: bad.part, mismatch: bad.mismatch }
       : { ok: false, part: bad.part, not_supplied: true };
   }
-  if (entries.length === 0) return { ok: false, part: "statement", mismatch: LISTS_MISMATCHES.list_malformed };
+  // No lists object at all: nothing was supplied, which is not a malformed list.
+  if (entries.length === 0) return { ok: false, part: "checkpoints", not_supplied: true };
   return { ok: true };
 }
 

@@ -148,8 +148,7 @@ export function parseCliArgs(argv: readonly string[]): CliArgs | "help" {
     "--expected-head-sha": "expectedHeadSha",
     "--lists": "lists",
   };
-  /** Options that may be given more than once. */
-  const repeatable = new Set(["lists"]);
+
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]!;
     if (arg === "-h" || arg === "--help") return "help";
@@ -169,11 +168,12 @@ export function parseCliArgs(argv: readonly string[]): CliArgs | "help" {
       if (name !== arg) value = arg.slice(eq + 1);
       else value = argv[++i];
       if (value === undefined || value === "") throw new UsageError(`${name} needs a value`);
+      // --lists may be given more than once (pages); every other option once.
       if (key === "lists") {
         (out.lists ??= []).push(value);
         continue;
       }
-      if (!repeatable.has(key) && out[key] !== undefined) throw new UsageError(`${name} given twice`);
+      if (out[key] !== undefined) throw new UsageError(`${name} given twice`);
       out[key] = value;
       continue;
     }
