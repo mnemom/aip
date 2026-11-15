@@ -93,12 +93,26 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          labels="$(gh api "repos/${GH_REPO}/issues/${PR_NUMBER}/labels" --paginate --jq '.[].name' | paste -sd, -)"
+          names="$(gh api "repos/${GH_REPO}/issues/${PR_NUMBER}/labels" --paginate --jq '.[].name')"
+          # The checker splits --labels on commas, so a label named `x,record-test-shape-waive`
+          # would read as the waive label. A name with a comma is left out of the list.
+          if grep -q ',' <<< "$names"; then
+            echo "::warning::labels with a comma are not passed to the checker: $(grep ',' <<< "$names" | paste -sd' ' -)"
+          fi
+          labels="$({ grep -v ',' <<< "$names" || true; } | paste -sd, -)"
+          # Who applied the waive label: only while that exact label is on the PR, and only when
+          # its latest labeled/unlabeled event is `labeled`, so a removed waiver is never reused.
           # Read from the API on every run: a later push is a `synchronize` event and does
           # not name who applied the label.
-          waiver="$(gh api "repos/${GH_REPO}/issues/${PR_NUMBER}/events" --paginate \
-            --jq '.[] | select(.event == "labeled" and .label.name == "record-test-shape-waive") | [.actor.login, .actor.type] | @tsv' \
-            | tail -n 1)"
+          waiver=""
+          if grep -Fxq record-test-shape-waive <<< "$names"; then
+            last="$(gh api "repos/${GH_REPO}/issues/${PR_NUMBER}/events" --paginate \
+              --jq '.[] | select((.event == "labeled" or .event == "unlabeled") and .label.name == "record-test-shape-waive") | [.event, .actor.login, .actor.type] | @tsv' \
+              | tail -n 1)"
+            if [ "$(printf '%s' "$last" | cut -f1)" = labeled ]; then
+              waiver="$(printf '%s' "$last" | cut -f2-)"
+            fi
+          fi
           {
             echo "labels=${labels}"
             echo "waived_by=$(printf '%s' "$waiver" | cut -f1)"
