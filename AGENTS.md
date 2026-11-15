@@ -101,6 +101,9 @@ examples/                    # Working examples — used in docs
   "Releasing the verifier" below.
 - The `workflow_dispatch` path publishes `packages/typescript` to npm (and
   `packages/python` to PyPI); any other `npm-directory` is refused.
+- Before the `production` gate, `dispatch-check` asks npm and PyPI for the
+  exact versions. A version already published skips its gated publish job,
+  so a dispatch with nothing new to publish never waits for an approval.
 
 ### Releasing the verifier (`packages/verify`)
 
