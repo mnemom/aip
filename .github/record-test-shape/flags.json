@@ -1,0 +1,323 @@
+{
+  "flags": {
+    "RECORD_INPUTS_MODE": [
+      "off",
+      "on"
+    ],
+    "RECORD_COHORT": [
+      "off",
+      "on"
+    ],
+    "RECORD_COHORT_ORGS": [
+      "off",
+      "on"
+    ],
+    "RECORD_BUILDER_MODE": [
+      "off",
+      "on"
+    ],
+    "RECORD_BUILDER_COHORT": [
+      "off",
+      "on"
+    ],
+    "RECORD_COHORT_FOLLOWS_DURABLE": [
+      "off",
+      "on"
+    ],
+    "RECORD_ACCUMULATOR_MODE": [
+      "off",
+      "on"
+    ],
+    "RECORD_DELTA_RATE_CAP": [
+      "off",
+      "on"
+    ],
+    "RECORD_ACCUMULATOR_COHORT": [
+      "off",
+      "on"
+    ],
+    "RECORD_ACCUMULATOR_COHORT_BY_ORG": [
+      "off",
+      "on"
+    ],
+    "RECORD_APP_ID": [
+      "off",
+      "on"
+    ],
+    "RECORD_APP_CLIENT_ID": [
+      "off",
+      "on"
+    ],
+    "RECORD_RETENTION_MODE": [
+      "off",
+      "on"
+    ],
+    "RECORD_APP_EVENTS_RETENTION_MODE": [
+      "off",
+      "on"
+    ],
+    "RECORD_ACCUMULATOR_RETENTION_MODE": [
+      "off",
+      "on"
+    ],
+    "RECORD_ACCUMULATOR_RETENTION_MAX_BATCH": [
+      "off",
+      "on"
+    ],
+    "METERING_RETENTION_MODE": [
+      "off",
+      "on"
+    ],
+    "RECORD_APP_MODE": [
+      "off",
+      "on"
+    ],
+    "RECORD_APP_REPOS": [
+      "off",
+      "on"
+    ],
+    "RECORD_APP_MINT_CAP_HOURLY": [
+      "off",
+      "on"
+    ],
+    "RECORD_APP_BUILD_CAP_HOURLY": [
+      "off",
+      "on"
+    ],
+    "RECORD_READ_CAP_HOURLY": [
+      "off",
+      "on"
+    ],
+    "RECORD_CANON_OUTCOME_MODE": [
+      "off",
+      "on"
+    ],
+    "RECORD_CANON_OUTCOME_ORGS": [
+      "off",
+      "on"
+    ],
+    "RECORD_APP_OUTCOME_WINDOW_OVERRIDES": [
+      "off",
+      "on"
+    ],
+    "MNEMOM_RECORD_WORKER": [
+      "off",
+      "on"
+    ],
+    "CHECKPOINT_CARD_HASH_WRITE": [
+      "off",
+      "on"
+    ],
+    "BILLING_SHARE_EVENTS": [
+      "off",
+      "on"
+    ],
+    "RECORD_SHARE_URL": [
+      "off",
+      "on"
+    ],
+    "GOAL_INTENT_ENABLED": [
+      "off",
+      "on"
+    ],
+    "VERIFIER_PAGE_MODE": [
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_MODE": [
+      "off",
+      "on"
+    ],
+    "CONTRACT_STEP_MODE": [
+      "off",
+      "on"
+    ],
+    "CONTRACT_STEP_ORG_ALLOWLIST": [
+      "off",
+      "on"
+    ],
+    "CONTRACT_STEP_FOLLOWS_DURABLE": [
+      "off",
+      "on"
+    ],
+    "EVENT_ROUTER_MODE": [
+      "off",
+      "on"
+    ],
+    "CONTRACT_STEP_ISSUE_REPOS": [
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_SIGNED_REPORT_MODE": [
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_ORG_ALLOWLIST": [
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_EMAIL_LIVE": [
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_REPORT_BASE_URL": [
+      "off",
+      "on"
+    ],
+    "DURABLE_SESSIONS_ENABLED": [
+      "off",
+      "on"
+    ],
+    "CANON_LIFECYCLE_HOOK_ENABLED": [
+      "off",
+      "on"
+    ],
+    "CANON_SERVICE_TENANT_WRITE_MODE": [
+      "off",
+      "on"
+    ],
+    "DURABLE_SWEEP_ENABLED": [
+      "off",
+      "on"
+    ],
+    "DURABLE_POOL_CLAIM": [
+      "off",
+      "on"
+    ],
+    "DURABLE_OIDC_EXCHANGE_MODE": [
+      "off",
+      "on"
+    ],
+    "RUNNER_GITHUB_PUSH_MODE": [
+      "off",
+      "on"
+    ],
+    "SERVED_PHASES_MODE": [
+      "off",
+      "on"
+    ],
+    "SERVED_PROMPTS_COHORT": [
+      "off",
+      "on"
+    ],
+    "DISPATCH_MODE": [
+      "off",
+      "on"
+    ],
+    "DISPATCH_COHORT": [
+      "off",
+      "on"
+    ],
+    "DISPATCH_COHORT_FOLLOWS_DURABLE": [
+      "off",
+      "on"
+    ],
+    "DISPATCH_WAKEUP_MODE": [
+      "off",
+      "on"
+    ],
+    "DURABLE_OIDC_WORKFLOWS": [
+      "off",
+      "on"
+    ],
+    "DISPATCH_WAKEUP_WORKFLOW": [
+      "off",
+      "on"
+    ],
+    "DISPATCH_WAKEUP_SESSION_INPUT": [
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_METHOD_URL": [
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_APP_URL": [
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_ISSUER": [
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_KID": [
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_VERDICT_JSON": [
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_FINDER_PRECISION_THRESHOLD": [
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_SELFTEST_ENABLED": [
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_EXPECTED_ORGS": [
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_EXPECTED_MODE": [
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_SELFTEST_ORG_ID": [
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_SELFTEST_REPOS": [
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_SELFTEST_RANGES": [
+      "off",
+      "on"
+    ],
+    "RECORD_SHARE_V1_REJECT": [
+      "off",
+      "on"
+    ],
+    "RECORD_TOTALS_READ_V2": [
+      "off",
+      "on"
+    ],
+    "RECORD_GOAL_SEAL_MODE": [
+      "off",
+      "on"
+    ]
+  },
+  "patterns": [
+    "^RECORD_[A-Z0-9_]+$",
+    "^MNEMOM_RECORD_[A-Z0-9_]+$",
+    "^CHECKPOINT_CARD_HASH_WRITE$",
+    "^BILLING_SHARE_EVENTS$",
+    "^GOAL_INTENT_ENABLED$",
+    "^VERIFIER_PAGE_MODE$",
+    "^ORG_SCAN_[A-Z0-9_]+$",
+    "^DURABLE_SESSIONS_ENABLED$",
+    "^DURABLE_SWEEP_ENABLED$",
+    "^DURABLE_POOL_CLAIM$",
+    "^DURABLE_OIDC_EXCHANGE_MODE$",
+    "^DURABLE_OIDC_WORKFLOWS$",
+    "^RUNNER_GITHUB_PUSH_MODE$",
+    "^SERVED_PHASES_MODE$",
+    "^SERVED_PROMPTS_COHORT$",
+    "^DISPATCH_MODE$",
+    "^DISPATCH_COHORT$",
+    "^DISPATCH_COHORT_FOLLOWS_DURABLE$",
+    "^DISPATCH_WAKEUP_MODE$",
+    "^DISPATCH_WAKEUP_WORKFLOW$",
+    "^DISPATCH_WAKEUP_SESSION_INPUT$",
+    "^CANON_LIFECYCLE_HOOK_ENABLED$",
+    "^CANON_SERVICE_TENANT_WRITE_MODE$",
+    "^CONTRACT_STEP_MODE$",
+    "^CONTRACT_STEP_ORG_ALLOWLIST$",
+    "^CONTRACT_STEP_FOLLOWS_DURABLE$",
+    "^CONTRACT_STEP_ISSUE_REPOS$",
+    "^EVENT_ROUTER_MODE$",
+    "^METERING_RETENTION_MODE$"
+  ]
+}
