@@ -87,6 +87,30 @@ for (const tcase of tampered) {
   });
 }
 
+test("a v1 -> v2 bundle verifies, shows the signed counts and explains the summary flags", async ({ page }) => {
+  const { networkRequests } = await open(page);
+  await verifyText(page, read("golden-bundle-v1-v2.json"));
+  await expect(page.locator("#verdict")).toHaveText("Verified");
+  await expect(page.locator('#statements tr[data-index="2"]')).toContainText(
+    "valid (45 checkpoints, 32 in this bundle; 9 protection acts in 8 groups)",
+  );
+  const summarized = page.locator('#flags li[data-flag="summarized"]');
+  await expect(summarized).toHaveCount(2);
+  await expect(summarized.nth(1)).toContainText("Count: 13.");
+  expect(networkRequests).toEqual([]);
+});
+
+test("a lone pasted v2 statement verifies and shows its signed counts", async ({ page }) => {
+  const { networkRequests } = await open(page);
+  await verifyText(page, read("golden-conduct-v2.json"));
+  await expect(page.locator("#verdict")).toHaveText("Verified");
+  await expect(page.locator('#statements tr[data-index="0"]')).toContainText(
+    "valid (45 checkpoints, 32 in this bundle; 9 protection acts in 8 groups)",
+  );
+  await expect(page.locator('#flags li[data-flag="summarized"]')).toContainText("Count: 13.");
+  expect(networkRequests).toEqual([]);
+});
+
 test("a bundle cut by retention verifies and explains lineage_truncated", async ({ page }) => {
   // mnemom-api retention deleted the oldest build; the first surviving build
   // names it. The flag does not fail the bundle, and the page says why.

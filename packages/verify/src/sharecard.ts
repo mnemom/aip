@@ -76,12 +76,13 @@ const OPAQUE_ID = /^[a-z0-9_-]{1,64}$/;
 const LABEL = /^[A-Za-z0-9 .,()+-]{1,40}$/;
 const LABEL_MAX = 40;
 /**
- * Statement types a v1 card may commit to: the three signed record statements
- * (C5-R3). The share card itself ("AAP-ShareCard/v1") and the bundle are not
+ * Statement types a v1 card may commit to: the signed record statements
+ * (C5-R3), conduct records of either version included. The share card itself ("AAP-ShareCard/v1") and the bundle are not
  * valid sources. Mirrored in schemas/aap-sharecard.schema.json.
  */
 export const SHARE_CARD_STATEMENT_TYPES: readonly string[] = [
   "AAP-ConductRecord/v1",
+  "AAP-ConductRecord/v2",
   "AAP-PRRecord/v1",
   "AAP-Outcome/v1",
 ];

@@ -13,27 +13,44 @@
  * 3. `signing_key_id` and `signature` present and well formed
  * 4. key lookup by `kid`; the key must be an Ed25519 OKP key with `alg: EdDSA`
  * 5. Ed25519 over `canonicalJson(statement minus signature)`
- * 6. per-type rules (share card line classes, verdict coverage)
- * 7. flags on cited checkpoints (T12), which never change `valid`
+ * 6. per-type rules (share card line classes, verdict coverage, the
+ *    `AAP-ConductRecord/v2` summary checks of conduct-summary.ts)
+ * 7. flags on cited checkpoints (T12) and on v2 summaries, which never change `valid`
  *
  * Across a bundle (K1.20): every link must name a statement of the right
  * type, each record's `previous_digest` chain must hold inside the bundle
  * (`chain_broken`), and, when the caller passes `expected_head_sha`, the
  * latest PR record must name that head (`head_mismatch`, `head_unbound`).
+ * Conduct records v1 and v2 share one chain per lineage; a v2 build is also
+ * checked to extend the build before it (flags only), and `options.lists`
+ * checks lists files against the v2 digests (`summary_list_mismatch`).
  */
 
 import { verifyAsync } from "@noble/ed25519";
-import { sha256 } from "@noble/hashes/sha2.js";
-import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils.js";
+import { utf8ToBytes } from "@noble/hashes/utils.js";
 
-import { canonicalJson, base64urlToUint8 } from "./canonical.js";
+import { base64urlToUint8, statementCommitment, statementDigest } from "./canonical.js";
+import {
+  CONDUCT_RECORD_V1_TYP,
+  CONDUCT_RECORD_V2_TYP,
+  ConductListsCheck,
+  conductSummaryFlags,
+  conductSummaryReasons,
+  extensionFlags,
+  listsHeaderMismatch,
+  listsMalformed,
+} from "./conduct-summary.js";
 import {
   BUNDLE_TYP,
   CARD_LINE_CLASSES,
+  CONDUCT_RECORD_TYPES,
   FLAGS,
+  LISTS_MISMATCHES,
   REASONS,
   STATEMENT_TYPES,
   type CheckpointCitation,
+  type ListsCheck,
+  type ListsCheckResult,
   type Reason,
   type RecordBundle,
   type RecordJwk,
@@ -56,20 +73,7 @@ function isObject(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
 }
 
-/**
- * The bytes a statement's signature covers: canonical JSON of the statement
- * with `signature` removed. Exported so a signer in another language can be
- * checked against it byte for byte.
- */
-export function statementCommitment(statement: Record<string, unknown>): string {
-  const { signature: _signature, ...rest } = statement;
-  return canonicalJson(rest);
-}
-
-/** Lowercase sha256 hex of a statement's commitment: how statements link (T2). */
-export function statementDigest(statement: Record<string, unknown>): string {
-  return bytesToHex(sha256(utf8ToBytes(statementCommitment(statement))));
-}
+export { statementCommitment, statementDigest };
 
 /** Pick the Ed25519 key for `kid`, or say why none can be used. */
 function selectKey(jwks: RecordJwks, kid: string): { key?: Uint8Array; reason?: Reason } {
@@ -256,9 +260,14 @@ export async function verifyStatement(
   if ("prev_digest" in statement && "previous_digest" in statement) {
     if (statement.prev_digest !== statement.previous_digest) reasons.push(REASONS.chain_broken);
   }
+  if (typ === CONDUCT_RECORD_V2_TYP) {
+    for (const r of conductSummaryReasons(statement)) if (!reasons.includes(r)) reasons.push(r);
+  }
   if (typ === "AAP-ShareCard/v1") reasons.push(...shareCardReasons(statement.lines));
 
-  const flags = typ === "AAP-ConductRecord/v1" ? checkpointFlags(statement.checkpoints) : [];
+  let flags: StatementFlag[] = [];
+  if (typ === CONDUCT_RECORD_V1_TYP) flags = checkpointFlags(statement.checkpoints);
+  else if (typ === CONDUCT_RECORD_V2_TYP && reasons.length === 0) flags = conductSummaryFlags(statement, digest);
 
   return {
     valid: reasons.length === 0,
@@ -275,14 +284,23 @@ export async function verifyStatement(
  * here: `chainReasons` checks it, and a broken chain fails rather than flags.
  */
 const LINK_TARGETS: Record<string, readonly StatementTyp[]> = {
-  conduct_digests: ["AAP-ConductRecord/v1"],
+  conduct_digests: CONDUCT_RECORD_TYPES,
   pr_record_digest: ["AAP-PRRecord/v1"],
-  source_digest: ["AAP-ConductRecord/v1", "AAP-PRRecord/v1", "AAP-Outcome/v1"],
+  source_digest: [...CONDUCT_RECORD_TYPES, "AAP-PRRecord/v1", "AAP-Outcome/v1"],
 };
 
-/** One record's chain: statements of the same `typ` and `lineage_key`. */
+/**
+ * The chain family of a `typ`: conduct records v1 and v2 are one family
+ * (spec §9), so a lineage's builds chain across the typ change in either
+ * direction. Every other typ is its own family.
+ */
+export function chainFamily(typ: unknown): string {
+  return (CONDUCT_RECORD_TYPES as readonly unknown[]).includes(typ) ? "AAP-ConductRecord" : String(typ);
+}
+
+/** One record's chain: statements of the same family and `lineage_key`. */
 function chainKey(s: Record<string, unknown>): string {
-  return `${String(s.typ)}\u0000${typeof s.lineage_key === "string" ? s.lineage_key : ""}`;
+  return `${chainFamily(s.typ)}\u0000${typeof s.lineage_key === "string" ? s.lineage_key : ""}`;
 }
 
 /**
@@ -290,7 +308,7 @@ function chainKey(s: Record<string, unknown>): string {
  * that carry the field (or its alias `prev_digest`, see predecessorOf) take
  * part; `null` is a genesis. For each one, by index:
  * - a non-null `previous_digest` must name a statement earlier in the bundle
- *   (build order) with the same `typ` and `lineage_key`;
+ *   (build order) of the same chain family (`chainFamily`) and `lineage_key`;
  * - no two statements of one chain may name the same predecessor, and a chain
  *   has at most one root (a fork, or a spliced second history).
  * The one exception is retention: mnemom-api deletes a lineage's builds once
@@ -367,6 +385,117 @@ function headReason(
   return REASONS.head_unbound;
 }
 
+/** Each lists object of `lists` in order: one object, an array, or an async iterable. */
+async function* listsObjects(lists: unknown): AsyncGenerator<unknown> {
+  if (Array.isArray(lists)) {
+    yield* lists;
+    return;
+  }
+  if (lists !== null && typeof lists === "object" && Symbol.asyncIterator in lists) {
+    for await (const item of lists as AsyncIterable<unknown>) yield item;
+    return;
+  }
+  yield lists;
+}
+
+/**
+ * The lists check (spec §11.4) for every lists object in `lists`: each is
+ * matched to the statement whose digest it names, and its lists continue
+ * that statement's lists in order (pages). An object that names no statement
+ * in the input, or a statement that failed, is a mismatch too: the caller
+ * asked for a check that could not run. Then, per statement, one entry per
+ * part: checked, a mismatch, or (when only the other part was supplied)
+ * `not_supplied`.
+ */
+async function listsChecks(
+  lists: unknown,
+  raw: unknown[],
+  statements: StatementVerificationResult[],
+): Promise<ListsCheck[]> {
+  const out: ListsCheck[] = [];
+  const checks = new Map<string, ConductListsCheck>();
+  for await (const file of listsObjects(lists)) {
+    const named = isObject(file) && typeof file.statement_digest === "string" ? file.statement_digest : "";
+    const i = named === "" ? -1 : statements.findIndex((s) => s.digest === named);
+    const header = (mismatch: ListsCheck["mismatch"]) =>
+      out.push({ statement_digest: named, part: "statement", ok: false, mismatch });
+    if (named === "") {
+      header(LISTS_MISMATCHES.list_malformed);
+      continue;
+    }
+    if (listsMalformed(file)) {
+      header(LISTS_MISMATCHES.list_malformed);
+      continue;
+    }
+    if (i < 0) {
+      header(LISTS_MISMATCHES.statement_not_found);
+      continue;
+    }
+    if (!statements[i]!.valid) {
+      header(LISTS_MISMATCHES.statement_invalid);
+      continue;
+    }
+    const mismatch = listsHeaderMismatch(raw[i], file as Record<string, unknown>);
+    if (mismatch !== null) {
+      header(mismatch);
+      continue;
+    }
+    let check = checks.get(named);
+    if (check === undefined) {
+      check = new ConductListsCheck(raw[i] as Record<string, unknown>);
+      checks.set(named, check);
+    }
+    const f = file as { checkpoints?: unknown; acts?: unknown };
+    if (f.checkpoints !== undefined) check.addCheckpoints(f.checkpoints);
+    if (f.acts !== undefined) check.addActs(f.acts);
+  }
+  for (const [digest, check] of checks) {
+    for (const part of ["checkpoints", "acts"] as const) {
+      if (!check.supplied(part)) {
+        out.push({ statement_digest: digest, part, ok: false, not_supplied: true });
+        continue;
+      }
+      const mismatch = check.result(part);
+      out.push(mismatch === null ? { statement_digest: digest, part, ok: true } : { statement_digest: digest, part, ok: false, mismatch });
+    }
+  }
+  return out;
+}
+
+/**
+ * Check lists against one v2 statement, signature first (§11.4): the
+ * statement is verified against `jwks`, and a statement that does not
+ * verify is `statement_invalid` whatever the lists say, since anyone can
+ * build a statement and lists that agree. `lists` is one lists object, an
+ * array or an async iterable of pages, as `verify`'s `options.lists`.
+ *
+ * `{ ok: true }` only when both lists were supplied and fold to the signed
+ * digests. Otherwise the first part that is not proven: with its mismatch,
+ * or `not_supplied` for a list no object carried. A mismatch says "this list
+ * is not what Mnemom signed", not that it was tampered with: retention or a
+ * deletion, a backfill, or a row committed late also change a list (§14).
+ */
+export async function checkConductLists(
+  statement: unknown,
+  lists: RecordVerifyOptions["lists"],
+  jwks: RecordJwks,
+): Promise<ListsCheckResult> {
+  const r = await verify(statement, jwks, { lists: lists ?? [] });
+  if (!r.statements[0]?.valid) {
+    return { ok: false, part: "statement", mismatch: LISTS_MISMATCHES.statement_invalid };
+  }
+  const entries = r.lists_checked ?? [];
+  const bad = entries.find((e) => !e.ok);
+  if (bad) {
+    return bad.mismatch !== undefined
+      ? { ok: false, part: bad.part, mismatch: bad.mismatch }
+      : { ok: false, part: bad.part, not_supplied: true };
+  }
+  // No lists object at all: nothing was supplied, which is not a malformed list.
+  if (entries.length === 0) return { ok: false, part: "checkpoints", not_supplied: true };
+  return { ok: true };
+}
+
 /**
  * Verify a statement or a whole bundle against the published JWKS.
  *
@@ -377,6 +506,13 @@ function headReason(
  * or `source_digest` that names nothing in the bundle is flagged, not
  * failed. With `options.expected_head_sha` the input must also bind to that
  * PR head; the reasons for it are bundle-level, without an index prefix.
+ *
+ * Each valid `AAP-ConductRecord/v2` whose predecessor is in the bundle and
+ * valid is checked to extend it (`checkpoints removed since previous build`,
+ * `checkpoints changed since previous build`; flags only). With
+ * `options.lists`, every lists file is checked against the v2 statement it
+ * names; any mismatch adds the bundle-level `summary_list_mismatch`, and
+ * `lists_checked` reports each part.
  */
 export async function verify(
   input: SignedStatement | RecordBundle | unknown,
@@ -389,7 +525,19 @@ export async function verify(
     reasons: string[],
     flags: StatementFlag[],
     statements: StatementVerificationResult[],
-  ): RecordVerificationResult => ({ valid, reasons, flags, statements, verified_at });
+    lists_checked?: ListsCheck[],
+  ): RecordVerificationResult =>
+    lists_checked === undefined
+      ? { valid, reasons, flags, statements, verified_at }
+      : { valid, reasons, flags, statements, verified_at, lists_checked };
+  const lists = options.lists;
+  /** Run the lists check when asked: the checks, and the bundle reason when one does not match. */
+  const checkLists = async (raw: unknown[], statements: StatementVerificationResult[], reasons: string[]) => {
+    if (lists === undefined) return undefined;
+    const checked = await listsChecks(lists, raw, statements);
+    if (checked.some((c) => c.mismatch !== undefined)) reasons.push(REASONS.summary_list_mismatch);
+    return checked;
+  };
 
   const expected = options.expected_head_sha;
   if (expected !== undefined && (typeof expected !== "string" || !GIT_SHA_RE.test(expected))) {
@@ -415,7 +563,8 @@ export async function verify(
     const reasons = one.reasons.map((r) => `0:${r}`);
     const head = expected === undefined ? null : headReason([input], [one], expected);
     if (head) reasons.push(head);
-    return result(reasons.length === 0, reasons, one.flags, [one]);
+    const checked = await checkLists([input], [one], reasons);
+    return result(reasons.length === 0, reasons, one.flags, [one], checked);
   }
 
   const rawStatements: unknown[] | null = Array.isArray(input.statements) ? input.statements : null;
@@ -435,6 +584,10 @@ export async function verify(
     rawStatements,
     statements.map((s) => s.digest),
   );
+  const digestIndex = new Map<string, number>();
+  statements.forEach((s, i) => {
+    if (s.digest && !digestIndex.has(s.digest)) digestIndex.set(s.digest, i);
+  });
 
   const reasons: string[] = [];
   const flags: StatementFlag[] = [];
@@ -447,6 +600,16 @@ export async function verify(
     if (cut && s.valid) flags.push({ flag: FLAGS.lineage_truncated, subject: cut });
     const raw = rawStatements[i];
     if (!s.valid || !isObject(raw)) return;
+    // The extension check (spec §11.3): a valid v2 build whose link holds,
+    // against its valid predecessor in the bundle.
+    if ((raw.typ === CONDUCT_RECORD_V2_TYP || raw.typ === CONDUCT_RECORD_V1_TYP) && !broken && s.digest) {
+      const prev = predecessorOf(raw);
+      const j = typeof prev === "string" ? digestIndex.get(prev) : undefined;
+      if (j !== undefined && j < i && statements[j]!.valid) {
+        // extensionFlags returns nothing for a v1 -> v1 link.
+        flags.push(...extensionFlags(rawStatements[j], raw, s.digest));
+      }
+    }
     for (const [field, targets] of Object.entries(LINK_TARGETS)) {
       const value = raw[field];
       const digests = Array.isArray(value) ? value : [value];
@@ -468,6 +631,7 @@ export async function verify(
     const head = headReason(rawStatements, statements, expected);
     if (head) reasons.push(head);
   }
+  const checked = await checkLists(rawStatements, statements, reasons);
 
-  return result(reasons.length === 0, reasons, flags, statements);
+  return result(reasons.length === 0, reasons, flags, statements, checked);
 }

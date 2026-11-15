@@ -418,6 +418,19 @@ export interface StatementProtectionAct {
   [k: string]: unknown;
 }
 
+/**
+ * One row of an `AAP-ConductRecord/v2` statement's `protection.by[]`: a group
+ * of acts with one mode, verdict and tool. Its line's text is the one a single
+ * act of the group would have; the count is never in the text.
+ */
+export interface StatementProtectionGroup {
+  mode: Mode;
+  verdict: ProtectionVerdict;
+  tool_name: string | null;
+  count: number;
+  [k: string]: unknown;
+}
+
 /** A statement line as the builder signs it: one class, a stable key, the words shown. */
 export interface StatementLine {
   class: string;
@@ -430,22 +443,28 @@ export interface StatementLine {
  * pick M6). The statement carries `{class, key, text}` only; this returns the
  * same lines with `goal_mode` on `goal.*` lines, and `mode`, `verdict` and
  * `tool_name` on `protection.act.*` lines, read from the statement's `goal`
- * and `protection.acts` blocks (`protection.act.<i>` is `acts[i]`). Coverage
+ * and `protection.acts` blocks (`protection.act.<i>` is `acts[i]`). For an
+ * `AAP-ConductRecord/v2` statement, `protection.group.<i>` lines read the same
+ * context from `protection.by[i]`. Coverage
  * stays in the verdict line's words; a card renderer attaches the `coverage`
  * object itself. The text is never changed.
  */
 export function attachLineContext(
   lines: readonly StatementLine[],
   goal: StatementGoalBlock | null | undefined,
-  protection: { acts: readonly StatementProtectionAct[] } | null | undefined,
+  protection:
+    | { acts?: readonly StatementProtectionAct[]; by?: readonly StatementProtectionGroup[] }
+    | null
+    | undefined,
 ): RenderedLine[] {
   return lines.map((line) => {
     const out: RenderedLine = { class: line.class, key: line.key, text: line.text };
     if (line.key.startsWith("goal.") && goal) out.goal_mode = goal.mode;
     if (line.key === "protection.mode") out.mode = "off";
-    const act = /^protection\.act\.(\d+)$/.exec(line.key);
+    const act = /^protection\.(act|group)\.(\d+)$/.exec(line.key);
     if (act && protection) {
-      const entry = protection.acts[Number(act[1])];
+      const list = act[1] === "act" ? protection.acts : protection.by;
+      const entry = list?.[Number(act[2])];
       if (entry) {
         out.mode = entry.mode;
         out.verdict = entry.verdict;

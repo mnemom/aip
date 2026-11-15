@@ -189,17 +189,22 @@ describe("hardening (MNE-9022 review findings 1-4)", () => {
     await rejects((c) => (c.period = { start: "2026-10-07", end: "2026-10-01" }), "start must be <= end");
     expect((await verifySigned((c) => (c.period = { start: "2026-10-07", end: "2026-10-07" }))).valid).toBe(true);
   });
-  it("pins statement typ to the three real record statement types", () => {
-    expect([...SHARE_CARD_STATEMENT_TYPES]).toEqual(["AAP-ConductRecord/v1", "AAP-PRRecord/v1", "AAP-Outcome/v1"]);
+  it("pins statement typ to the real record statement types, conduct records of both versions", () => {
+    expect([...SHARE_CARD_STATEMENT_TYPES]).toEqual([
+      "AAP-ConductRecord/v1",
+      "AAP-ConductRecord/v2",
+      "AAP-PRRecord/v1",
+      "AAP-Outcome/v1",
+    ]);
   });
   it("rejects the old placeholder, the card's own typ, and the bundle typ as a statement typ", async () => {
     for (const t of ["AAP-Statement/v1", "AAP-ShareCard/v1", "AAP-RecordBundle/v1"]) {
       await rejects((c) => (c.statements[0].typ = t), "statements[0].typ");
     }
   });
-  it("accepts each of the three real types", async () => {
+  it("accepts each of the real types, AAP-ConductRecord/v2 included", async () => {
     const pk = await testPublicKeyHex();
-    for (const t of ["AAP-ConductRecord/v1", "AAP-PRRecord/v1", "AAP-Outcome/v1"]) {
+    for (const t of ["AAP-ConductRecord/v1", "AAP-ConductRecord/v2", "AAP-PRRecord/v1", "AAP-Outcome/v1"]) {
       const c = baseCard() as any;
       c.statements[0].typ = t;
       expect((await verifyShareCard(await signWithTestKey(c), { publicKey: pk })).valid).toBe(true);

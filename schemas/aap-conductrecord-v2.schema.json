@@ -1,0 +1,431 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mnemom/aip/schemas/aap-conductrecord-v2.schema.json",
+  "title": "AAP-ConductRecord/v2",
+  "description": "Bounded signed conduct record (specs/aap-conductrecord-v2.md). Ed25519 (base64url) over canonical JSON (sorted keys, no whitespace) of the statement minus `signature`, exactly as AAP-ConductRecord/v1. Structural only: the summary rules (counts add up, the tail folds to `digest`, `by` in output order, group lines match their rows, the 262144 byte ceiling, `lists_as_of <= built_at`) are checked by @mnemom/verify (`summary_inconsistent`). Closed at every level the format defines: no top-level key beyond §3, `protection`, `checkpoints`, `goal`, `cost`, `people` and each line closed, so no free text can ride in them. `runner` and `door2` are the v1 blocks; @mnemom/verify holds them to the producer's no-content allowlist.",
+  "type": "object",
+  "required": [
+    "typ",
+    "unit_kind",
+    "org_id",
+    "lineage_key",
+    "signing_key_id",
+    "built_at",
+    "lists_as_of",
+    "previous_digest",
+    "goal",
+    "cost",
+    "people",
+    "protection",
+    "checkpoints",
+    "lines",
+    "signature"
+  ],
+  "properties": {
+    "typ": {
+      "const": "AAP-ConductRecord/v2"
+    },
+    "unit_kind": {
+      "const": "conversation"
+    },
+    "org_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.:/+=@-]{1,256}$"
+    },
+    "lineage_key": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.:/+=@-]{1,256}$"
+    },
+    "signing_key_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.:/+=@-]{1,256}$"
+    },
+    "built_at": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+    },
+    "lists_as_of": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+    },
+    "previous_digest": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "goal": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-z_]{1,32}$"
+        },
+        "contract_sha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "seal_version": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "seal_reason": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-z_]{1,32}$"
+        },
+        "previous_contract_sha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "canon_node_status": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "written",
+            "pending",
+            null
+          ]
+        },
+        "canon_node_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^mn-[a-z0-9]{6}$"
+        },
+        "on_goal": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "judged": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "turns": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "cost": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "model_cost_mmu": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^(0|[1-9][0-9]{0,18})$"
+        },
+        "mu_charged_mmu": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^(0|[1-9][0-9]{0,18})$"
+        },
+        "mu_provisional_mmu": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^(0|[1-9][0-9]{0,18})$"
+        },
+        "mu_status": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[a-z_]{1,32}$"
+        },
+        "mu_rate_bps": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "row_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "as_of": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{1,3})?Z$"
+        }
+      }
+    },
+    "people": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "messages_from_person": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "compactions": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      }
+    },
+    "runner": {
+      "type": "object"
+    },
+    "door2": {
+      "type": "object"
+    },
+    "protection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "acts_total",
+        "acts_digest",
+        "by",
+        "tools_folded",
+        "tool_names_withheld"
+      ],
+      "properties": {
+        "acts_total": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "acts_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "tools_folded": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "tool_names_withheld": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "by": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "mode",
+              "verdict",
+              "tool_name",
+              "count"
+            ],
+            "properties": {
+              "mode": {
+                "enum": [
+                  "off",
+                  "observe",
+                  "nudge",
+                  "enforce"
+                ]
+              },
+              "verdict": {
+                "enum": [
+                  "pass",
+                  "warn",
+                  "nudge",
+                  "quarantine",
+                  "block"
+                ]
+              },
+              "tool_name": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              }
+            }
+          }
+        }
+      }
+    },
+    "checkpoints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "count",
+        "bound_count",
+        "card_hash_count",
+        "digest",
+        "tail_from_digest",
+        "tail"
+      ],
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "bound_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "card_hash_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "tail_from_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "tail": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/$defs/citation"
+          }
+        }
+      }
+    },
+    "lines": {
+      "type": "array",
+      "maxItems": 72,
+      "description": "The v1 lines in v1 order (§8), at most 8 fixed lines and one per line-bearing `protection.by` row (`protection.group.<i>`, i < by.length). The exact wording per key is checked by @mnemom/verify.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "class",
+          "key",
+          "text"
+        ],
+        "properties": {
+          "class": {
+            "enum": [
+              "measured",
+              "verdict"
+            ]
+          },
+          "key": {
+            "type": "string",
+            "pattern": "^(cost\\.model|cost\\.mu|goal\\.mode|goal\\.node|goal\\.verdict|protection\\.mode|people\\.messages|context\\.compactions|protection\\.group\\.(0|[1-9][0-9]?))$"
+          },
+          "text": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9µ≈() ,:_./-]{1,200}$"
+          }
+        }
+      }
+    },
+    "alg": {
+      "const": "EdDSA"
+    },
+    "signature": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{86}$"
+    }
+  },
+  "$defs": {
+    "citation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checkpoint_id",
+        "combined_commitment",
+        "commitment_signature",
+        "commitment_key_id",
+        "card_hash"
+      ],
+      "properties": {
+        "checkpoint_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.:/+=@-]{1,256}$"
+        },
+        "combined_commitment": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-Za-z0-9_=-]{1,512}$"
+        },
+        "commitment_signature": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-Za-z0-9+/_=-]{1,512}$"
+        },
+        "commitment_key_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-Za-z0-9_.:/+=@-]{1,256}$"
+        },
+        "card_hash": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

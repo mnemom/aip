@@ -39,6 +39,8 @@ const REASON_TEXT: Record<string, string> = {
   [REASONS.head_mismatch]: "The latest PR record in the input names a different head commit than the one expected.",
   [REASONS.head_unbound]: "No verified PR record in the input names a head commit, so it binds to none.",
   [REASONS.expected_head_malformed]: "The expected head is not a 40 or 64 character lowercase hex commit sha.",
+  [REASONS.summary_inconsistent]: "The summarised conduct record does not hold together: its counts, its newest checkpoint citations and its digests disagree, or its summary carries a field the format does not allow.",
+  [REASONS.summary_list_mismatch]: "A lists file does not match the digests of the summarised conduct record it names. It is not the list Mnemom signed; retention, a deletion or a late row can also cause this.",
 };
 
 const FLAG_TEXT: Record<string, string> = {
@@ -46,6 +48,10 @@ const FLAG_TEXT: Record<string, string> = {
   [FLAGS.card_not_bound]: "A checkpoint carries no signed card commitment.",
   [FLAGS.linked_statement_not_in_bundle]: "A digest names a statement outside this bundle.",
   [FLAGS.lineage_truncated]: "The record's oldest builds are not in this bundle (removed by retention); the builds it holds still chain.",
+  [FLAGS.summarized]: "A long session's conduct record is summarised: protection acts are counted in groups, and the earlier checkpoint citations are committed only by digest. The count is the citations not shown in full.",
+  [FLAGS.checkpoints_removed]: "This build cites fewer checkpoints than the build before it, for example after retention or a deletion.",
+  [FLAGS.checkpoints_changed]: "This build's checkpoint citations do not extend the build before it, for example after a backfill or a late row.",
+  [FLAGS.extension_not_checked]: "Whether this build extends the build before it could not be checked from the bundle: more citations were added than it shows in full (the count), or it was cut off earlier. Unknown, not wrong; a lists file settles it.",
 };
 
 function $<T extends HTMLElement>(id: string): T {
@@ -80,7 +86,22 @@ function splitReason(reason: string): { index: number | null; code: string } {
   return m ? { index: Number(m[1]), code: m[2] as string } : { index: null, code: reason };
 }
 
-function render(result: RecordVerificationResult, inputTyp: string | null): void {
+/**
+ * "45 checkpoints, 32 in this bundle; 9 protection acts in 8 groups" for a
+ * verified AAP-ConductRecord/v2, else null. Every number is a signed field.
+ */
+function conductV2Summary(raw: unknown): string | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as { typ?: unknown; checkpoints?: { count?: unknown; tail?: unknown }; protection?: { acts_total?: unknown; by?: unknown } };
+  if (r.typ !== "AAP-ConductRecord/v2") return null;
+  const count = Number(r.checkpoints?.count ?? 0);
+  const shown = Array.isArray(r.checkpoints?.tail) ? r.checkpoints.tail.length : 0;
+  const acts = Number(r.protection?.acts_total ?? 0);
+  const groups = Array.isArray(r.protection?.by) ? r.protection.by.length : 0;
+  return `${count} checkpoints, ${shown} in this bundle; ${acts} protection acts in ${groups} groups`;
+}
+
+function render(result: RecordVerificationResult, inputTyp: string | null, raws: unknown[] = []): void {
   const out = $("result");
   out.replaceChildren();
   out.dataset.valid = String(result.valid);
@@ -121,7 +142,8 @@ function render(result: RecordVerificationResult, inputTyp: string | null): void
     for (const f of result.flags) {
       const li = el("li", null);
       li.dataset.flag = f.flag;
-      li.append(el("code", null, f.flag), document.createTextNode(` ${FLAG_TEXT[f.flag] ?? ""} (${f.subject})`));
+      const count = f.count === undefined ? "" : ` Count: ${f.count}.`;
+      li.append(el("code", null, f.flag), document.createTextNode(` ${FLAG_TEXT[f.flag] ?? ""}${count} (${f.subject})`));
       ul.append(li);
     }
     out.append(h, ul);
@@ -140,7 +162,7 @@ function render(result: RecordVerificationResult, inputTyp: string | null): void
       el("td", null, s.typ ?? "?"),
       el("td", null, s.signing_key_id ?? "?"),
       el("td", "digest", s.digest ?? "?"),
-      el("td", null, s.valid ? "valid" : s.reasons.join(", ")),
+      el("td", null, s.valid ? (conductV2Summary(raws[i]) ? `valid (${conductV2Summary(raws[i])})` : "valid") : s.reasons.join(", ")),
     );
     table.append(tr);
   });
@@ -198,7 +220,9 @@ async function run(): Promise<void> {
     jwks.value as Parameters<typeof verify>[1],
     expectedHead ? { expected_head_sha: expectedHead } : {},
   );
-  render(result, typ);
+  const value = input.value as { statements?: unknown };
+  const raws = typ === "AAP-RecordBundle/v1" && Array.isArray(value.statements) ? value.statements : [input.value];
+  render(result, typ, raws);
 }
 
 function wire(): void {
