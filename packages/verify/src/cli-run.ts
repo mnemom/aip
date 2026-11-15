@@ -50,7 +50,10 @@ Options:
   --lists <file>             Check an AAP-RecordLists/v1 file (one object or an
                              array) against the AAP-ConductRecord/v2 statements
                              it names: every count, the tail and both digests
-                             are recomputed from the full lists. Offline.
+                             are recomputed from the full lists. Offline. Give
+                             it again for more files (pages): objects naming
+                             the same statement continue its lists in the
+                             order given, and each file is read on its own.
   --json                     Print the result as JSON.
   -h, --help                 Show this help.
 
@@ -71,7 +74,7 @@ the single acts are proven only with --lists. A lists mismatch, or a
 tampering: retention, a deletion, a backfill or a late row also change a list.
 `;
 
-const SHORT_USAGE = `Usage: mnemom-verify <bundle.json | -> [--jwks <file>] [--jwks-url <url>] [--expected-head-sha <sha>] [--lists <file>] [--json]
+const SHORT_USAGE = `Usage: mnemom-verify <bundle.json | -> [--jwks <file>] [--jwks-url <url>] [--expected-head-sha <sha>] [--lists <file>]... [--json]
 Run mnemom-verify --help for more.
 `;
 
@@ -128,7 +131,8 @@ export interface CliArgs {
   jwks?: string;
   jwksUrl?: string;
   expectedHeadSha?: string;
-  lists?: string;
+  /** `--lists` files, in the order given. */
+  lists?: string[];
   json: boolean;
 }
 
@@ -144,6 +148,8 @@ export function parseCliArgs(argv: readonly string[]): CliArgs | "help" {
     "--expected-head-sha": "expectedHeadSha",
     "--lists": "lists",
   };
+  /** Options that may be given more than once. */
+  const repeatable = new Set(["lists"]);
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]!;
     if (arg === "-h" || arg === "--help") return "help";
@@ -163,7 +169,11 @@ export function parseCliArgs(argv: readonly string[]): CliArgs | "help" {
       if (name !== arg) value = arg.slice(eq + 1);
       else value = argv[++i];
       if (value === undefined || value === "") throw new UsageError(`${name} needs a value`);
-      if (out[key] !== undefined) throw new UsageError(`${name} given twice`);
+      if (key === "lists") {
+        (out.lists ??= []).push(value);
+        continue;
+      }
+      if (!repeatable.has(key) && out[key] !== undefined) throw new UsageError(`${name} given twice`);
       out[key] = value;
       continue;
     }
@@ -236,18 +246,25 @@ async function readBundle(args: CliArgs, io: CliIo): Promise<unknown> {
   return parseJson(text, what);
 }
 
-/** Read the `--lists` file: one `AAP-RecordLists/v1` object or an array of them. */
-async function readLists(path: string, io: CliIo): Promise<RecordLists | RecordLists[]> {
-  let text: string;
-  try {
-    text = await io.readFile(path);
-  } catch (e) {
-    throw new InputError(`cannot read lists ${path}: ${(e as Error).message}`);
+/**
+ * The `--lists` files' objects, one file at a time: each file is one
+ * `AAP-RecordLists/v1` object or an array of them, read and parsed only when
+ * the check reaches it, so the files together may hold more than one file can.
+ */
+async function* readLists(paths: readonly string[], io: CliIo): AsyncGenerator<RecordLists> {
+  for (const path of paths) {
+    let text: string;
+    try {
+      text = await io.readFile(path);
+    } catch (e) {
+      throw new InputError(`cannot read lists ${path}: ${(e as Error).message}`);
+    }
+    checkSize(text, `lists ${path}`);
+    const value = parseJson(text, `lists ${path}`);
+    if (!value || typeof value !== "object") throw new InputError(`lists ${path} is not an object or an array`);
+    if (Array.isArray(value)) yield* value as RecordLists[];
+    else yield value as RecordLists;
   }
-  checkSize(text, path);
-  const value = parseJson(text, `lists ${path}`);
-  if (!value || typeof value !== "object") throw new InputError(`lists ${path} is not an object or an array`);
-  return value as RecordLists | RecordLists[];
 }
 
 async function loadJwks(args: CliArgs, io: CliIo): Promise<{ jwks: RecordJwks; source: string }> {
@@ -322,9 +339,27 @@ export function conductV2Line(raw: unknown, s: StatementVerificationResult, resu
   const inBundle = r.checkpoints?.tail?.length ?? 0;
   const acts = r.protection?.acts_total ?? 0;
   const groups = r.protection?.by?.length ?? 0;
-  const checked = (result.lists_checked ?? []).filter((c) => c.statement_digest === s.digest);
-  const lists = checked.length === 0 ? "not supplied" : checked.every((c) => c.ok) ? "checked" : "mismatch";
-  return `${count} checkpoints (${inBundle} in bundle), ${acts} acts in ${groups} groups, lists: ${lists}`;
+  return `${count} checkpoints (${inBundle} in bundle), ${acts} acts in ${groups} groups, lists: ${listsStatus(result, s.digest)}`;
+}
+
+/**
+ * What the lists check proved for one statement: "checked" only when both
+ * lists were supplied and fold to the signed digests; "mismatch" when any
+ * check failed; "not supplied" when none was given; else each part on its
+ * own ("checkpoints checked, acts not supplied").
+ */
+function listsStatus(result: RecordVerificationResult, digest: string | null): string {
+  const checked = (result.lists_checked ?? []).filter((c) => c.statement_digest === digest);
+  if (checked.length === 0) return "not supplied";
+  if (checked.some((c) => c.mismatch !== undefined)) return "mismatch";
+  const part = (name: "checkpoints" | "acts") => {
+    const c = checked.find((x) => x.part === name);
+    return c?.ok ? "checked" : "not supplied";
+  };
+  const cp = part("checkpoints");
+  const acts = part("acts");
+  if (cp === "checked" && acts === "checked") return "checked";
+  return `checkpoints ${cp}, acts ${acts}`;
 }
 
 function rawStatements(input: unknown): unknown[] {
@@ -403,10 +438,8 @@ export async function runCli(argv: readonly string[], io: CliIo): Promise<number
   let input: unknown;
   let jwks: RecordJwks;
   let source: string;
-  let lists: RecordLists | RecordLists[] | undefined;
   try {
     input = await readBundle(args, io);
-    if (args.lists !== undefined) lists = await readLists(args.lists, io);
     ({ jwks, source } = await loadJwks(args, io));
   } catch (e) {
     // The message can name the bundle path and quote bundle bytes (JSON.parse does).
@@ -416,9 +449,18 @@ export async function runCli(argv: readonly string[], io: CliIo): Promise<number
 
   const options = {
     ...(args.expectedHeadSha === undefined ? {} : { expected_head_sha: args.expectedHeadSha }),
-    ...(lists === undefined ? {} : { lists }),
+    ...(args.lists === undefined ? {} : { lists: readLists(args.lists, io) }),
   };
-  const result = requireStatements(await verify(input, jwks, options));
+  let result: RecordVerificationResult;
+  try {
+    result = requireStatements(await verify(input, jwks, options));
+  } catch (e) {
+    // A lists file that cannot be read, is not JSON, is too large or is a
+    // scalar: the files are read one at a time during the check.
+    if (!(e instanceof InputError)) throw e;
+    io.stderr(`mnemom-verify: ${terminalSafe(e.message)}\n`);
+    return EXIT_ERROR;
+  }
   const code = result.valid ? EXIT_VALID : EXIT_INVALID;
 
   if (args.json) {

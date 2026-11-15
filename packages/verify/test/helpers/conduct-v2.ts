@@ -6,7 +6,7 @@
  */
 
 import { protectionVerb, type Mode, type ProtectionVerdict } from "../../src/claim-table.js";
-import { ACTS_SEED_HEX, CKPT_SEED_HEX, SUMMARY_TAIL_MAX, decisionRef, fold, groupActs } from "../../src/conduct-summary.js";
+import { ACTS_SEED_HEX, CKPT_SEED_HEX, SUMMARY_TAIL_MAX, decisionRef, fold, groupActs, groupLineText } from "../../src/conduct-summary.js";
 import type { ActTuple, CheckpointTuple } from "../../src/statements.js";
 import { TEST_KID } from "./sign.js";
 
@@ -59,12 +59,6 @@ export function stripId(a: ActTuple & { decision_id?: string }): ActTuple {
   return t;
 }
 
-/** v1 `protectionActLine`'s wording for one act or group (mnemom-api claims.ts). */
-function groupLineText(mode: Mode, verdict: ProtectionVerdict, tool: string | null): string {
-  const verb = protectionVerb(mode, verdict)!;
-  return verb === "stopped" && tool !== null ? `stopped ${tool}` : verb;
-}
-
 export interface V2Input {
   lineage_key: string;
   built_at: string;
@@ -85,17 +79,25 @@ export function buildConductV2(input: V2Input): Record<string, unknown> {
   const tuples = input.acts.map(stripId);
   const groups = groupActs(tuples);
   const lists_as_of = new Date(Date.parse(input.built_at) - 5000).toISOString();
+  // The v1 lines in v1 order (spec §8), with the api's wording.
   const lines: Record<string, unknown>[] = [
+    { class: "measured", key: "cost.model", text: "model cost 530000 mmu" },
     { class: "measured", key: "cost.mu", text: "µ 21200 mmu" },
-    { class: "measured", key: "goal.mode", text: "sealed" },
+    { class: "measured", key: "goal.mode", text: "sealed contract" },
+    { class: "measured", key: "goal.node", text: "Canon node mn-b2c3d4" },
+    { class: "verdict", key: "goal.verdict", text: "3 of 4 judged turns on goal, 4 of 5 turns judged" },
   ];
   if (groups.by.length === 0 || groups.by.every((g) => g.mode === "off")) {
     lines.push({ class: "measured", key: "protection.mode", text: "not checked" });
   }
   groups.by.forEach((g, i) => {
     if (protectionVerb(g.mode, g.verdict) === null) return;
-    lines.push({ class: "verdict", key: `protection.group.${i}`, text: groupLineText(g.mode, g.verdict, g.tool_name) });
+    lines.push({ class: "verdict", key: `protection.group.${i}`, text: groupLineText(g) });
   });
+  lines.push(
+    { class: "measured", key: "people.messages", text: "3 messages from a person" },
+    { class: "measured", key: "context.compactions", text: "1 compactions" },
+  );
   return {
     typ: "AAP-ConductRecord/v2",
     signing_key_id: TEST_KID,
@@ -105,8 +107,28 @@ export function buildConductV2(input: V2Input): Record<string, unknown> {
     built_at: input.built_at,
     lists_as_of,
     previous_digest: input.previous_digest,
-    goal: { mode: "sealed", contract_sha256: H("1"), canon_node_id: "node_" + "b".repeat(16), seal_version: 1 },
-    cost: { model_cost_millimu: 530000, mu_millimu: 21200, mu_rate_bps: 400, currency_fixed_at: input.built_at },
+    goal: {
+      mode: "sealed",
+      contract_sha256: H("1"),
+      seal_version: 1,
+      seal_reason: null,
+      previous_contract_sha256: null,
+      canon_node_status: "written",
+      canon_node_id: "mn-b2c3d4",
+      on_goal: 3,
+      judged: 4,
+      turns: 5,
+    },
+    cost: {
+      model_cost_mmu: "530000",
+      mu_charged_mmu: "21200",
+      mu_provisional_mmu: null,
+      mu_status: "final",
+      mu_rate_bps: 400,
+      row_count: 12,
+      as_of: input.built_at,
+    },
+    people: { messages_from_person: 3, compactions: 1 },
     protection: {
       acts_total: tuples.length,
       acts_digest: fold(ACTS_SEED_HEX, tuples),

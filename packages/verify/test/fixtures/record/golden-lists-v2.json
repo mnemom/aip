@@ -1,7 +1,7 @@
 {
   "lists": {
     "typ": "AAP-RecordLists/v1",
-    "statement_digest": "c558c49c15cfca88bf63551a2aca78f320fb133921a37de7c2fce849e1408776",
+    "statement_digest": "bc6146d4ed8c55806cca43ae27abc68c6760ef0f77199559b86f18a1da471dfd",
     "lists_as_of": "2026-11-14T10:59:55.000Z",
     "checkpoints": [
       {
@@ -402,7 +402,7 @@
       "mismatch": "digest_mismatch",
       "lists": {
         "typ": "AAP-RecordLists/v1",
-        "statement_digest": "c558c49c15cfca88bf63551a2aca78f320fb133921a37de7c2fce849e1408776",
+        "statement_digest": "bc6146d4ed8c55806cca43ae27abc68c6760ef0f77199559b86f18a1da471dfd",
         "lists_as_of": "2026-11-14T10:59:55.000Z",
         "checkpoints": [
           {
@@ -803,7 +803,7 @@
       "mismatch": "count_mismatch",
       "lists": {
         "typ": "AAP-RecordLists/v1",
-        "statement_digest": "c558c49c15cfca88bf63551a2aca78f320fb133921a37de7c2fce849e1408776",
+        "statement_digest": "bc6146d4ed8c55806cca43ae27abc68c6760ef0f77199559b86f18a1da471dfd",
         "lists_as_of": "2026-11-14T10:59:55.000Z",
         "checkpoints": [
           {
@@ -1197,7 +1197,7 @@
       "mismatch": "binding_count_mismatch",
       "lists": {
         "typ": "AAP-RecordLists/v1",
-        "statement_digest": "c558c49c15cfca88bf63551a2aca78f320fb133921a37de7c2fce849e1408776",
+        "statement_digest": "bc6146d4ed8c55806cca43ae27abc68c6760ef0f77199559b86f18a1da471dfd",
         "lists_as_of": "2026-11-14T10:59:55.000Z",
         "checkpoints": [
           {
@@ -1598,7 +1598,7 @@
       "mismatch": "digest_mismatch",
       "lists": {
         "typ": "AAP-RecordLists/v1",
-        "statement_digest": "c558c49c15cfca88bf63551a2aca78f320fb133921a37de7c2fce849e1408776",
+        "statement_digest": "bc6146d4ed8c55806cca43ae27abc68c6760ef0f77199559b86f18a1da471dfd",
         "lists_as_of": "2026-11-14T10:59:55.000Z",
         "checkpoints": [
           {
@@ -1999,7 +1999,7 @@
       "mismatch": "decision_ref_mismatch",
       "lists": {
         "typ": "AAP-RecordLists/v1",
-        "statement_digest": "c558c49c15cfca88bf63551a2aca78f320fb133921a37de7c2fce849e1408776",
+        "statement_digest": "bc6146d4ed8c55806cca43ae27abc68c6760ef0f77199559b86f18a1da471dfd",
         "lists_as_of": "2026-11-14T10:59:55.000Z",
         "checkpoints": [
           {
@@ -2400,7 +2400,7 @@
       "mismatch": "as_of_mismatch",
       "lists": {
         "typ": "AAP-RecordLists/v1",
-        "statement_digest": "c558c49c15cfca88bf63551a2aca78f320fb133921a37de7c2fce849e1408776",
+        "statement_digest": "bc6146d4ed8c55806cca43ae27abc68c6760ef0f77199559b86f18a1da471dfd",
         "lists_as_of": "2026-11-14T09:59:55.000Z",
         "checkpoints": [
           {

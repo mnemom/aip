@@ -80,10 +80,15 @@
         "decision_ref": "e4dd51cca034337eca15c8e5bb09706f59de3524fc395442c9897426735ccd85"
       },
       {
-        "id": "00000000-0000-4000-8000-000000000001",
-        "decision_ref": "6699a3dfa4f36d42c83041bf2631208c431b6acef26617ec7cc694d63132a200"
+        "id": "3f2a9c1e-b7d4-4e6f-a0c8-5d1e9b2f7a6c",
+        "decision_ref": "d143e2cb5680360e15cda38befdaf6bd3bf712e7b45c687d2f9138ddc8f339ae"
+      },
+      {
+        "id": "3F2A9C1E-B7D4-4E6F-A0C8-5D1E9B2F7A6C",
+        "decision_ref": "d143e2cb5680360e15cda38befdaf6bd3bf712e7b45c687d2f9138ddc8f339ae"
       }
-    ]
+    ],
+    "$comment": "The id is lowercased before hashing: the third and fourth ids are one id in two cases and give one ref. In SQL the prefix is E'AAP-DecisionRef/v1\\n' (or 'AAP-DecisionRef/v1' || chr(10)); a plain '...\\n' literal keeps a backslash and an n."
   },
   "act_tuples": {
     "a1": {
@@ -135,5 +140,1826 @@
       "items": [],
       "result": "636e3beabb000b277895117585ba15c71fe2642db841003e3df015e5a78d9fc9"
     }
-  ]
+  ],
+  "row_normalisation": {
+    "$comment": "Raw stored rows and the §4 tuple each normalises to, as canonical JSON text (null: the row fails the build). Shared by the aip tests (citationFromRow, actFromRow) and the api pgTAP tests (record_ckpt_tuple, record_act_tuple). Postgres regex bounds stop at 255, so SQL writes each bounded pattern as '^[class]+$' AND length(x) BETWEEN 1 AND n.",
+    "checkpoints": [
+      {
+        "name": "bound",
+        "row": {
+          "checkpoint_id": "ic-00000000-0000-4000-8000-000000000001",
+          "input_commitment": "YWJj",
+          "issuer_signature": "c2ln",
+          "signing_key_id": "key-001",
+          "card_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "tuple": "{\"card_hash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"checkpoint_id\":\"ic-00000000-0000-4000-8000-000000000001\",\"combined_commitment\":\"YWJj\",\"commitment_key_id\":\"key-001\",\"commitment_signature\":\"c2ln\"}"
+      },
+      {
+        "name": "signature fails its pattern: unbound",
+        "row": {
+          "checkpoint_id": "ic-00000000-0000-4000-8000-000000000001",
+          "input_commitment": "YWJj",
+          "issuer_signature": "c2ln with space",
+          "signing_key_id": "key-001",
+          "card_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "tuple": "{\"card_hash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"checkpoint_id\":\"ic-00000000-0000-4000-8000-000000000001\",\"combined_commitment\":null,\"commitment_key_id\":null,\"commitment_signature\":null}"
+      },
+      {
+        "name": "commitment fails its pattern: unbound",
+        "row": {
+          "checkpoint_id": "ic-00000000-0000-4000-8000-000000000001",
+          "input_commitment": "YW+j",
+          "issuer_signature": "c2ln",
+          "signing_key_id": "key-001",
+          "card_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "tuple": "{\"card_hash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"checkpoint_id\":\"ic-00000000-0000-4000-8000-000000000001\",\"combined_commitment\":null,\"commitment_key_id\":null,\"commitment_signature\":null}"
+      },
+      {
+        "name": "commitment null: unbound, key id dropped",
+        "row": {
+          "checkpoint_id": "ic-00000000-0000-4000-8000-000000000001",
+          "input_commitment": null,
+          "issuer_signature": "c2ln",
+          "signing_key_id": "key-001",
+          "card_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "tuple": "{\"card_hash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"checkpoint_id\":\"ic-00000000-0000-4000-8000-000000000001\",\"combined_commitment\":null,\"commitment_key_id\":null,\"commitment_signature\":null}"
+      },
+      {
+        "name": "bound, key id fails ID_RE: key id null",
+        "row": {
+          "checkpoint_id": "ic-00000000-0000-4000-8000-000000000001",
+          "input_commitment": "YWJj",
+          "issuer_signature": "c2ln",
+          "signing_key_id": "key 001",
+          "card_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "tuple": "{\"card_hash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"checkpoint_id\":\"ic-00000000-0000-4000-8000-000000000001\",\"combined_commitment\":\"YWJj\",\"commitment_key_id\":null,\"commitment_signature\":\"c2ln\"}"
+      },
+      {
+        "name": "bound, key id null",
+        "row": {
+          "checkpoint_id": "ic-00000000-0000-4000-8000-000000000001",
+          "input_commitment": "YWJj",
+          "issuer_signature": "c2ln",
+          "signing_key_id": null,
+          "card_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "tuple": "{\"card_hash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"checkpoint_id\":\"ic-00000000-0000-4000-8000-000000000001\",\"combined_commitment\":\"YWJj\",\"commitment_key_id\":null,\"commitment_signature\":\"c2ln\"}"
+      },
+      {
+        "name": "uppercase card hash: null",
+        "row": {
+          "checkpoint_id": "ic-00000000-0000-4000-8000-000000000001",
+          "input_commitment": "YWJj",
+          "issuer_signature": "c2ln",
+          "signing_key_id": "key-001",
+          "card_hash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+        },
+        "tuple": "{\"card_hash\":null,\"checkpoint_id\":\"ic-00000000-0000-4000-8000-000000000001\",\"combined_commitment\":\"YWJj\",\"commitment_key_id\":\"key-001\",\"commitment_signature\":\"c2ln\"}"
+      },
+      {
+        "name": "short card hash: null",
+        "row": {
+          "checkpoint_id": "ic-00000000-0000-4000-8000-000000000001",
+          "input_commitment": "YWJj",
+          "issuer_signature": "c2ln",
+          "signing_key_id": "key-001",
+          "card_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "tuple": "{\"card_hash\":null,\"checkpoint_id\":\"ic-00000000-0000-4000-8000-000000000001\",\"combined_commitment\":\"YWJj\",\"commitment_key_id\":\"key-001\",\"commitment_signature\":\"c2ln\"}"
+      },
+      {
+        "name": "commitment 512 characters: bound",
+        "row": {
+          "checkpoint_id": "ic-00000000-0000-4000-8000-000000000001",
+          "input_commitment": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "issuer_signature": "c2ln",
+          "signing_key_id": "key-001",
+          "card_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "tuple": "{\"card_hash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"checkpoint_id\":\"ic-00000000-0000-4000-8000-000000000001\",\"combined_commitment\":\"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\",\"commitment_key_id\":\"key-001\",\"commitment_signature\":\"c2ln\"}"
+      },
+      {
+        "name": "commitment 513 characters: unbound",
+        "row": {
+          "checkpoint_id": "ic-00000000-0000-4000-8000-000000000001",
+          "input_commitment": "ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "issuer_signature": "c2ln",
+          "signing_key_id": "key-001",
+          "card_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "tuple": "{\"card_hash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"checkpoint_id\":\"ic-00000000-0000-4000-8000-000000000001\",\"combined_commitment\":null,\"commitment_key_id\":null,\"commitment_signature\":null}"
+      },
+      {
+        "name": "signature 255 characters: bound",
+        "row": {
+          "checkpoint_id": "ic-00000000-0000-4000-8000-000000000001",
+          "input_commitment": "YWJj",
+          "issuer_signature": "sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss",
+          "signing_key_id": "key-001",
+          "card_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "tuple": "{\"card_hash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"checkpoint_id\":\"ic-00000000-0000-4000-8000-000000000001\",\"combined_commitment\":\"YWJj\",\"commitment_key_id\":\"key-001\",\"commitment_signature\":\"sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss\"}"
+      },
+      {
+        "name": "signature 512 characters: bound",
+        "row": {
+          "checkpoint_id": "ic-00000000-0000-4000-8000-000000000001",
+          "input_commitment": "YWJj",
+          "issuer_signature": "ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss",
+          "signing_key_id": "key-001",
+          "card_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "tuple": "{\"card_hash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"checkpoint_id\":\"ic-00000000-0000-4000-8000-000000000001\",\"combined_commitment\":\"YWJj\",\"commitment_key_id\":\"key-001\",\"commitment_signature\":\"ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss\"}"
+      },
+      {
+        "name": "signature 513 characters: unbound",
+        "row": {
+          "checkpoint_id": "ic-00000000-0000-4000-8000-000000000001",
+          "input_commitment": "YWJj",
+          "issuer_signature": "sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss",
+          "signing_key_id": "key-001",
+          "card_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "tuple": "{\"card_hash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"checkpoint_id\":\"ic-00000000-0000-4000-8000-000000000001\",\"combined_commitment\":null,\"commitment_key_id\":null,\"commitment_signature\":null}"
+      },
+      {
+        "name": "key id 256 characters: kept",
+        "row": {
+          "checkpoint_id": "ic-00000000-0000-4000-8000-000000000001",
+          "input_commitment": "YWJj",
+          "issuer_signature": "c2ln",
+          "signing_key_id": "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+          "card_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "tuple": "{\"card_hash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"checkpoint_id\":\"ic-00000000-0000-4000-8000-000000000001\",\"combined_commitment\":\"YWJj\",\"commitment_key_id\":\"kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk\",\"commitment_signature\":\"c2ln\"}"
+      },
+      {
+        "name": "key id 257 characters: null",
+        "row": {
+          "checkpoint_id": "ic-00000000-0000-4000-8000-000000000001",
+          "input_commitment": "YWJj",
+          "issuer_signature": "c2ln",
+          "signing_key_id": "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+          "card_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "tuple": "{\"card_hash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"checkpoint_id\":\"ic-00000000-0000-4000-8000-000000000001\",\"combined_commitment\":\"YWJj\",\"commitment_key_id\":null,\"commitment_signature\":\"c2ln\"}"
+      },
+      {
+        "name": "checkpoint id 255 characters",
+        "row": {
+          "checkpoint_id": "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii",
+          "input_commitment": "YWJj",
+          "issuer_signature": "c2ln",
+          "signing_key_id": "key-001",
+          "card_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "tuple": "{\"card_hash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"checkpoint_id\":\"iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii\",\"combined_commitment\":\"YWJj\",\"commitment_key_id\":\"key-001\",\"commitment_signature\":\"c2ln\"}"
+      },
+      {
+        "name": "checkpoint id 256 characters",
+        "row": {
+          "checkpoint_id": "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii",
+          "input_commitment": "YWJj",
+          "issuer_signature": "c2ln",
+          "signing_key_id": "key-001",
+          "card_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "tuple": "{\"card_hash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"checkpoint_id\":\"iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii\",\"combined_commitment\":\"YWJj\",\"commitment_key_id\":\"key-001\",\"commitment_signature\":\"c2ln\"}"
+      },
+      {
+        "name": "checkpoint id 257 characters: the build fails",
+        "row": {
+          "checkpoint_id": "iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii",
+          "input_commitment": "YWJj",
+          "issuer_signature": "c2ln",
+          "signing_key_id": "key-001",
+          "card_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "tuple": null
+      },
+      {
+        "name": "checkpoint id with a space: the build fails",
+        "row": {
+          "checkpoint_id": "ic 1",
+          "input_commitment": "YWJj",
+          "issuer_signature": "c2ln",
+          "signing_key_id": "key-001",
+          "card_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "tuple": null
+      }
+    ],
+    "acts": [
+      {
+        "name": "named tool",
+        "row": {
+          "id": "3f2a9c1e-b7d4-4e6f-a0c8-5d1e9b2f7a6c",
+          "mode": "enforce",
+          "verdict": "block",
+          "tool_name": "Bash"
+        },
+        "tuple": "{\"decision_ref\":\"d143e2cb5680360e15cda38befdaf6bd3bf712e7b45c687d2f9138ddc8f339ae\",\"mode\":\"enforce\",\"tool_name\":\"Bash\",\"tool_withheld\":false,\"verdict\":\"block\"}"
+      },
+      {
+        "name": "uppercase id: the same ref",
+        "row": {
+          "id": "3F2A9C1E-B7D4-4E6F-A0C8-5D1E9B2F7A6C",
+          "mode": "enforce",
+          "verdict": "block",
+          "tool_name": "Bash"
+        },
+        "tuple": "{\"decision_ref\":\"d143e2cb5680360e15cda38befdaf6bd3bf712e7b45c687d2f9138ddc8f339ae\",\"mode\":\"enforce\",\"tool_name\":\"Bash\",\"tool_withheld\":false,\"verdict\":\"block\"}"
+      },
+      {
+        "name": "null tool: not withheld",
+        "row": {
+          "id": "00000000-0000-4000-8000-000000000002",
+          "mode": "observe",
+          "verdict": "pass",
+          "tool_name": null
+        },
+        "tuple": "{\"decision_ref\":\"e4dd51cca034337eca15c8e5bb09706f59de3524fc395442c9897426735ccd85\",\"mode\":\"observe\",\"tool_name\":null,\"tool_withheld\":false,\"verdict\":\"pass\"}"
+      },
+      {
+        "name": "tool with a space: withheld",
+        "row": {
+          "id": "00000000-0000-4000-8000-000000000003",
+          "mode": "enforce",
+          "verdict": "block",
+          "tool_name": "rm -rf /"
+        },
+        "tuple": "{\"decision_ref\":\"82652574a24986ae63131cf5983b38dbe216ff95f2903c37768d1e90fb25a0fb\",\"mode\":\"enforce\",\"tool_name\":null,\"tool_withheld\":true,\"verdict\":\"block\"}"
+      },
+      {
+        "name": "tool 128 characters: named",
+        "row": {
+          "id": "00000000-0000-4000-8000-000000000004",
+          "mode": "nudge",
+          "verdict": "nudge",
+          "tool_name": "tttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt"
+        },
+        "tuple": "{\"decision_ref\":\"6c65ae9167e66148c0ad90828a3e74e914ee1baa3d2b2e8b675cb27fb2ee39e8\",\"mode\":\"nudge\",\"tool_name\":\"tttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt\",\"tool_withheld\":false,\"verdict\":\"nudge\"}"
+      },
+      {
+        "name": "tool 129 characters: withheld",
+        "row": {
+          "id": "00000000-0000-4000-8000-000000000005",
+          "mode": "nudge",
+          "verdict": "nudge",
+          "tool_name": "ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt"
+        },
+        "tuple": "{\"decision_ref\":\"291475abb20f81c1a7f9331cf35e950194471c78ab089830031fd8d52c38b935\",\"mode\":\"nudge\",\"tool_name\":null,\"tool_withheld\":true,\"verdict\":\"nudge\"}"
+      },
+      {
+        "name": "empty tool: withheld",
+        "row": {
+          "id": "00000000-0000-4000-8000-000000000006",
+          "mode": "observe",
+          "verdict": "warn",
+          "tool_name": ""
+        },
+        "tuple": "{\"decision_ref\":\"042306a0a3e004707bb50a864296d9c3cb35424a241d0d0ed624d2c7c74ce598\",\"mode\":\"observe\",\"tool_name\":null,\"tool_withheld\":true,\"verdict\":\"warn\"}"
+      }
+    ]
+  },
+  "grouping": {
+    "$comment": "groupActCounts(counts, withheld) (§7) and the expected result. The producer's SQL returns only plain GROUP BY counts; the ranking, the 64-row cap and the order are this one function.",
+    "cases": [
+      {
+        "name": "under the cap: one row per key, null first, tools by code point",
+        "counts": [
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Bash",
+            "count": 2
+          },
+          {
+            "mode": "observe",
+            "verdict": "warn",
+            "tool_name": null,
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Agent",
+            "count": 1
+          },
+          {
+            "mode": "off",
+            "verdict": "pass",
+            "tool_name": null,
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": null,
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "b",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "B",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "_",
+            "count": 1
+          }
+        ],
+        "withheld": 1,
+        "expect": {
+          "by": [
+            {
+              "mode": "off",
+              "verdict": "pass",
+              "tool_name": null,
+              "count": 1
+            },
+            {
+              "mode": "observe",
+              "verdict": "warn",
+              "tool_name": null,
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": null,
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Agent",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "B",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Bash",
+              "count": 2
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "_",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "b",
+              "count": 1
+            }
+          ],
+          "tools_folded": 0,
+          "tool_names_withheld": 1
+        }
+      },
+      {
+        "name": "overflow: 44 line-bearing names by count kept, the rest folded into null rows",
+        "counts": [
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T00",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T01",
+            "count": 2
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T02",
+            "count": 3
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T03",
+            "count": 4
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T04",
+            "count": 5
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T05",
+            "count": 6
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T06",
+            "count": 7
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T07",
+            "count": 8
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T08",
+            "count": 9
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T09",
+            "count": 10
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T10",
+            "count": 11
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T11",
+            "count": 12
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T12",
+            "count": 13
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T13",
+            "count": 14
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T14",
+            "count": 15
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T15",
+            "count": 16
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T16",
+            "count": 17
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T17",
+            "count": 18
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T18",
+            "count": 19
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T19",
+            "count": 20
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T20",
+            "count": 21
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T21",
+            "count": 22
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T22",
+            "count": 23
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T23",
+            "count": 24
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T24",
+            "count": 25
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T25",
+            "count": 26
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T26",
+            "count": 27
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T27",
+            "count": 28
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T28",
+            "count": 29
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T29",
+            "count": 30
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T30",
+            "count": 31
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T31",
+            "count": 32
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T32",
+            "count": 33
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T33",
+            "count": 34
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T34",
+            "count": 35
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T35",
+            "count": 36
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T36",
+            "count": 37
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T37",
+            "count": 38
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T38",
+            "count": 39
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T39",
+            "count": 40
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T40",
+            "count": 41
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T41",
+            "count": 42
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T42",
+            "count": 43
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T43",
+            "count": 44
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T44",
+            "count": 45
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T45",
+            "count": 46
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T46",
+            "count": 47
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T47",
+            "count": 48
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T48",
+            "count": 49
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T49",
+            "count": 50
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T50",
+            "count": 51
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T51",
+            "count": 52
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T52",
+            "count": 53
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T53",
+            "count": 54
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T54",
+            "count": 55
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T55",
+            "count": 56
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T56",
+            "count": 57
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T57",
+            "count": 58
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T58",
+            "count": 59
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T59",
+            "count": 60
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T60",
+            "count": 61
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T61",
+            "count": 62
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T62",
+            "count": 63
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T63",
+            "count": 64
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T64",
+            "count": 65
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T65",
+            "count": 66
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T66",
+            "count": 67
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T67",
+            "count": 68
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T68",
+            "count": 69
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "T69",
+            "count": 70
+          },
+          {
+            "mode": "observe",
+            "verdict": "pass",
+            "tool_name": "P0",
+            "count": 1000
+          },
+          {
+            "mode": "observe",
+            "verdict": "pass",
+            "tool_name": "P1",
+            "count": 1000
+          },
+          {
+            "mode": "observe",
+            "verdict": "pass",
+            "tool_name": "P2",
+            "count": 1000
+          },
+          {
+            "mode": "observe",
+            "verdict": "pass",
+            "tool_name": "P3",
+            "count": 1000
+          },
+          {
+            "mode": "observe",
+            "verdict": "pass",
+            "tool_name": "P4",
+            "count": 1000
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": null,
+            "count": 3
+          }
+        ],
+        "withheld": 3,
+        "expect": {
+          "by": [
+            {
+              "mode": "observe",
+              "verdict": "pass",
+              "tool_name": null,
+              "count": 5000
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": null,
+              "count": 354
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T26",
+              "count": 27
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T27",
+              "count": 28
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T28",
+              "count": 29
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T29",
+              "count": 30
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T30",
+              "count": 31
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T31",
+              "count": 32
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T32",
+              "count": 33
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T33",
+              "count": 34
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T34",
+              "count": 35
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T35",
+              "count": 36
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T36",
+              "count": 37
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T37",
+              "count": 38
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T38",
+              "count": 39
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T39",
+              "count": 40
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T40",
+              "count": 41
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T41",
+              "count": 42
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T42",
+              "count": 43
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T43",
+              "count": 44
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T44",
+              "count": 45
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T45",
+              "count": 46
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T46",
+              "count": 47
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T47",
+              "count": 48
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T48",
+              "count": 49
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T49",
+              "count": 50
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T50",
+              "count": 51
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T51",
+              "count": 52
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T52",
+              "count": 53
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T53",
+              "count": 54
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T54",
+              "count": 55
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T55",
+              "count": 56
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T56",
+              "count": 57
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T57",
+              "count": 58
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T58",
+              "count": 59
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T59",
+              "count": 60
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T60",
+              "count": 61
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T61",
+              "count": 62
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T62",
+              "count": 63
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T63",
+              "count": 64
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T64",
+              "count": 65
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T65",
+              "count": 66
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T66",
+              "count": 67
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T67",
+              "count": 68
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T68",
+              "count": 69
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "T69",
+              "count": 70
+            }
+          ],
+          "tools_folded": 5351,
+          "tool_names_withheld": 3
+        }
+      },
+      {
+        "name": "overflow tie-break: equal counts rank by mode, verdict, then tool name",
+        "counts": [
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z69",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z68",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z67",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z66",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z65",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z64",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z63",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z62",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z61",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z60",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z59",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z58",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z57",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z56",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z55",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z54",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z53",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z52",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z51",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z50",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z49",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z48",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z47",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z46",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z45",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z44",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z43",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z42",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z41",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z40",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z39",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z38",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z37",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z36",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z35",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z34",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z33",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z32",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z31",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z30",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z29",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z28",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z27",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z26",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z25",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z24",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z23",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z22",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z21",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z20",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z19",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z18",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z17",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z16",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z15",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z14",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z13",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z12",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z11",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Z10",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "warn",
+            "tool_name": "Tie",
+            "count": 1
+          },
+          {
+            "mode": "nudge",
+            "verdict": "warn",
+            "tool_name": "Tie",
+            "count": 1
+          },
+          {
+            "mode": "observe",
+            "verdict": "warn",
+            "tool_name": "Tie",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "warn",
+            "tool_name": "Tv",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "nudge",
+            "tool_name": "Tv",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "quarantine",
+            "tool_name": "Tv",
+            "count": 1
+          }
+        ],
+        "withheld": 0,
+        "expect": {
+          "by": [
+            {
+              "mode": "observe",
+              "verdict": "warn",
+              "tool_name": "Tie",
+              "count": 1
+            },
+            {
+              "mode": "nudge",
+              "verdict": "warn",
+              "tool_name": "Tie",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "warn",
+              "tool_name": "Tie",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "warn",
+              "tool_name": "Tv",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "nudge",
+              "tool_name": "Tv",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "quarantine",
+              "tool_name": "Tv",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": null,
+              "count": 22
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z10",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z11",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z12",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z13",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z14",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z15",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z16",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z17",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z18",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z19",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z20",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z21",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z22",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z23",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z24",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z25",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z26",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z27",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z28",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z29",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z30",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z31",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z32",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z33",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z34",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z35",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z36",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z37",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z38",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z39",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z40",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z41",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z42",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z43",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z44",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z45",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z46",
+              "count": 1
+            },
+            {
+              "mode": "enforce",
+              "verdict": "block",
+              "tool_name": "Z47",
+              "count": 1
+            }
+          ],
+          "tools_folded": 22,
+          "tool_names_withheld": 0
+        }
+      }
+    ]
+  }
 }

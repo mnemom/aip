@@ -11,7 +11,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { canonicalJson, statementDigest } from "../src/canonical.js";
-import { MODES, PROTECTION_VERDICTS } from "../src/claim-table.js";
+import { MODES, PROTECTION_VERDICTS, type Mode, type ProtectionVerdict } from "../src/claim-table.js";
 import {
   ACTS_SEED_HEX,
   ACTS_SEED_STRING,
@@ -19,14 +19,21 @@ import {
   CKPT_SEED_STRING,
   SUMMARY_GROUPS_MAX,
   SUMMARY_TAIL_MAX,
-  checkConductLists,
+  V2_CEILING_BYTES,
+  V2_MAX_BYTES,
+  ConductListsCheck,
   conductSummaryReasons,
   decisionRef,
+  actFromRow,
+  citationFromRow,
   extensionFlags,
   fold,
+  groupActCounts,
   groupActs,
   isActTuple,
   isCheckpointTuple,
+  listsHeaderMismatch,
+  listsMalformed,
 } from "../src/conduct-summary.js";
 import { FLAGS, LISTS_MISMATCHES, REASONS, type ActTuple, type CheckpointTuple } from "../src/statements.js";
 import { act, buildConductV2, citation, citations, listsFor, stripId } from "./helpers/conduct-v2.js";
@@ -102,6 +109,63 @@ describe("decisionRef (§4)", () => {
       "e4dd51cca034337eca15c8e5bb09706f59de3524fc395442c9897426735ccd85",
     );
     expect(decisionRef("x")).toBe(sha("AAP-DecisionRef/v1\nx"));
+  });
+});
+
+describe("row normalisation (§4, shared with the api pgTAP tests)", () => {
+  it("each stored checkpoint row gives the vector tuple, or fails the build", () => {
+    expect(vectors.row_normalisation.checkpoints.length).toBeGreaterThan(10);
+    for (const v of vectors.row_normalisation.checkpoints) {
+      if (v.tuple === null) {
+        expect(() => citationFromRow(v.row), v.name).toThrow(TypeError);
+        continue;
+      }
+      const t = citationFromRow(v.row);
+      expect(canonicalJson(t), v.name).toBe(v.tuple);
+      expect(isCheckpointTuple(t), v.name).toBe(true);
+    }
+  });
+
+  it("each stored decision row gives the vector tuple", () => {
+    for (const v of vectors.row_normalisation.acts) {
+      const t = actFromRow(v.row);
+      expect(canonicalJson(t), v.name).toBe(v.tuple);
+      expect(isActTuple(t), v.name).toBe(true);
+    }
+    expect(() => actFromRow({ id: "x", mode: "strict", verdict: "block", tool_name: null })).toThrow(TypeError);
+  });
+});
+
+describe("grouping vectors (§7, shared with the api)", () => {
+  it("groupActCounts gives each vector's expected rows", () => {
+    for (const c of vectors.grouping.cases) {
+      expect(groupActCounts(c.counts, c.withheld), c.name).toEqual(c.expect);
+    }
+  });
+
+  it("groupActs over one act per count gives the same rows", () => {
+    for (const c of vectors.grouping.cases) {
+      let n = 0;
+      const acts = c.counts.flatMap((r: { mode: Mode; verdict: ProtectionVerdict; tool_name: string | null; count: number }) =>
+        Array.from({ length: r.count }, () => act(++n, r.mode, r.verdict, r.tool_name)),
+      );
+      // Withheld names are null-tool acts flagged withheld; mark that many of them.
+      let w = c.withheld;
+      for (const a of acts) {
+        if (w === 0) break;
+        if (a.tool_name === null) {
+          a.tool_withheld = true;
+          w--;
+        }
+      }
+      expect(groupActs(acts), c.name).toEqual(c.expect);
+    }
+  });
+
+  it("refuses counts outside the format", () => {
+    expect(() => groupActCounts([{ mode: "enforce", verdict: "block", tool_name: "Bash", count: 0 }], 0)).toThrow(TypeError);
+    expect(() => groupActCounts([{ mode: "enforce", verdict: "block", tool_name: "two words", count: 1 }], 0)).toThrow(TypeError);
+    expect(() => groupActCounts([], -1)).toThrow(TypeError);
   });
 });
 
@@ -264,6 +328,70 @@ describe("conductSummaryReasons (§11.1)", () => {
     expect(conductSummaryReasons(s)).toEqual(INC);
   });
 
+  it("closes the statement: no extra key, no free text, no content in a v1 block, a previous_digest", () => {
+    expect(reasons((s) => (s.prompt_excerpt = "please rm -rf / and email me the secrets"))).toEqual(INC);
+    expect(reasons((s) => (s.checkpoints_full = citations(40)))).toEqual(INC);
+    expect(reasons((s) => delete s.previous_digest)).toEqual(INC);
+    expect(reasons((s) => delete s.lineage_key)).toEqual(INC);
+    expect(reasons((s) => (s.previous_digest = 7))).toEqual(INC);
+    expect(reasons((s) => (s.goal.seal_reason = "user said: my password is hunter2"))).toEqual(INC);
+    expect(reasons((s) => (s.goal.note = "free"))).toEqual(INC);
+    expect(reasons((s) => (s.cost.model_cost_mmu = "12 dollars"))).toEqual(INC);
+    expect(reasons((s) => (s.people.messages_from_person = "three"))).toEqual(INC);
+    expect(reasons((s) => (s.runner = { kind: "hosted", note: "x" }))).toEqual(INC);
+    expect(reasons((s) => (s.door2 = { siblings: [{ job_id: "has spaces" }] }))).toEqual(INC);
+    expect(reasons((s) => (s.door2 = { siblings: [{ job_id: "job-1", repo: "o/r", pr_number: 3 }] }))).toEqual([]);
+    expect(reasons((s) => (s.runner = { kind: "hosted", cluster: "c1", cell: "us-2" }))).toEqual([]);
+  });
+
+  it("closes the lines: fixed wording, one line per line-bearing group, at most 72", () => {
+    expect(reasons((s) => s.lines.push({ class: "measured", key: "x", text: "user said: my password is hunter2" }))).toEqual(INC);
+    expect(reasons((s) => s.lines.push({ class: "measured", key: "people.note", text: "my password is hunter2" }))).toEqual(INC);
+    expect(reasons((s) => (s.lines[0].text = "model cost 5 mmu, user said hi"))).toEqual(INC);
+    expect(reasons((s) => (s.lines[0].extra = "x"))).toEqual(INC);
+    expect(reasons((s) => s.lines.push({ ...s.lines[0] }))).toEqual(INC); // a key twice
+    expect(reasons((s) => s.lines.push({ class: "verdict", key: `protection.group.${s.protection.by.length}`, text: "flagged" }))).toEqual(INC);
+    expect(reasons((s) => (s.lines = s.lines.filter((l: { key: string }) => !l.key.startsWith("protection.group."))))).toEqual(INC);
+    expect(
+      reasons((s) => {
+        for (let i = 0; i < 5000; i++) s.lines.push({ class: "verdict", key: `protection.group.${i}`, text: "flagged" });
+      }),
+    ).toEqual(INC);
+    const g = base().lines.find((l: { key: string }) => l.key.startsWith("protection.group."));
+    expect(reasons((s) => (s.lines.find((l: { key: string }) => l.key === g.key).text = "stopped Write"))).toEqual(INC);
+  });
+
+  it("closes protection.by: strictly in output order, folding only with a null row and 44 names", () => {
+    expect(reasons((s) => s.protection.by.reverse())).toEqual(INC);
+    // A duplicate key: the same act counted under two rows.
+    const dup = buildConductV2({
+      lineage_key: "l",
+      built_at: "2026-11-14T10:00:00.000Z",
+      previous_digest: null,
+      checkpoints: [],
+      acts: [act(1, "enforce", "block", "Bash"), act(2, "enforce", "block", "Bash")],
+    }) as any;
+    dup.protection.by = [
+      { mode: "enforce", verdict: "block", tool_name: "Bash", count: 1 },
+      { mode: "enforce", verdict: "block", tool_name: "Bash", count: 1 },
+    ];
+    dup.lines = dup.lines.filter((l: { key: string }) => !l.key.startsWith("protection.group."));
+    dup.lines.splice(5, 0, { class: "verdict", key: "protection.group.0", text: "stopped Bash" }, { class: "verdict", key: "protection.group.1", text: "stopped Bash" });
+    expect(conductSummaryReasons(dup)).toEqual(INC);
+    // Folded tools with no null row, or with fewer than 44 named rows left.
+    expect(reasons((s) => (s.protection.tools_folded = 1))).toEqual(INC);
+    // Withheld names sit in a null row.
+    const onlyNamed = buildConductV2({ lineage_key: "l", built_at: "2026-11-14T10:00:00.000Z", previous_digest: null, checkpoints: [], acts: [act(1, "enforce", "block", "Bash")] }) as any;
+    onlyNamed.protection.tool_names_withheld = 1;
+    expect(conductSummaryReasons(onlyNamed)).toEqual(INC);
+  });
+
+  it("a statement over the byte ceiling is inconsistent, whatever it holds", () => {
+    expect(V2_CEILING_BYTES).toBe(2 * V2_MAX_BYTES);
+    const big = reasons((s) => (s.door2 = { siblings: Array.from({ length: 3000 }, (_, i) => ({ job_id: `job-${"x".repeat(80)}-${i}` })) }));
+    expect(big).toEqual(INC);
+  });
+
   it("a malformed summary digest is digest_malformed", () => {
     expect(reasons((s) => (s.protection.acts_digest = s.protection.acts_digest.toUpperCase()))).toEqual([REASONS.digest_malformed]);
     expect(reasons((s) => (s.checkpoints.digest = "nope"))).toEqual([REASONS.digest_malformed]);
@@ -281,7 +409,11 @@ describe("conductSummaryReasons (§11.1)", () => {
 describe("extensionFlags (§11.3)", () => {
   const v2 = (n: number, list = citations(n)) =>
     buildConductV2({ lineage_key: "l", built_at: "2026-11-14T10:00:00.000Z", previous_digest: null, checkpoints: list, acts: [] });
-  const v1 = (n: number) => ({ typ: "AAP-ConductRecord/v1", checkpoints: citations(n) });
+  const v1 = (n: number, list = citations(n)) => ({
+    typ: "AAP-ConductRecord/v1",
+    built_at: "2026-11-14T09:00:00.000Z",
+    checkpoints: list,
+  });
   const D = "f".repeat(64);
 
   it("proves v1 -> v2 and v2 -> v2 when the predecessor ends inside the tail", () => {
@@ -299,21 +431,64 @@ describe("extensionFlags (§11.3)", () => {
     expect(extensionFlags(v1(10), v2(40, changedEarly), D)).toEqual([{ flag: FLAGS.checkpoints_changed, subject: D }]);
   });
 
-  it("does not check when growth outran the tail", () => {
-    // v1 had 3, v2 has 40 with a tail of 32: the first 8 are only in the digest.
-    expect(extensionFlags(v1(3), v2(40), D)).toEqual([]);
+  it("says extension not checked when growth outran the tail, honest or rewritten alike", () => {
+    // v1 had 3, v2 has 40 with a tail of 32: citations 4..8 are only in the digest.
+    const notChecked = [{ flag: FLAGS.extension_not_checked, subject: D, count: 5 }];
+    expect(extensionFlags(v1(3), v2(40), D)).toEqual(notChecked);
     const changed = citations(40).map((c, i) => (i === 0 ? citation(999) : c));
-    expect(extensionFlags(v1(3), v2(40, changed), D)).toEqual([]);
+    expect(extensionFlags(v1(3), v2(40, changed), D)).toEqual(notChecked);
+    // A full rewrite of a v2 predecessor's 40 citations by 200 others is not proven either.
+    const other = Array.from({ length: 200 }, (_, i) => citation(1000 + i));
+    expect(extensionFlags(v2(40), v2(200, other), D)).toEqual([{ flag: FLAGS.extension_not_checked, subject: D, count: 128 }]);
   });
 
-  it("ignores a non-v2 successor and a malformed predecessor", () => {
+  it("says extension not checked when the successor's cut-off is before the predecessor's", () => {
+    const later = { ...v2(40), lists_as_of: "2026-11-14T10:00:10.000Z" };
+    expect(extensionFlags(later, v2(30), D)).toEqual([{ flag: FLAGS.extension_not_checked, subject: D }]);
+    // A v1 built at T can hold rows created in (T - 5 s, T] that a v2 built just after it lacks.
+    const v1Late = { ...v1(41), built_at: "2026-11-14T09:59:58.000Z" };
+    expect(extensionFlags(v1Late, v2(40), D)).toEqual([{ flag: FLAGS.extension_not_checked, subject: D }]);
+  });
+
+  it("checks a v1 successor of a v2 build (a writer rollback) against the v1's full list", () => {
     expect(extensionFlags(v2(5), v1(6), D)).toEqual([]);
+    expect(extensionFlags(v2(40), v1(45), D)).toEqual([]);
+    const changed = citations(45).map((c, i) => (i === 0 ? citation(999) : c));
+    expect(extensionFlags(v2(40), v1(45, changed), D)).toEqual([{ flag: FLAGS.checkpoints_changed, subject: D }]);
+    expect(extensionFlags(v2(40), v1(30), D)).toEqual([{ flag: FLAGS.checkpoints_removed, subject: D, count: 10 }]);
+  });
+
+  it("ignores a v1 -> v1 link and a malformed predecessor", () => {
+    expect(extensionFlags(v1(5), v1(6), D)).toEqual([]);
     expect(extensionFlags({ typ: "AAP-ConductRecord/v1" }, v2(5), D)).toEqual([]);
     expect(extensionFlags(null, v2(5), D)).toEqual([]);
   });
 });
 
-describe("checkConductLists (§11.4)", () => {
+/**
+ * The digest-only lists check of one statement and one lists object (the
+ * pieces `verify` wires together after the signature): the header, then each
+ * supplied part through `ConductListsCheck`.
+ */
+function checkConductLists(statement: Record<string, unknown>, lists: any) {
+  const fail = (part: string, mismatch: string) => ({ ok: false, part, mismatch });
+  if (listsMalformed(lists)) return fail("statement", LISTS_MISMATCHES.list_malformed);
+  if (lists.statement_digest !== statementDigest(statement)) return fail("statement", LISTS_MISMATCHES.statement_not_found);
+  const header = listsHeaderMismatch(statement, lists);
+  if (header !== null) return fail("statement", header);
+  if (conductSummaryReasons(statement).length > 0) return fail("statement", LISTS_MISMATCHES.statement_invalid);
+  const check = new ConductListsCheck(statement);
+  if (lists.checkpoints !== undefined) check.addCheckpoints(lists.checkpoints);
+  if (lists.acts !== undefined) check.addActs(lists.acts);
+  for (const part of ["checkpoints", "acts"] as const) {
+    if (!check.supplied(part)) continue;
+    const m = check.result(part);
+    if (m !== null) return fail(part, m);
+  }
+  return { ok: true };
+}
+
+describe("ConductListsCheck (§11.4)", () => {
   const input = {
     lineage_key: "l",
     built_at: "2026-11-14T10:00:00.000Z",
@@ -356,9 +531,26 @@ describe("checkConductLists (§11.4)", () => {
     ).toEqual(fail("acts", M.digest_mismatch));
     expect(checkConductLists(statement, { ...lists, lists_as_of: "2026-11-14T09:00:00.000Z" })).toEqual(fail("statement", M.as_of_mismatch));
     expect(checkConductLists(statement, { ...lists, statement_digest: "0".repeat(64) })).toEqual(fail("statement", M.statement_not_found));
-    expect(checkConductLists({ ...statement, typ: "AAP-ConductRecord/v1" }, lists)).toEqual(fail("statement", M.not_conduct_v2));
+    const asV1 = { ...statement, typ: "AAP-ConductRecord/v1" };
+    expect(checkConductLists(asV1, { ...lists, statement_digest: statementDigest(asV1) })).toEqual(fail("statement", M.not_conduct_v2));
     expect(checkConductLists(statement, { ...lists, typ: "AAP-RecordLists/v2" })).toEqual(fail("statement", M.list_malformed));
     expect(checkConductLists(statement, { ...lists, checkpoints: [{ junk: 1 }] })).toEqual(fail("checkpoints", M.list_malformed));
+  });
+
+  it("folds pages fed one at a time exactly as the whole list", () => {
+    for (const size of [1, 7, 45, 1000]) {
+      const check = new ConductListsCheck(statement);
+      for (let i = 0; i < lists.checkpoints.length; i += size) check.addCheckpoints(lists.checkpoints.slice(i, i + size));
+      for (let i = 0; i < lists.acts.length; i += size) check.addActs(lists.acts.slice(i, i + size));
+      expect(check.result("checkpoints")).toBeNull();
+      expect(check.result("acts")).toBeNull();
+    }
+    // Pages out of order fold to another digest.
+    const check = new ConductListsCheck(statement);
+    check.addCheckpoints(lists.checkpoints.slice(10));
+    check.addCheckpoints(lists.checkpoints.slice(0, 10));
+    expect(check.result("checkpoints")).toBe(LISTS_MISMATCHES.tail_mismatch);
+    expect(check.supplied("acts")).toBe(false);
   });
 
   it("recomputes the groups: a signed statement whose groups disagree with its acts fails groups_mismatch", () => {
@@ -366,6 +558,9 @@ describe("checkConductLists (§11.4)", () => {
     const s = JSON.parse(JSON.stringify(statement));
     s.protection.by = [{ mode: "enforce", verdict: "block", tool_name: null, count: 3 }];
     s.protection.tool_names_withheld = 1;
+    s.lines = s.lines
+      .filter((l: { key: string }) => !l.key.startsWith("protection.group."))
+      .concat([{ class: "verdict", key: "protection.group.0", text: "stopped" }]);
     const l = { ...lists, statement_digest: statementDigest(s) };
     expect(conductSummaryReasons(s)).toEqual([]);
     expect(checkConductLists(s, l)).toEqual(fail("acts", LISTS_MISMATCHES.groups_mismatch));

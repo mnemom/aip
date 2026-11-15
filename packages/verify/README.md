@@ -34,7 +34,7 @@ The first line names the key set the command used. Then there is one line per st
 - `invalid: <reasons>`: the reasons, as listed under [Reason codes](#reason-codes). The command adds one reason of its own, `no_statements`, for a bundle whose `statements` array is empty: nothing was checked, so it does not pass. The library `verify()` still returns `valid: true` for such a bundle.
 
 ```text
-npx @mnemom/verify <bundle.json | -> [--jwks <file>] [--jwks-url <url>] [--expected-head-sha <sha>] [--lists <file>] [--json]
+npx @mnemom/verify <bundle.json | -> [--jwks <file>] [--jwks-url <url>] [--expected-head-sha <sha>] [--lists <file>]... [--json]
 ```
 
 | Option | What it does |
@@ -43,7 +43,7 @@ npx @mnemom/verify <bundle.json | -> [--jwks <file>] [--jwks-url <url>] [--expec
 | `--jwks <file>` | Verify against a JWKS saved on disk. The command makes no network call. |
 | `--jwks-url <url>` | Fetch the JWKS from this URL instead of the default. It must be `https` (plain `http` only to localhost). |
 | `--expected-head-sha <sha>` | Fail with `head_mismatch` or `head_unbound` unless the latest PR record names this head commit. |
-| `--lists <file>` | Check an `AAP-RecordLists/v1` file (one object or an array) against the `AAP-ConductRecord/v2` statements it names. See [Summarized records and --lists](#summarized-records-and---lists). Makes no network call. |
+| `--lists <file>` | Check an `AAP-RecordLists/v1` file (one object or an array) against the `AAP-ConductRecord/v2` statements it names. Give it again for more files (pages). See [Summarized records and --lists](#summarized-records-and---lists). Makes no network call. |
 | `--json` | Print the result (`valid`, `reasons`, `flags`, `statements`, `verified_at`) as JSON on stdout. It is the library result, except that an empty bundle has `valid: false` and the reason `no_statements`. The JWKS line goes to stderr. |
 
 Exit codes: `0` valid (flags included), `1` invalid, `2` a usage error, a file that cannot be read or is not JSON, or a JWKS fetch that failed.
@@ -181,13 +181,21 @@ protection.acts_digest = fold(SHA-256("AAP-ConductRecord/v2/acts"), every act tu
 digest               = fold(tail_from_digest, tail)
 ```
 
-A citation tuple has exactly `checkpoint_id`, `combined_commitment`, `commitment_signature`, `commitment_key_id` and `card_hash` (a v1 citation's shape). An act tuple has exactly `decision_ref`, `mode`, `tool_name`, `tool_withheld` and `verdict`, where `decision_ref = sha256("AAP-DecisionRef/v1\n" + lowercase decision id)`: a bundle never carries a raw decision id. Test vectors: [`schemas/aap-conductrecord-v2.vectors.json`](../../schemas/aap-conductrecord-v2.vectors.json). `fold`, `decisionRef` and `groupActs` are exported, and the producer uses the same code.
+A citation tuple has exactly `checkpoint_id`, `combined_commitment`, `commitment_signature`, `commitment_key_id` and `card_hash` (a v1 citation's shape). An act tuple has exactly `decision_ref`, `mode`, `tool_name`, `tool_withheld` and `verdict`, where `decision_ref = sha256("AAP-DecisionRef/v1\n" + lowercase decision id)`: a bundle never carries a raw decision id. Test vectors: [`schemas/aap-conductrecord-v2.vectors.json`](../../schemas/aap-conductrecord-v2.vectors.json). `fold`, `decisionRef`, `citationFromRow`, `actFromRow`, `groupActCounts` and `groupActs` are exported, and the producer uses the same code.
 
 What the verifier checks:
 
-- On every v2 statement: the summary holds together (`summary_inconsistent` otherwise). Counts add up, the tail is at most 32 citations and folds from `tail_from_digest` to `digest`, `by` has at most 64 rows summing to `acts_total`, `lists_as_of <= built_at`, and the two summary blocks carry no key and no value the format does not define. A summary digest that is not 64 lowercase hex is `digest_malformed`.
-- In a bundle: each v2 build is checked to extend the build before it. When the earlier build's citations end inside the new tail, the new tail must fold to the earlier digest. Otherwise the verifier flags `checkpoints changed since previous build` or `checkpoints removed since previous build`. These are flags, never reasons.
-- With `--lists <file>` or `verify(input, jwks, { lists })`: an `AAP-RecordLists/v1` file holds the full lists behind one v2 statement. The verifier folds each list and recomputes every count, the tail, the groups and both digests. Any difference fails the input with the bundle-level reason `summary_list_mismatch`, and `lists_checked` says which part failed and why. `checkConductLists(statement, lists)` runs the same check on its own.
+- On every v2 statement: the statement holds together (`summary_inconsistent` otherwise). Counts add up, the tail is at most 32 citations and folds from `tail_from_digest` to `digest`, `by` has at most 64 rows summing to `acts_total` in strict output order, `lists_as_of <= built_at`. The whole statement is closed: no key outside the format, `previous_digest` present, the v1-shaped blocks held to the producer's no-content allowlist, every line in its fixed v1 wording (one group line per line-bearing `by` row, at most 72 lines), and at most 262 144 bytes of canonical JSON. A summary digest that is not 64 lowercase hex is `digest_malformed`.
+- In a bundle: each conduct build next to a v2 build is checked to extend the build before it. When the earlier build's citations end inside the new tail, the new tail must fold to the earlier digest (a v1 after a v2 must start with the v2's citations). Otherwise the verifier flags `checkpoints changed since previous build` or `checkpoints removed since previous build`. When the bundle cannot show it (more citations were added than the tail holds, or the new build was cut off earlier), it flags `extension not checked` with the count of citations it could not see. These are flags, never reasons.
+- With `--lists <file>` (repeatable) or `verify(input, jwks, { lists })`: `AAP-RecordLists/v1` objects hold the full lists behind a v2 statement, split across as many objects (pages) and files as needed; objects naming the same statement continue its lists in order. The verifier folds each list incrementally and recomputes every count, the tail, the groups and both digests. Any difference fails the input with the bundle-level reason `summary_list_mismatch`, and `lists_checked` says which part failed and why; a part no object carried is `not_supplied`. The CLI says `lists: checked` only when both parts were supplied and passed.
+
+```ts
+import { checkConductLists } from "@mnemom/verify";
+
+// Verifies the statement's signature first: a statement nobody signed proves nothing.
+const r = await checkConductLists(statement, pages, jwks);
+// { ok: true } only when both lists were supplied and fold to the signed digests.
+```
 
 The bundle alone proves Mnemom signed the counts, groups and digests, that the citations shown are the true end of the signed list, and that the arithmetic holds. It does not show the citations before the tail or the single acts; only a lists file proves those. A lists mismatch, or a `changed`/`removed` flag, is not proof of tampering: retention or a deletion, a backfill of a card hash or a commitment, and a row committed more than 5 s late all change a list. A v2 record drops act order, turn numbers and the names of tools folded by the 64-row cap.
 
@@ -223,7 +231,7 @@ The bundle alone proves Mnemom signed the counts, groups and digests, that the c
 | `summary_inconsistent` | An `AAP-ConductRecord/v2` summary does not hold together |
 | `summary_list_mismatch` | A lists file does not fold to the digests of the v2 statement it names (bundle-level, only with `lists`) |
 
-`FLAGS` lists the flags: `card hash not recorded`, `card not bound`, `linked statement not in bundle`, `lineage truncated`, `summarized`, `checkpoints removed since previous build` and `checkpoints changed since previous build`. On a v2 statement a flag carries `count`, how many items it covers (for example 13 citations not in the bundle in full); the CLI adds the counts up.
+`FLAGS` lists the flags: `card hash not recorded`, `card not bound`, `linked statement not in bundle`, `lineage truncated`, `summarized`, `checkpoints removed since previous build`, `checkpoints changed since previous build` and `extension not checked`. On a v2 statement a flag carries `count`, how many items it covers (for example 13 citations not in the bundle in full); the CLI adds the counts up.
 
 ## Verify an integrity certificate
 

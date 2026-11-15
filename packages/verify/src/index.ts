@@ -20,7 +20,14 @@ export { verifyCertificate } from "./verify.js";
 // Record statements (AAP-ConductRecord/v1 and /v2, AAP-PRRecord/v1,
 // AAP-Outcome/v1, AAP-ShareCard/v1, AAP-TransparencyRoot/v1) and their
 // bundle, verified against the published JWKS.
-export { verify, verifyStatement, statementCommitment, statementDigest, chainFamily } from "./verify-record.js";
+export {
+  verify,
+  verifyStatement,
+  statementCommitment,
+  statementDigest,
+  chainFamily,
+  checkConductLists,
+} from "./verify-record.js";
 export {
   STATEMENT_TYPES,
   BUNDLE_TYP,
@@ -46,17 +53,25 @@ export {
   SUMMARY_TAIL_MAX,
   SUMMARY_GROUPS_MAX,
   SUMMARY_GROUPS_NAMED_MAX,
+  V2_MAX_BYTES,
+  V2_CEILING_BYTES,
+  V2_LINES_MAX,
   TOOL_NAME_RE,
   fold,
   decisionRef,
+  citationFromRow,
+  actFromRow,
   groupActs,
+  groupActCounts,
+  groupLineText,
   isCheckpointTuple,
   isActTuple,
   conductSummaryReasons,
   conductSummaryFlags,
   extensionFlags,
-  checkConductLists,
+  ConductListsCheck,
 } from "./conduct-summary.js";
+export type { ActCount, CheckpointRow, DecisionRow } from "./conduct-summary.js";
 
 // Claim table (T5), claim-lint (K1.17) and the render-estimate rule (T8).
 export {

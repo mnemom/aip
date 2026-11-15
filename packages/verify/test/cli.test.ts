@@ -673,12 +673,47 @@ describe("AAP-ConductRecord/v2 and --lists", () => {
     expect(out.lists_checked?.some((c) => !c.ok && c.mismatch === "digest_mismatch")).toBe(true);
   });
 
-  it("--lists errors: unreadable, not JSON, a scalar, or given twice", async () => {
+  it("--lists errors: unreadable, not JSON or a scalar", async () => {
     expect((await run([V2_BUNDLE, "--jwks", JWKS_PATH, "--lists", join(tmp, "nope.json")])).code).toBe(EXIT_ERROR);
     expect((await run([V2_BUNDLE, "--jwks", JWKS_PATH, "--lists", writeTmp("l.txt", "{")])).code).toBe(EXIT_ERROR);
     expect((await run([V2_BUNDLE, "--jwks", JWKS_PATH, "--lists", writeTmp("l3.json", "7")])).code).toBe(EXIT_ERROR);
-    expect(() => parseCliArgs(["b.json", "--lists", "a", "--lists", "b"])).toThrow("--lists given twice");
-    expect(parseCliArgs(["b.json", "--lists=a.json"])).toMatchObject({ lists: "a.json" });
+    expect(parseCliArgs(["b.json", "--lists=a.json"])).toMatchObject({ lists: ["a.json"] });
+    expect(parseCliArgs(["b.json", "--lists", "a", "--lists", "b"])).toMatchObject({ lists: ["a", "b"] });
+  });
+
+  it("--lists with one part says which part was not supplied, never just checked", async () => {
+    const all = lists().lists as { checkpoints: unknown[]; acts: unknown[] };
+    const { acts: _a, ...onlyCheckpoints } = all;
+    const r = await run([V2_BUNDLE, "--jwks", JWKS_PATH, "--lists", writeTmp("only-ckpt.json", onlyCheckpoints)]);
+    expect(r.code).toBe(0);
+    expect(r.stdout).toContain("lists: checkpoints checked, acts not supplied)");
+    const { checkpoints: _c, ...onlyActs } = all;
+    const r2 = await run([V2_BUNDLE, "--jwks", JWKS_PATH, "--lists", writeTmp("only-acts.json", onlyActs)]);
+    expect(r2.stdout).toContain("lists: checkpoints not supplied, acts checked)");
+  });
+
+  it("--lists given several times continues one statement's lists across files (pages)", async () => {
+    const all = lists().lists as { checkpoints: unknown[]; acts: unknown[] };
+    const page1 = { ...all, checkpoints: all.checkpoints.slice(0, 20), acts: undefined };
+    const page2 = { ...all, checkpoints: all.checkpoints.slice(20), acts: undefined };
+    const page3 = { ...all, checkpoints: undefined, acts: all.acts };
+    const r = await run([
+      V2_BUNDLE,
+      "--jwks",
+      JWKS_PATH,
+      "--lists",
+      writeTmp("p1.json", page1),
+      "--lists",
+      writeTmp("p2.json", page2),
+      "--lists",
+      writeTmp("p3.json", page3),
+    ]);
+    expect(r.code).toBe(0);
+    expect(r.stdout).toContain("9 acts in 8 groups, lists: checked)");
+    // The same pages out of order fold to another digest.
+    const bad = await run([V2_BUNDLE, "--jwks", JWKS_PATH, "--lists", writeTmp("q2.json", page2), "--lists", writeTmp("q1.json", page1)]);
+    expect(bad.code).toBe(1);
+    expect(bad.stdout).toContain("lists: mismatch)");
   });
 
   it("help explains what a summarised record does and does not prove", async () => {

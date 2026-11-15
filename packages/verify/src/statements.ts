@@ -190,9 +190,12 @@ export interface ActTuple {
 }
 
 /**
- * An `AAP-RecordLists/v1` file (§11.4): the full citation and act lists
- * behind one v2 statement, in fold order, as the lists route serves them.
- * Unsigned: it is trusted only as far as it folds to the signed digests.
+ * An `AAP-RecordLists/v1` object (§11.4): citation and act lists behind one
+ * v2 statement, in fold order, as the lists route serves them. A list may be
+ * split over several objects naming the same statement (one per page); they
+ * are joined in the order given. `next` is the route's page cursor and is
+ * ignored. Unsigned: it is trusted only as far as it folds to the signed
+ * digests.
  */
 export interface RecordLists {
   typ: typeof LISTS_TYP;
@@ -230,15 +233,28 @@ export const LISTS_MISMATCHES = {
 
 export type ListsMismatch = (typeof LISTS_MISMATCHES)[keyof typeof LISTS_MISMATCHES];
 
-/** `checkConductLists` result: ok, or the first part and mismatch that failed. */
-export type ListsCheckResult = { ok: true } | { ok: false; part: ListsPart; mismatch: ListsMismatch };
+/**
+ * `checkConductLists` result: ok (both lists supplied and proven), or the
+ * first part that is not proven, with its mismatch or `not_supplied`.
+ */
+export type ListsCheckResult =
+  | { ok: true }
+  | { ok: false; part: ListsPart; mismatch: ListsMismatch }
+  | { ok: false; part: ListsPart; not_supplied: true };
 
 /** One entry of `RecordVerificationResult.lists_checked`. */
 export interface ListsCheck {
   statement_digest: string;
   part: ListsPart;
+  /** True only when the part was supplied and folds to the signed digests: proven. */
   ok: boolean;
+  /** Why the part does not match. Only an entry with a mismatch fails `verify` (`summary_list_mismatch`). */
   mismatch?: ListsMismatch;
+  /**
+   * Set (with `ok: false` and no mismatch) on a list part no lists object
+   * supplied, for a statement whose other part was: not proven, not wrong.
+   */
+  not_supplied?: true;
 }
 
 export interface PRRecordStatement extends SignedStatementBase {
@@ -355,8 +371,9 @@ export const REASONS = {
   expected_head_malformed: "expected_head_malformed",
   /**
    * An `AAP-ConductRecord/v2` statement's summary does not hold together
-   * (spec §11.1): a count, bound or shape is wrong, the summary blocks carry a
-   * key the format does not define, or the tail does not fold to `digest`.
+   * (spec §11.1): a count, bound or shape is wrong, the statement or a line
+   * carries a key or text the format does not define, it is over the byte
+   * ceiling, or the tail does not fold to `digest`.
    */
   summary_inconsistent: "summary_inconsistent",
   /**
@@ -389,8 +406,15 @@ export const FLAGS = {
   summarized: "summarized",
   /** A v2 build cites fewer checkpoints than the in-bundle build before it. `count` is how many fewer. */
   checkpoints_removed: "checkpoints removed since previous build",
-  /** A v2 build's citations do not extend the in-bundle build before it. */
+  /** A conduct build's citations do not extend the in-bundle build before it. */
   checkpoints_changed: "checkpoints changed since previous build",
+  /**
+   * A conduct build next to a v2 build could not be checked to extend it:
+   * more citations were added than the new tail holds (`count` says how many
+   * lie outside it), or the new build's `lists_as_of` is earlier than the
+   * cut-off of the build before it. Unknown, not wrong.
+   */
+  extension_not_checked: "extension not checked",
 } as const;
 
 export type Flag = (typeof FLAGS)[keyof typeof FLAGS];
@@ -440,12 +464,15 @@ export interface RecordVerifyOptions {
    */
   expected_head_sha?: string;
   /**
-   * `AAP-RecordLists/v1` files to check against the v2 statements they name
-   * (spec §11.4). Each must fold to its statement's signed digests, or
-   * `verify` fails with the bundle-level `summary_list_mismatch`. Absent, no
-   * list is checked and the result has no `lists_checked`.
+   * `AAP-RecordLists/v1` objects to check against the v2 statements they name
+   * (spec §11.4): one, an array, or an async iterable (read one at a time, so
+   * a lineage's lists can be checked in pages without holding them all).
+   * Objects naming the same statement continue each other's lists in order.
+   * Each list must fold to its statement's signed digests, or `verify` fails
+   * with the bundle-level `summary_list_mismatch`. Absent, no list is checked
+   * and the result has no `lists_checked`.
    */
-  lists?: RecordLists | RecordLists[];
+  lists?: RecordLists | readonly RecordLists[] | AsyncIterable<RecordLists>;
 }
 
 export interface RecordVerificationResult {

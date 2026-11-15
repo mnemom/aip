@@ -6,18 +6,31 @@
   "lineage_key": "conv_dddddddddddddddddddddddddddddddd",
   "built_at": "2026-11-14T11:00:00.000Z",
   "lists_as_of": "2026-11-14T10:59:55.000Z",
-  "previous_digest": "0a3ab9d1a00d2da70669e39f15c367ed0d530ca0710dc540b0185b9a7369f1e6",
+  "previous_digest": "3e779ddea6ddcb42681cf4955fd104e50632e148a314fcb9581ed35445b45698",
   "goal": {
     "mode": "sealed",
     "contract_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
-    "canon_node_id": "node_bbbbbbbbbbbbbbbb",
-    "seal_version": 1
+    "seal_version": 1,
+    "seal_reason": null,
+    "previous_contract_sha256": null,
+    "canon_node_status": "written",
+    "canon_node_id": "mn-b2c3d4",
+    "on_goal": 3,
+    "judged": 4,
+    "turns": 5
   },
   "cost": {
-    "model_cost_millimu": 530000,
-    "mu_millimu": 21200,
+    "model_cost_mmu": "530000",
+    "mu_charged_mmu": "21200",
+    "mu_provisional_mmu": null,
+    "mu_status": "final",
     "mu_rate_bps": 400,
-    "currency_fixed_at": "2026-11-14T11:00:00.000Z"
+    "row_count": 12,
+    "as_of": "2026-11-14T11:00:00.000Z"
+  },
+  "people": {
+    "messages_from_person": 3,
+    "compactions": 1
   },
   "protection": {
     "acts_total": 9,
@@ -311,13 +324,28 @@
   "lines": [
     {
       "class": "measured",
+      "key": "cost.model",
+      "text": "model cost 530000 mmu"
+    },
+    {
+      "class": "measured",
       "key": "cost.mu",
       "text": "µ 21200 mmu"
     },
     {
       "class": "measured",
       "key": "goal.mode",
-      "text": "sealed"
+      "text": "sealed contract"
+    },
+    {
+      "class": "measured",
+      "key": "goal.node",
+      "text": "Canon node mn-b2c3d4"
+    },
+    {
+      "class": "verdict",
+      "key": "goal.verdict",
+      "text": "3 of 4 judged turns on goal, 4 of 5 turns judged"
     },
     {
       "class": "verdict",
@@ -348,7 +376,17 @@
       "class": "verdict",
       "key": "protection.group.7",
       "text": "stopped Bash"
+    },
+    {
+      "class": "measured",
+      "key": "people.messages",
+      "text": "3 messages from a person"
+    },
+    {
+      "class": "measured",
+      "key": "context.compactions",
+      "text": "1 compactions"
     }
   ],
-  "signature": "m3UGMCNFiqzWmwZo2THDdLRPidConvYxzPdEtnVZ8oQgJLTHJqCX4EgyAYRsGz1tT5dSbDVspr48kbVmxFPoCg"
+  "signature": "N0WWjqovlkfZlMOL4Cs0m0PgLH_8mlXgHOta470aywcaJvntMUbZo4xoCPrPNHxpxcAPLxntPJbMMqSMQoJHBw"
 }

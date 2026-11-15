@@ -51,6 +51,7 @@ const FLAG_TEXT: Record<string, string> = {
   [FLAGS.summarized]: "A long session's conduct record is summarised: protection acts are counted in groups, and the earlier checkpoint citations are committed only by digest. The count is the citations not shown in full.",
   [FLAGS.checkpoints_removed]: "This build cites fewer checkpoints than the build before it, for example after retention or a deletion.",
   [FLAGS.checkpoints_changed]: "This build's checkpoint citations do not extend the build before it, for example after a backfill or a late row.",
+  [FLAGS.extension_not_checked]: "Whether this build extends the build before it could not be checked from the bundle: more citations were added than it shows in full (the count), or it was cut off earlier. Unknown, not wrong; a lists file settles it.",
 };
 
 function $<T extends HTMLElement>(id: string): T {

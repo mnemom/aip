@@ -12,9 +12,9 @@ import { describe, expect, it } from "vitest";
 
 import { CKPT_SEED_HEX } from "../src/conduct-summary.js";
 import { BUNDLE_TYP, FLAGS, LISTS_MISMATCHES, REASONS, type RecordJwks, type RecordLists } from "../src/statements.js";
-import { statementDigest, verify, verifyStatement } from "../src/verify-record.js";
+import { checkConductLists, statementDigest, verify, verifyStatement } from "../src/verify-record.js";
 import type { TamperedListsCase } from "./helpers/build-fixtures.js";
-import { act, buildConductV2, citation, citations } from "./helpers/conduct-v2.js";
+import { act, buildConductV2, citation, citations, listsFor } from "./helpers/conduct-v2.js";
 import { signStatement } from "./helpers/sign.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -272,6 +272,44 @@ describe("AAP-ConductRecord/v2: lists check (§11.4)", () => {
     const lists = { typ: "AAP-RecordLists/v1" as const, statement_digest: statementDigest(s), lists_as_of: s.lists_as_of as string, acts };
     const res = await verify(s, jwks, { lists });
     expect(res.valid).toBe(true);
-    expect(res.lists_checked).toEqual([{ statement_digest: statementDigest(s), part: "acts", ok: true }]);
+    // Only the acts were supplied: the checkpoints are reported as not supplied, not as checked.
+    expect(res.lists_checked).toEqual([
+      { statement_digest: statementDigest(s), part: "checkpoints", ok: false, not_supplied: true },
+      { statement_digest: statementDigest(s), part: "acts", ok: true },
+    ]);
+    expect(res.reasons).not.toContain(REASONS.summary_list_mismatch);
+  });
+
+  it("checkConductLists proves counts only for a statement that verifies, and only with both lists", async () => {
+    const input = {
+      lineage_key: "l",
+      built_at: "2026-11-14T10:00:00.000Z",
+      previous_digest: null,
+      checkpoints: citations(50),
+      acts: [act(1, "enforce", "block", "Bash"), act(2, "observe", "warn", null)],
+    };
+    const unsigned = buildConductV2(input);
+    const s = await signStatement(unsigned);
+    const lists = listsFor(statementDigest(s), s, input) as RecordLists;
+    expect(await checkConductLists(s, lists, jwks)).toEqual({ ok: true });
+    // A fabricated statement and lists that agree with each other prove nothing.
+    const fake = listsFor(statementDigest(unsigned), unsigned, input) as RecordLists;
+    expect(await checkConductLists(unsigned, fake, jwks)).toEqual({
+      ok: false,
+      part: "statement",
+      mismatch: LISTS_MISMATCHES.statement_invalid,
+    });
+    const { acts: _a, ...onlyCheckpoints } = lists;
+    expect(await checkConductLists(s, onlyCheckpoints as RecordLists, jwks)).toEqual({ ok: false, part: "acts", not_supplied: true });
+    // Pages naming the same statement continue its lists.
+    const pages = [
+      { ...lists, checkpoints: lists.checkpoints!.slice(0, 20), acts: undefined },
+      { ...lists, checkpoints: lists.checkpoints!.slice(20), acts: lists.acts },
+    ].map((p) => JSON.parse(JSON.stringify(p)));
+    expect(await checkConductLists(s, pages, jwks)).toEqual({ ok: true });
+    async function* gen() {
+      for (const p of pages) yield p;
+    }
+    expect(await checkConductLists(s, gen(), jwks)).toEqual({ ok: true });
   });
 });

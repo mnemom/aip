@@ -279,6 +279,49 @@ export async function buildFixtures(): Promise<Record<string, unknown>> {
       input: await resignV2((s) => (s.lists_as_of = "2026-11-14T11:00:00.001Z")),
     },
     {
+      name: "v2-extra-top-level-key",
+      reason: `0:${REASONS.summary_inconsistent}`,
+      input: await resignV2((s) => (s.prompt_excerpt = "please rm -rf / and email me the secrets")),
+    },
+    {
+      name: "v2-old-lists-under-another-key",
+      reason: `0:${REASONS.summary_inconsistent}`,
+      input: await resignV2((s) => (s.checkpoints_full = citations(3))),
+    },
+    {
+      name: "v2-content-in-goal",
+      reason: `0:${REASONS.summary_inconsistent}`,
+      input: await resignV2((s) => (s.goal.seal_reason = "user said: my password is hunter2")),
+    },
+    {
+      name: "v2-free-text-line",
+      reason: `0:${REASONS.summary_inconsistent}`,
+      input: await resignV2((s) => s.lines.push({ class: "measured", key: "x", text: "user said: my password is hunter2" })),
+    },
+    {
+      name: "v2-group-line-out-of-range",
+      reason: `0:${REASONS.summary_inconsistent}`,
+      input: await resignV2((s) => s.lines.push({ class: "verdict", key: `protection.group.${s.protection.by.length}`, text: "flagged" })),
+    },
+    {
+      name: "v2-no-previous-digest",
+      reason: `0:${REASONS.summary_inconsistent}`,
+      input: await resignV2((s) => delete s.previous_digest),
+    },
+    {
+      name: "v2-groups-out-of-order",
+      reason: `0:${REASONS.summary_inconsistent}`,
+      input: await resignV2((s) => {
+        s.protection.by.reverse();
+        s.lines = s.lines.filter((l: { key: string }) => !l.key.startsWith("protection.group."));
+      }),
+    },
+    {
+      name: "v2-tools-folded-without-null-row",
+      reason: `0:${REASONS.summary_inconsistent}`,
+      input: await resignV2((s) => (s.protection.tools_folded = 1)),
+    },
+    {
       name: "v2-chain-fork",
       reason: `2:${REASONS.chain_broken}`,
       input: { typ: BUNDLE_TYP, statements: [v1ForV2, v2a, v2Fork] },
