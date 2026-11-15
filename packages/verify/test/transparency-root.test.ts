@@ -65,6 +65,13 @@ function bodyFor(typ: StatementTyp): Record<string, unknown> {
   if (typ === ROOT) return rootBody();
   if (typ === "AAP-ShareCard/v1") return shareCardBody();
   if (typ === "AAP-Outcome/v1") return { ...conductBody(), typ, previous_digest: undefined };
+  // A v2 conduct record must hold its summary together, so it is the golden one.
+  if (typ === "AAP-ConductRecord/v2") {
+    const { signature: _drop, ...v2 } = JSON.parse(
+      readFileSync(resolve(here, "fixtures/record/golden-conduct-v2.json"), "utf8"),
+    ) as Record<string, unknown>;
+    return v2;
+  }
   return { ...conductBody(), typ };
 }
 

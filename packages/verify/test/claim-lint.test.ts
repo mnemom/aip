@@ -509,6 +509,28 @@ describe("builder line shape (M6, M7)", () => {
     expect(off[2]).toMatchObject({ goal_mode: "off" });
     expect(off[3]).toMatchObject({ mode: "off" });
   });
+  it("attachLineContext maps AAP-ConductRecord/v2 protection.group.<i> lines to protection.by[i]", () => {
+    const by = [
+      { mode: "observe" as const, verdict: "pass" as const, tool_name: "Read", count: 4 },
+      { mode: "observe" as const, verdict: "warn" as const, tool_name: null, count: 2 },
+      { mode: "enforce" as const, verdict: "block" as const, tool_name: "Bash", count: 7 },
+    ];
+    const lines = [
+      { class: "verdict" as const, key: "protection.group.1", text: "flagged" },
+      { class: "verdict" as const, key: "protection.group.2", text: "stopped Bash" },
+    ];
+    const out = attachLineContext(lines, { mode: "sealed" }, { by });
+    expect(out[0]).toMatchObject({ key: "protection.group.1", mode: "observe", verdict: "warn" });
+    expect(out[0]!.tool_name).toBeUndefined();
+    expect(out[1]).toMatchObject({ key: "protection.group.2", mode: "enforce", verdict: "block", tool_name: "Bash" });
+    expect(fieldForLineKey("protection.group.12")).toBe("protection");
+    expect(lintRendering({ surface: "record_page", lines: out }).violations).toEqual([]);
+    // The count never rides in the text: a group line that says "7 stopped" is a verb mismatch or worse.
+    const counted = out.map((l) => (l.key === "protection.group.2" ? { ...l, text: "flagged Bash" } : l));
+    expect(rules({ surface: "record_page", lines: counted })).toContain(LINT_RULES.verb_mismatch);
+    // v1 statements keep their acts path; a v2 group key with no `by` gets no context.
+    expect(attachLineContext(lines, null, { acts: [] })[0]!.mode).toBeUndefined();
+  });
   it.each([
     ["sealed, enforce, final µ", sealedLines, sealedGoal, sealedProtection],
     ["implicit, nudge, pending µ", nudgeLines, { mode: "implicit" as const }, { acts: [{ mode: "nudge" as const, verdict: "nudge" as const, tool_name: "Edit" }] }],

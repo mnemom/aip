@@ -1,0 +1,265 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mnemom/aip/schemas/aap-conductrecord-v2.schema.json",
+  "title": "AAP-ConductRecord/v2",
+  "description": "Bounded signed conduct record (specs/aap-conductrecord-v2.md). Ed25519 (base64url) over canonical JSON (sorted keys, no whitespace) of the statement minus `signature`, exactly as AAP-ConductRecord/v1. Structural only: the summary rules (counts add up, the tail folds to `digest`, `lists_as_of <= built_at`) are checked by @mnemom/verify (`summary_inconsistent`). The v1-shaped blocks (`goal`, `cost`, `people`, `runner`, `door2`, `lines`) are left open here because they are byte for byte the v1 blocks; `protection` and `checkpoints` are closed so no free text can ride in them.",
+  "type": "object",
+  "required": [
+    "typ",
+    "signing_key_id",
+    "built_at",
+    "lists_as_of",
+    "lineage_key",
+    "previous_digest",
+    "protection",
+    "checkpoints",
+    "signature"
+  ],
+  "properties": {
+    "typ": {
+      "const": "AAP-ConductRecord/v2"
+    },
+    "unit_kind": {
+      "type": "string"
+    },
+    "org_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.:/+=@-]{1,256}$"
+    },
+    "lineage_key": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.:/+=@-]{1,256}$"
+    },
+    "signing_key_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_.:/+=@-]{1,256}$"
+    },
+    "built_at": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+    },
+    "lists_as_of": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+    },
+    "previous_digest": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "goal": {
+      "type": "object"
+    },
+    "cost": {
+      "type": "object"
+    },
+    "people": {
+      "type": "object"
+    },
+    "runner": {
+      "type": "object"
+    },
+    "door2": {
+      "type": "object"
+    },
+    "protection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "acts_total",
+        "acts_digest",
+        "by",
+        "tools_folded",
+        "tool_names_withheld"
+      ],
+      "properties": {
+        "acts_total": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "acts_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "tools_folded": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "tool_names_withheld": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "by": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "mode",
+              "verdict",
+              "tool_name",
+              "count"
+            ],
+            "properties": {
+              "mode": {
+                "enum": [
+                  "off",
+                  "observe",
+                  "nudge",
+                  "enforce"
+                ]
+              },
+              "verdict": {
+                "enum": [
+                  "pass",
+                  "warn",
+                  "nudge",
+                  "quarantine",
+                  "block"
+                ]
+              },
+              "tool_name": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              }
+            }
+          }
+        }
+      }
+    },
+    "checkpoints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "count",
+        "bound_count",
+        "card_hash_count",
+        "digest",
+        "tail_from_digest",
+        "tail"
+      ],
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "bound_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "card_hash_count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "tail_from_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "tail": {
+          "type": "array",
+          "maxItems": 32,
+          "items": {
+            "$ref": "#/$defs/citation"
+          }
+        }
+      }
+    },
+    "lines": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "class",
+          "key",
+          "text"
+        ],
+        "properties": {
+          "class": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "alg": {
+      "const": "EdDSA"
+    },
+    "signature": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{86}$"
+    }
+  },
+  "$defs": {
+    "citation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "checkpoint_id",
+        "combined_commitment",
+        "commitment_signature",
+        "commitment_key_id",
+        "card_hash"
+      ],
+      "properties": {
+        "checkpoint_id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.:/+=@-]{1,256}$"
+        },
+        "combined_commitment": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-Za-z0-9_=-]{1,512}$"
+        },
+        "commitment_signature": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-Za-z0-9+/_=-]{1,512}$"
+        },
+        "commitment_key_id": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[A-Za-z0-9_.:/+=@-]{1,256}$"
+        },
+        "card_hash": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    }
+  }
+}

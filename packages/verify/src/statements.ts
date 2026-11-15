@@ -1,5 +1,5 @@
 /**
- * Record statements: the five signed statement types the Mnemom record is
+ * Record statements: the six signed statement types the Mnemom record is
  * built from, their bundle, and the JWKS they verify against.
  *
  * Shape (design "The record", decisions T2, T3, T12):
@@ -18,7 +18,13 @@
  *   make a statement invalid: they tell the reader how strong the binding is.
  * - A share card carries only measured lines, outcome lines, and verdict
  *   lines shown with their coverage. Any other class fails the card.
+ * - `AAP-ConductRecord/v2` (spec `specs/aap-conductrecord-v2.md`) is a v1
+ *   whose protection acts and checkpoint citations are summarised: counts, a
+ *   sha256 fold digest of each list and the newest 32 citations in full. It
+ *   chains with v1 builds of the same lineage.
  */
+
+import type { Mode, ProtectionVerdict } from "./claim-table.js";
 
 // ---------------------------------------------------------------------------
 // JWKS
@@ -50,6 +56,7 @@ export interface RecordJwks {
 
 export const STATEMENT_TYPES = [
   "AAP-ConductRecord/v1",
+  "AAP-ConductRecord/v2",
   "AAP-PRRecord/v1",
   "AAP-Outcome/v1",
   "AAP-ShareCard/v1",
@@ -57,6 +64,16 @@ export const STATEMENT_TYPES = [
 ] as const;
 
 export type StatementTyp = (typeof STATEMENT_TYPES)[number];
+
+/**
+ * The conduct record typs. v1 and v2 are one chain family: a v2 build may
+ * name a v1 build as its `previous_digest`, and the reverse (spec
+ * `specs/aap-conductrecord-v2.md` §9).
+ */
+export const CONDUCT_RECORD_TYPES = ["AAP-ConductRecord/v1", "AAP-ConductRecord/v2"] as const;
+
+/** The unsigned lists file a third party checks a v2 statement's digests against (§11.4). */
+export const LISTS_TYP = "AAP-RecordLists/v1" as const;
 
 export const BUNDLE_TYP = "AAP-RecordBundle/v1" as const;
 
@@ -97,6 +114,131 @@ export interface ConductRecordStatement extends SignedStatementBase {
   /** Lineage the record is keyed on (T1), e.g. a conversation id. */
   lineage_key?: string;
   checkpoints?: CheckpointCitation[];
+}
+
+/**
+ * One checkpoint citation tuple of `AAP-ConductRecord/v2` (spec §4): exactly
+ * these five keys, the shape v1's `checkpoints[]` entries already have.
+ */
+export interface CheckpointTuple {
+  checkpoint_id: string;
+  combined_commitment: string | null;
+  commitment_signature: string | null;
+  commitment_key_id: string | null;
+  card_hash: string | null;
+}
+
+/** `checkpoints` of a v2 conduct record: counts, the fold digest, and the newest citations in full (§3, §5). */
+export interface CheckpointSummary {
+  count: number;
+  /** Citations with `combined_commitment` and `commitment_signature` both set. */
+  bound_count: number;
+  /** Citations with `card_hash` set. */
+  card_hash_count: number;
+  /** `fold(CKPT_SEED, every citation)`, lowercase hex. */
+  digest: string;
+  /** `fold(CKPT_SEED, the citations before the tail)`; `digest = fold(tail_from_digest, tail)`. */
+  tail_from_digest: string;
+  /** The last citations in fold order, at most 32. */
+  tail: CheckpointTuple[];
+}
+
+/** One row of a v2 conduct record's `protection.by` (§7). */
+export interface ProtectionGroup {
+  mode: Mode;
+  verdict: ProtectionVerdict;
+  /** A tool name, or null for acts with no tool, a withheld name, or a name folded by the 64-row cap. */
+  tool_name: string | null;
+  count: number;
+}
+
+/** `protection` of a v2 conduct record: totals, grouped counts and the acts digest (§3). */
+export interface ProtectionSummary {
+  acts_total: number;
+  /** `fold(ACTS_SEED, every act tuple)`, lowercase hex. */
+  acts_digest: string;
+  by: ProtectionGroup[];
+  /** Acts whose tool name was folded into a `tool_name: null` row by the 64-row cap. */
+  tools_folded: number;
+  /** Acts whose stored tool name failed the tool-name shape (`tool_withheld: true`). */
+  tool_names_withheld: number;
+}
+
+/**
+ * `AAP-ConductRecord/v2`: the bounded conduct record (spec
+ * `specs/aap-conductrecord-v2.md`). Same signature and digest as v1; the
+ * protection acts and checkpoint citations are summarised and committed by
+ * sha256 fold digests, so the statement stays bounded at any session length.
+ */
+export interface ConductRecordV2Statement extends SignedStatementBase {
+  typ: "AAP-ConductRecord/v2";
+  lineage_key?: string;
+  /** Both lists hold exactly the rows created at or before this instant (`built_at` minus 5 s). */
+  lists_as_of?: string;
+  protection?: ProtectionSummary;
+  checkpoints?: CheckpointSummary;
+}
+
+/** One protection act tuple (§4). `decision_ref` hashes the decision id; the raw id is never signed. */
+export interface ActTuple {
+  decision_ref: string;
+  mode: Mode;
+  tool_name: string | null;
+  /** True when the stored tool name failed the tool-name shape and is cited as null. */
+  tool_withheld: boolean;
+  verdict: ProtectionVerdict;
+}
+
+/**
+ * An `AAP-RecordLists/v1` file (§11.4): the full citation and act lists
+ * behind one v2 statement, in fold order, as the lists route serves them.
+ * Unsigned: it is trusted only as far as it folds to the signed digests.
+ */
+export interface RecordLists {
+  typ: typeof LISTS_TYP;
+  /** Digest of the v2 statement these lists belong to. */
+  statement_digest: string;
+  lists_as_of: string;
+  checkpoints?: CheckpointTuple[];
+  /** Act tuples; `decision_id`, when present, must hash to the tuple's `decision_ref`. */
+  acts?: (ActTuple & { decision_id?: string })[];
+  [k: string]: unknown;
+}
+
+/** Which part of a lists file a check is about. `statement` covers the file header and its match to a statement. */
+export type ListsPart = "statement" | "checkpoints" | "acts";
+
+/** Why a lists file does not match the statement it names. Stable strings. */
+export const LISTS_MISMATCHES = {
+  /** The lists file is not an `AAP-RecordLists/v1` object, or a list or an entry is malformed. */
+  list_malformed: "list_malformed",
+  /** No statement in the input has the file's `statement_digest`. */
+  statement_not_found: "statement_not_found",
+  /** The statement the file names failed verification, so its digests prove nothing. */
+  statement_invalid: "statement_invalid",
+  /** The statement the file names is not an `AAP-ConductRecord/v2`. */
+  not_conduct_v2: "not_conduct_v2",
+  /** The file's `lists_as_of` is not the statement's. */
+  as_of_mismatch: "as_of_mismatch",
+  count_mismatch: "count_mismatch",
+  binding_count_mismatch: "binding_count_mismatch",
+  tail_mismatch: "tail_mismatch",
+  digest_mismatch: "digest_mismatch",
+  decision_ref_mismatch: "decision_ref_mismatch",
+  groups_mismatch: "groups_mismatch",
+} as const;
+
+export type ListsMismatch = (typeof LISTS_MISMATCHES)[keyof typeof LISTS_MISMATCHES];
+
+/** `checkConductLists` result: ok, or the first part and mismatch that failed. */
+export type ListsCheckResult = { ok: true } | { ok: false; part: ListsPart; mismatch: ListsMismatch };
+
+/** One entry of `RecordVerificationResult.lists_checked`. */
+export interface ListsCheck {
+  statement_digest: string;
+  part: ListsPart;
+  ok: boolean;
+  mismatch?: ListsMismatch;
 }
 
 export interface PRRecordStatement extends SignedStatementBase {
@@ -152,6 +294,7 @@ export interface TransparencyRootStatement extends SignedStatementBase {
 
 export type SignedStatement =
   | ConductRecordStatement
+  | ConductRecordV2Statement
   | PRRecordStatement
   | OutcomeStatement
   | ShareCardStatement
@@ -210,6 +353,19 @@ export const REASONS = {
   head_unbound: "head_unbound",
   /** `expected_head_sha` was given but is not a lowercase hex git commit id. */
   expected_head_malformed: "expected_head_malformed",
+  /**
+   * An `AAP-ConductRecord/v2` statement's summary does not hold together
+   * (spec §11.1): a count, bound or shape is wrong, the summary blocks carry a
+   * key the format does not define, or the tail does not fold to `digest`.
+   */
+  summary_inconsistent: "summary_inconsistent",
+  /**
+   * Bundle-level, only with `options.lists`: a lists file does not fold to the
+   * signed digests of the statement it names (§11.4). It means "this list is
+   * not what Mnemom signed", not that Mnemom lied: retention, a backfill or a
+   * late row also change a list.
+   */
+  summary_list_mismatch: "summary_list_mismatch",
 } as const;
 
 export type Reason = (typeof REASONS)[keyof typeof REASONS];
@@ -225,6 +381,16 @@ export const FLAGS = {
    * (mnemom-api record-retention.ts). Never changes `valid`.
    */
   lineage_truncated: "lineage truncated",
+  /**
+   * On every valid `AAP-ConductRecord/v2`: acts are grouped and the citations
+   * before the tail are committed only by digest. `count` is how many
+   * citations are not in the bundle in full.
+   */
+  summarized: "summarized",
+  /** A v2 build cites fewer checkpoints than the in-bundle build before it. `count` is how many fewer. */
+  checkpoints_removed: "checkpoints removed since previous build",
+  /** A v2 build's citations do not extend the in-bundle build before it. */
+  checkpoints_changed: "checkpoints changed since previous build",
 } as const;
 
 export type Flag = (typeof FLAGS)[keyof typeof FLAGS];
@@ -233,6 +399,8 @@ export interface StatementFlag {
   flag: Flag;
   /** `checkpoint_id` or the digest the flag is about. */
   subject: string;
+  /** How many items the flag covers, on the v2 summary flags; absent means one. */
+  count?: number;
 }
 
 export interface StatementVerificationResult {
@@ -271,6 +439,13 @@ export interface RecordVerifyOptions {
    * `head_mismatch` / `head_unbound` (K1.20). Lowercase hex, 40 or 64 chars.
    */
   expected_head_sha?: string;
+  /**
+   * `AAP-RecordLists/v1` files to check against the v2 statements they name
+   * (spec §11.4). Each must fold to its statement's signed digests, or
+   * `verify` fails with the bundle-level `summary_list_mismatch`. Absent, no
+   * list is checked and the result has no `lists_checked`.
+   */
+  lists?: RecordLists | RecordLists[];
 }
 
 export interface RecordVerificationResult {
@@ -280,4 +455,6 @@ export interface RecordVerificationResult {
   flags: StatementFlag[];
   statements: StatementVerificationResult[];
   verified_at: string;
+  /** One entry per list part checked; present only when `options.lists` was given. */
+  lists_checked?: ListsCheck[];
 }

@@ -1,0 +1,139 @@
+{
+  "$comment": "Normative test vectors for AAP-ConductRecord/v2 (specs/aap-conductrecord-v2.md §4-§5). fold(h0,[t1..tn]): h_i = SHA-256(h_{i-1} || UTF-8(canonicalJson(t_i))), h as 32 raw bytes, result lowercase hex; fold(h0,[]) = h0. canonicalJson sorts keys recursively and writes no whitespace. Shared by the aip verifier tests, the @mnemom/sdk parity tests, the mnemom-api producer tests and its pgTAP test.",
+  "seeds": {
+    "checkpoints": {
+      "string": "AAP-ConductRecord/v2/checkpoints",
+      "sha256": "f785dba4fd7921589a92cfc78cb1a76b3b86f906fd81b013437f7440a5577a45"
+    },
+    "acts": {
+      "string": "AAP-ConductRecord/v2/acts",
+      "sha256": "636e3beabb000b277895117585ba15c71fe2642db841003e3df015e5a78d9fc9"
+    }
+  },
+  "checkpoint_tuples": {
+    "t1": {
+      "checkpoint_id": "ic-00000000-0000-4000-8000-000000000001",
+      "combined_commitment": "YWJj",
+      "commitment_signature": "c2ln",
+      "commitment_key_id": "key-001",
+      "card_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "t2": {
+      "checkpoint_id": "ic-00000000-0000-4000-8000-000000000002",
+      "combined_commitment": null,
+      "commitment_signature": null,
+      "commitment_key_id": null,
+      "card_hash": null
+    },
+    "t3": {
+      "checkpoint_id": "ic-00000000-0000-4000-8000-000000000003",
+      "combined_commitment": "ZGVm",
+      "commitment_signature": "c2ln",
+      "commitment_key_id": "key-001",
+      "card_hash": null
+    }
+  },
+  "checkpoint_tuple_canonical": {
+    "t1": "{\"card_hash\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"checkpoint_id\":\"ic-00000000-0000-4000-8000-000000000001\",\"combined_commitment\":\"YWJj\",\"commitment_key_id\":\"key-001\",\"commitment_signature\":\"c2ln\"}",
+    "t2": "{\"card_hash\":null,\"checkpoint_id\":\"ic-00000000-0000-4000-8000-000000000002\",\"combined_commitment\":null,\"commitment_key_id\":null,\"commitment_signature\":null}"
+  },
+  "checkpoint_folds": [
+    {
+      "from": "seed",
+      "items": [
+        "t1"
+      ],
+      "result": "671303fab4db2d8aa733d92564d080a8486c02d374dbfdb8318296f1d8b5f4a6"
+    },
+    {
+      "from": "seed",
+      "items": [
+        "t1",
+        "t2",
+        "t3"
+      ],
+      "result": "2d38faed1001ad9359a4700129e419255175858f0d57716ff84a4f648e59ed32"
+    },
+    {
+      "from": "fold(seed,[t1])",
+      "items": [
+        "t2",
+        "t3"
+      ],
+      "result": "2d38faed1001ad9359a4700129e419255175858f0d57716ff84a4f648e59ed32"
+    },
+    {
+      "from": "seed",
+      "items": [],
+      "result": "f785dba4fd7921589a92cfc78cb1a76b3b86f906fd81b013437f7440a5577a45"
+    }
+  ],
+  "decision_refs": {
+    "prefix": "AAP-DecisionRef/v1\n",
+    "refs": [
+      {
+        "id": "00000000-0000-4000-8000-000000000001",
+        "decision_ref": "6699a3dfa4f36d42c83041bf2631208c431b6acef26617ec7cc694d63132a200"
+      },
+      {
+        "id": "00000000-0000-4000-8000-000000000002",
+        "decision_ref": "e4dd51cca034337eca15c8e5bb09706f59de3524fc395442c9897426735ccd85"
+      },
+      {
+        "id": "00000000-0000-4000-8000-000000000001",
+        "decision_ref": "6699a3dfa4f36d42c83041bf2631208c431b6acef26617ec7cc694d63132a200"
+      }
+    ]
+  },
+  "act_tuples": {
+    "a1": {
+      "decision_ref": "6699a3dfa4f36d42c83041bf2631208c431b6acef26617ec7cc694d63132a200",
+      "mode": "enforce",
+      "tool_name": "Bash",
+      "tool_withheld": false,
+      "verdict": "block"
+    },
+    "a2": {
+      "decision_ref": "e4dd51cca034337eca15c8e5bb09706f59de3524fc395442c9897426735ccd85",
+      "mode": "observe",
+      "tool_name": null,
+      "tool_withheld": false,
+      "verdict": "pass"
+    },
+    "a3": {
+      "decision_ref": "82652574a24986ae63131cf5983b38dbe216ff95f2903c37768d1e90fb25a0fb",
+      "mode": "enforce",
+      "tool_name": null,
+      "tool_withheld": true,
+      "verdict": "block"
+    }
+  },
+  "act_tuple_canonical": {
+    "a1": "{\"decision_ref\":\"6699a3dfa4f36d42c83041bf2631208c431b6acef26617ec7cc694d63132a200\",\"mode\":\"enforce\",\"tool_name\":\"Bash\",\"tool_withheld\":false,\"verdict\":\"block\"}",
+    "a3": "{\"decision_ref\":\"82652574a24986ae63131cf5983b38dbe216ff95f2903c37768d1e90fb25a0fb\",\"mode\":\"enforce\",\"tool_name\":null,\"tool_withheld\":true,\"verdict\":\"block\"}"
+  },
+  "act_folds": [
+    {
+      "from": "seed",
+      "items": [
+        "a1",
+        "a2"
+      ],
+      "result": "b3fca034e59964185d75141b39c11f9133b31c48712baa932e9306c25ac98439"
+    },
+    {
+      "from": "seed",
+      "items": [
+        "a1",
+        "a2",
+        "a3"
+      ],
+      "result": "6783519789cf7ba295bda4ecbaf249910e2c9170fceab082485b67616a76b5fe"
+    },
+    {
+      "from": "seed",
+      "items": [],
+      "result": "636e3beabb000b277895117585ba15c71fe2642db841003e3df015e5a78d9fc9"
+    }
+  ]
+}

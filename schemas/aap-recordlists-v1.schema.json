@@ -1,0 +1,137 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mnemom/aip/schemas/aap-recordlists-v1.schema.json",
+  "title": "AAP-RecordLists/v1",
+  "description": "Unsigned lists file behind one AAP-ConductRecord/v2 statement (specs/aap-conductrecord-v2.md \u00a711.4): the full checkpoint citation and protection act lists in fold order. Trusted only as far as it folds to the statement's signed digests; check it with `verify(input, jwks, { lists })` or `mnemom-verify --lists`. `decision_id`, when present, must hash to its tuple's `decision_ref` and is removed before folding.",
+  "type": "object",
+  "required": [
+    "typ",
+    "statement_digest",
+    "lists_as_of"
+  ],
+  "anyOf": [
+    {
+      "required": [
+        "checkpoints"
+      ]
+    },
+    {
+      "required": [
+        "acts"
+      ]
+    }
+  ],
+  "properties": {
+    "typ": {
+      "const": "AAP-RecordLists/v1"
+    },
+    "statement_digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "lists_as_of": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$"
+    },
+    "checkpoints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "checkpoint_id",
+          "combined_commitment",
+          "commitment_signature",
+          "commitment_key_id",
+          "card_hash"
+        ],
+        "properties": {
+          "checkpoint_id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_.:/+=@-]{1,256}$"
+          },
+          "combined_commitment": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[A-Za-z0-9_=-]{1,512}$"
+          },
+          "commitment_signature": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[A-Za-z0-9+/_=-]{1,512}$"
+          },
+          "commitment_key_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[A-Za-z0-9_.:/+=@-]{1,256}$"
+          },
+          "card_hash": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      }
+    },
+    "acts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "decision_ref",
+          "mode",
+          "tool_name",
+          "tool_withheld",
+          "verdict"
+        ],
+        "properties": {
+          "decision_ref": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "mode": {
+            "enum": [
+              "off",
+              "observe",
+              "nudge",
+              "enforce"
+            ]
+          },
+          "verdict": {
+            "enum": [
+              "pass",
+              "warn",
+              "nudge",
+              "quarantine",
+              "block"
+            ]
+          },
+          "tool_name": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[A-Za-z0-9_.:-]{1,128}$"
+          },
+          "tool_withheld": {
+            "type": "boolean"
+          },
+          "decision_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          }
+        }
+      }
+    }
+  }
+}

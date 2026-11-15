@@ -8,6 +8,9 @@
  * `AAP-TransparencyRoot/v1` does (mnemom-api `src/transparency/root_publisher.ts`).
  */
 
+import { sha256 } from "@noble/hashes/sha2.js";
+import { bytesToHex, utf8ToBytes } from "@noble/hashes/utils.js";
+
 export function canonicalJson(value: unknown): string {
   if (value === null || typeof value !== "object") {
     return JSON.stringify(value);
@@ -33,4 +36,19 @@ export function base64urlToUint8(input: string): Uint8Array {
   const out = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
   return out;
+}
+
+/**
+ * The bytes a statement's signature covers: canonical JSON of the statement
+ * with `signature` removed. Exported (through verify-record.ts) so a signer
+ * in another language can be checked against it byte for byte.
+ */
+export function statementCommitment(statement: Record<string, unknown>): string {
+  const { signature: _signature, ...rest } = statement;
+  return canonicalJson(rest);
+}
+
+/** Lowercase sha256 hex of a statement's commitment: how statements link (T2). */
+export function statementDigest(statement: Record<string, unknown>): string {
+  return bytesToHex(sha256(utf8ToBytes(statementCommitment(statement))));
 }

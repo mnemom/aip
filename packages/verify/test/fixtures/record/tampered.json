@@ -1345,5 +1345,4084 @@
       ]
     },
     "expected_head_sha": "ffffffffffffffffffffffffffffffffffffffff"
+  },
+  {
+    "name": "v2-tail-leaf",
+    "reason": "0:summary_inconsistent",
+    "input": {
+      "typ": "AAP-ConductRecord/v2",
+      "signing_key_id": "aap-test-record-2026-10",
+      "unit_kind": "conversation",
+      "org_id": "org-test0001",
+      "lineage_key": "conv_dddddddddddddddddddddddddddddddd",
+      "built_at": "2026-11-14T11:00:00.000Z",
+      "lists_as_of": "2026-11-14T10:59:55.000Z",
+      "previous_digest": "0a3ab9d1a00d2da70669e39f15c367ed0d530ca0710dc540b0185b9a7369f1e6",
+      "goal": {
+        "mode": "sealed",
+        "contract_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "canon_node_id": "node_bbbbbbbbbbbbbbbb",
+        "seal_version": 1
+      },
+      "cost": {
+        "model_cost_millimu": 530000,
+        "mu_millimu": 21200,
+        "mu_rate_bps": 400,
+        "currency_fixed_at": "2026-11-14T11:00:00.000Z"
+      },
+      "protection": {
+        "acts_total": 9,
+        "acts_digest": "49c6871ed4c6f8ae608fed323c58fa48efffd81d4ccb33c7fe5aa52e1c287052",
+        "by": [
+          {
+            "mode": "off",
+            "verdict": "pass",
+            "tool_name": null,
+            "count": 1
+          },
+          {
+            "mode": "observe",
+            "verdict": "pass",
+            "tool_name": "Read",
+            "count": 1
+          },
+          {
+            "mode": "observe",
+            "verdict": "warn",
+            "tool_name": null,
+            "count": 1
+          },
+          {
+            "mode": "nudge",
+            "verdict": "nudge",
+            "tool_name": "Edit",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "warn",
+            "tool_name": "WebFetch",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "quarantine",
+            "tool_name": "Write",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": null,
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Bash",
+            "count": 2
+          }
+        ],
+        "tools_folded": 0,
+        "tool_names_withheld": 1
+      },
+      "checkpoints": {
+        "count": 45,
+        "bound_count": 39,
+        "card_hash_count": 37,
+        "digest": "ae367769f32ac5007097129516f98aecff89c91c5ded1c0aa56dd7f96c3972bf",
+        "tail_from_digest": "db557409406e80cd2cf9a1e9e964676845a74b670ebaf5db3b131f501e9979bb",
+        "tail": [
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000014",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000015",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ15",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000016",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ16",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000017",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ17",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000018",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ18",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000019",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ19",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000020",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ20",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000021",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000022",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ22",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000023",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ23",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000024",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ24",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000025",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ25",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000026",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ26",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000027",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ27",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000028",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000029",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ29",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000030",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ30",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000031",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ31",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000032",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ32",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000033",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ33",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000034",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ34",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000035",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000036",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ36",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000037",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ37",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000038",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ38",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000039",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ39",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000040",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ40",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000041",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ41",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000042",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000043",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ43",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000044",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ44",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-other-key"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000045",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ45",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          }
+        ]
+      },
+      "lines": [
+        {
+          "class": "measured",
+          "key": "cost.mu",
+          "text": "µ 21200 mmu"
+        },
+        {
+          "class": "measured",
+          "key": "goal.mode",
+          "text": "sealed"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.2",
+          "text": "flagged"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.3",
+          "text": "flagged, agent nudged"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.4",
+          "text": "flagged"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.5",
+          "text": "stopped Write"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.6",
+          "text": "stopped"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.7",
+          "text": "stopped Bash"
+        }
+      ],
+      "signature": "NrHPbkSxAPBJz2q-FoP7OQQBJJfvqhpC_xKDF5R3sDxXO-LYg8OZowt4Oh241EAxkx-pKZKkOPV8uFOknShMBA"
+    }
+  },
+  {
+    "name": "v2-digest",
+    "reason": "0:summary_inconsistent",
+    "input": {
+      "typ": "AAP-ConductRecord/v2",
+      "signing_key_id": "aap-test-record-2026-10",
+      "unit_kind": "conversation",
+      "org_id": "org-test0001",
+      "lineage_key": "conv_dddddddddddddddddddddddddddddddd",
+      "built_at": "2026-11-14T11:00:00.000Z",
+      "lists_as_of": "2026-11-14T10:59:55.000Z",
+      "previous_digest": "0a3ab9d1a00d2da70669e39f15c367ed0d530ca0710dc540b0185b9a7369f1e6",
+      "goal": {
+        "mode": "sealed",
+        "contract_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "canon_node_id": "node_bbbbbbbbbbbbbbbb",
+        "seal_version": 1
+      },
+      "cost": {
+        "model_cost_millimu": 530000,
+        "mu_millimu": 21200,
+        "mu_rate_bps": 400,
+        "currency_fixed_at": "2026-11-14T11:00:00.000Z"
+      },
+      "protection": {
+        "acts_total": 9,
+        "acts_digest": "49c6871ed4c6f8ae608fed323c58fa48efffd81d4ccb33c7fe5aa52e1c287052",
+        "by": [
+          {
+            "mode": "off",
+            "verdict": "pass",
+            "tool_name": null,
+            "count": 1
+          },
+          {
+            "mode": "observe",
+            "verdict": "pass",
+            "tool_name": "Read",
+            "count": 1
+          },
+          {
+            "mode": "observe",
+            "verdict": "warn",
+            "tool_name": null,
+            "count": 1
+          },
+          {
+            "mode": "nudge",
+            "verdict": "nudge",
+            "tool_name": "Edit",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "warn",
+            "tool_name": "WebFetch",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "quarantine",
+            "tool_name": "Write",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": null,
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Bash",
+            "count": 2
+          }
+        ],
+        "tools_folded": 0,
+        "tool_names_withheld": 1
+      },
+      "checkpoints": {
+        "count": 45,
+        "bound_count": 39,
+        "card_hash_count": 37,
+        "digest": "7777777777777777777777777777777777777777777777777777777777777777",
+        "tail_from_digest": "db557409406e80cd2cf9a1e9e964676845a74b670ebaf5db3b131f501e9979bb",
+        "tail": [
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000014",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000015",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ15",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000016",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ16",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000017",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ17",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000018",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ18",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000019",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ19",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000020",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ20",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000021",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000022",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ22",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000023",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ23",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000024",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ24",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000025",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ25",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000026",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ26",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000027",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ27",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000028",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000029",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ29",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000030",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ30",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000031",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ31",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000032",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ32",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000033",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ33",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000034",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ34",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000035",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000036",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ36",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000037",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ37",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000038",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ38",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000039",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ39",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000040",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ40",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000041",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ41",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000042",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000043",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ43",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000044",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ44",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000045",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ45",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          }
+        ]
+      },
+      "lines": [
+        {
+          "class": "measured",
+          "key": "cost.mu",
+          "text": "µ 21200 mmu"
+        },
+        {
+          "class": "measured",
+          "key": "goal.mode",
+          "text": "sealed"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.2",
+          "text": "flagged"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.3",
+          "text": "flagged, agent nudged"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.4",
+          "text": "flagged"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.5",
+          "text": "stopped Write"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.6",
+          "text": "stopped"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.7",
+          "text": "stopped Bash"
+        }
+      ],
+      "signature": "w_zB0CrPJnfvkbwxtdXlX_w4txCgnRbPzUVVaUZxrI_5CO8OT1TbGgUxXv59DSb9HeeLbP7AJgQXxrBvMfhzAg"
+    }
+  },
+  {
+    "name": "v2-count",
+    "reason": "0:summary_inconsistent",
+    "input": {
+      "typ": "AAP-ConductRecord/v2",
+      "signing_key_id": "aap-test-record-2026-10",
+      "unit_kind": "conversation",
+      "org_id": "org-test0001",
+      "lineage_key": "conv_dddddddddddddddddddddddddddddddd",
+      "built_at": "2026-11-14T10:00:00.000Z",
+      "lists_as_of": "2026-11-14T09:59:55.000Z",
+      "previous_digest": null,
+      "goal": {
+        "mode": "sealed",
+        "contract_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "canon_node_id": "node_bbbbbbbbbbbbbbbb",
+        "seal_version": 1
+      },
+      "cost": {
+        "model_cost_millimu": 530000,
+        "mu_millimu": 21200,
+        "mu_rate_bps": 400,
+        "currency_fixed_at": "2026-11-14T10:00:00.000Z"
+      },
+      "protection": {
+        "acts_total": 0,
+        "acts_digest": "636e3beabb000b277895117585ba15c71fe2642db841003e3df015e5a78d9fc9",
+        "by": [],
+        "tools_folded": 0,
+        "tool_names_withheld": 0
+      },
+      "checkpoints": {
+        "count": 6,
+        "bound_count": 5,
+        "card_hash_count": 4,
+        "digest": "2c46a98a2e9b23d2e761f40a10dce34f2741826665fdcd53214652e526f22abb",
+        "tail_from_digest": "f785dba4fd7921589a92cfc78cb1a76b3b86f906fd81b013437f7440a5577a45",
+        "tail": [
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000001",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ1",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000002",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ2",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000003",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ3",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000004",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ4",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000005",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ5",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          }
+        ]
+      },
+      "lines": [
+        {
+          "class": "measured",
+          "key": "cost.mu",
+          "text": "µ 21200 mmu"
+        },
+        {
+          "class": "measured",
+          "key": "goal.mode",
+          "text": "sealed"
+        },
+        {
+          "class": "measured",
+          "key": "protection.mode",
+          "text": "not checked"
+        }
+      ],
+      "signature": "wPd7LA9YoVU4tD9Nvc0zemsOzCOurknoqPEX-_6JtyqaCpHDrZ6qp5g8LDo3vGQUCLpl22U5kOSxQjjVXswzAg"
+    }
+  },
+  {
+    "name": "v2-bound-count-over-count",
+    "reason": "0:summary_inconsistent",
+    "input": {
+      "typ": "AAP-ConductRecord/v2",
+      "signing_key_id": "aap-test-record-2026-10",
+      "unit_kind": "conversation",
+      "org_id": "org-test0001",
+      "lineage_key": "conv_dddddddddddddddddddddddddddddddd",
+      "built_at": "2026-11-14T11:00:00.000Z",
+      "lists_as_of": "2026-11-14T10:59:55.000Z",
+      "previous_digest": "0a3ab9d1a00d2da70669e39f15c367ed0d530ca0710dc540b0185b9a7369f1e6",
+      "goal": {
+        "mode": "sealed",
+        "contract_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "canon_node_id": "node_bbbbbbbbbbbbbbbb",
+        "seal_version": 1
+      },
+      "cost": {
+        "model_cost_millimu": 530000,
+        "mu_millimu": 21200,
+        "mu_rate_bps": 400,
+        "currency_fixed_at": "2026-11-14T11:00:00.000Z"
+      },
+      "protection": {
+        "acts_total": 9,
+        "acts_digest": "49c6871ed4c6f8ae608fed323c58fa48efffd81d4ccb33c7fe5aa52e1c287052",
+        "by": [
+          {
+            "mode": "off",
+            "verdict": "pass",
+            "tool_name": null,
+            "count": 1
+          },
+          {
+            "mode": "observe",
+            "verdict": "pass",
+            "tool_name": "Read",
+            "count": 1
+          },
+          {
+            "mode": "observe",
+            "verdict": "warn",
+            "tool_name": null,
+            "count": 1
+          },
+          {
+            "mode": "nudge",
+            "verdict": "nudge",
+            "tool_name": "Edit",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "warn",
+            "tool_name": "WebFetch",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "quarantine",
+            "tool_name": "Write",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": null,
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Bash",
+            "count": 2
+          }
+        ],
+        "tools_folded": 0,
+        "tool_names_withheld": 1
+      },
+      "checkpoints": {
+        "count": 45,
+        "bound_count": 46,
+        "card_hash_count": 37,
+        "digest": "ae367769f32ac5007097129516f98aecff89c91c5ded1c0aa56dd7f96c3972bf",
+        "tail_from_digest": "db557409406e80cd2cf9a1e9e964676845a74b670ebaf5db3b131f501e9979bb",
+        "tail": [
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000014",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000015",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ15",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000016",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ16",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000017",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ17",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000018",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ18",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000019",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ19",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000020",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ20",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000021",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000022",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ22",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000023",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ23",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000024",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ24",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000025",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ25",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000026",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ26",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000027",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ27",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000028",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000029",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ29",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000030",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ30",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000031",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ31",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000032",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ32",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000033",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ33",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000034",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ34",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000035",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000036",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ36",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000037",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ37",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000038",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ38",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000039",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ39",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000040",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ40",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000041",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ41",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000042",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000043",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ43",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000044",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ44",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000045",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ45",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          }
+        ]
+      },
+      "lines": [
+        {
+          "class": "measured",
+          "key": "cost.mu",
+          "text": "µ 21200 mmu"
+        },
+        {
+          "class": "measured",
+          "key": "goal.mode",
+          "text": "sealed"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.2",
+          "text": "flagged"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.3",
+          "text": "flagged, agent nudged"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.4",
+          "text": "flagged"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.5",
+          "text": "stopped Write"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.6",
+          "text": "stopped"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.7",
+          "text": "stopped Bash"
+        }
+      ],
+      "signature": "3bF5y3SOxOEUTAfDqgaRpM3cNYLAxH3ZolaL92QHC3qXg4oH96pCBVubpWyH6ItWBqam0XEvMXQ2yUO_5OM5DQ"
+    }
+  },
+  {
+    "name": "v2-group-count",
+    "reason": "0:summary_inconsistent",
+    "input": {
+      "typ": "AAP-ConductRecord/v2",
+      "signing_key_id": "aap-test-record-2026-10",
+      "unit_kind": "conversation",
+      "org_id": "org-test0001",
+      "lineage_key": "conv_dddddddddddddddddddddddddddddddd",
+      "built_at": "2026-11-14T11:00:00.000Z",
+      "lists_as_of": "2026-11-14T10:59:55.000Z",
+      "previous_digest": "0a3ab9d1a00d2da70669e39f15c367ed0d530ca0710dc540b0185b9a7369f1e6",
+      "goal": {
+        "mode": "sealed",
+        "contract_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "canon_node_id": "node_bbbbbbbbbbbbbbbb",
+        "seal_version": 1
+      },
+      "cost": {
+        "model_cost_millimu": 530000,
+        "mu_millimu": 21200,
+        "mu_rate_bps": 400,
+        "currency_fixed_at": "2026-11-14T11:00:00.000Z"
+      },
+      "protection": {
+        "acts_total": 9,
+        "acts_digest": "49c6871ed4c6f8ae608fed323c58fa48efffd81d4ccb33c7fe5aa52e1c287052",
+        "by": [
+          {
+            "mode": "off",
+            "verdict": "pass",
+            "tool_name": null,
+            "count": 2
+          },
+          {
+            "mode": "observe",
+            "verdict": "pass",
+            "tool_name": "Read",
+            "count": 1
+          },
+          {
+            "mode": "observe",
+            "verdict": "warn",
+            "tool_name": null,
+            "count": 1
+          },
+          {
+            "mode": "nudge",
+            "verdict": "nudge",
+            "tool_name": "Edit",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "warn",
+            "tool_name": "WebFetch",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "quarantine",
+            "tool_name": "Write",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": null,
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Bash",
+            "count": 2
+          }
+        ],
+        "tools_folded": 0,
+        "tool_names_withheld": 1
+      },
+      "checkpoints": {
+        "count": 45,
+        "bound_count": 39,
+        "card_hash_count": 37,
+        "digest": "ae367769f32ac5007097129516f98aecff89c91c5ded1c0aa56dd7f96c3972bf",
+        "tail_from_digest": "db557409406e80cd2cf9a1e9e964676845a74b670ebaf5db3b131f501e9979bb",
+        "tail": [
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000014",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000015",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ15",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000016",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ16",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000017",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ17",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000018",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ18",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000019",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ19",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000020",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ20",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000021",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000022",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ22",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000023",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ23",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000024",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ24",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000025",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ25",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000026",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ26",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000027",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ27",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000028",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000029",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ29",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000030",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ30",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000031",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ31",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000032",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ32",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000033",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ33",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000034",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ34",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000035",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000036",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ36",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000037",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ37",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000038",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ38",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000039",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ39",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000040",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ40",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000041",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ41",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000042",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000043",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ43",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000044",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ44",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000045",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ45",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          }
+        ]
+      },
+      "lines": [
+        {
+          "class": "measured",
+          "key": "cost.mu",
+          "text": "µ 21200 mmu"
+        },
+        {
+          "class": "measured",
+          "key": "goal.mode",
+          "text": "sealed"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.2",
+          "text": "flagged"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.3",
+          "text": "flagged, agent nudged"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.4",
+          "text": "flagged"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.5",
+          "text": "stopped Write"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.6",
+          "text": "stopped"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.7",
+          "text": "stopped Bash"
+        }
+      ],
+      "signature": "bJPk5Z2Kyq7jgcfKTxUhIS1xVu_EVR7uG5okAJ8XOaZOXcWbIuTKIyBL2AO2GTZaZ63cq7cIVOw81jgeQflVBg"
+    }
+  },
+  {
+    "name": "v2-acts-digest-malformed",
+    "reason": "0:digest_malformed",
+    "input": {
+      "typ": "AAP-ConductRecord/v2",
+      "signing_key_id": "aap-test-record-2026-10",
+      "unit_kind": "conversation",
+      "org_id": "org-test0001",
+      "lineage_key": "conv_dddddddddddddddddddddddddddddddd",
+      "built_at": "2026-11-14T11:00:00.000Z",
+      "lists_as_of": "2026-11-14T10:59:55.000Z",
+      "previous_digest": "0a3ab9d1a00d2da70669e39f15c367ed0d530ca0710dc540b0185b9a7369f1e6",
+      "goal": {
+        "mode": "sealed",
+        "contract_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "canon_node_id": "node_bbbbbbbbbbbbbbbb",
+        "seal_version": 1
+      },
+      "cost": {
+        "model_cost_millimu": 530000,
+        "mu_millimu": 21200,
+        "mu_rate_bps": 400,
+        "currency_fixed_at": "2026-11-14T11:00:00.000Z"
+      },
+      "protection": {
+        "acts_total": 9,
+        "acts_digest": "49C6871ED4C6F8AE608FED323C58FA48EFFFD81D4CCB33C7FE5AA52E1C287052",
+        "by": [
+          {
+            "mode": "off",
+            "verdict": "pass",
+            "tool_name": null,
+            "count": 1
+          },
+          {
+            "mode": "observe",
+            "verdict": "pass",
+            "tool_name": "Read",
+            "count": 1
+          },
+          {
+            "mode": "observe",
+            "verdict": "warn",
+            "tool_name": null,
+            "count": 1
+          },
+          {
+            "mode": "nudge",
+            "verdict": "nudge",
+            "tool_name": "Edit",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "warn",
+            "tool_name": "WebFetch",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "quarantine",
+            "tool_name": "Write",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": null,
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Bash",
+            "count": 2
+          }
+        ],
+        "tools_folded": 0,
+        "tool_names_withheld": 1
+      },
+      "checkpoints": {
+        "count": 45,
+        "bound_count": 39,
+        "card_hash_count": 37,
+        "digest": "ae367769f32ac5007097129516f98aecff89c91c5ded1c0aa56dd7f96c3972bf",
+        "tail_from_digest": "db557409406e80cd2cf9a1e9e964676845a74b670ebaf5db3b131f501e9979bb",
+        "tail": [
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000014",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000015",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ15",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000016",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ16",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000017",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ17",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000018",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ18",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000019",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ19",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000020",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ20",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000021",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000022",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ22",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000023",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ23",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000024",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ24",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000025",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ25",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000026",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ26",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000027",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ27",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000028",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000029",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ29",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000030",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ30",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000031",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ31",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000032",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ32",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000033",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ33",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000034",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ34",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000035",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000036",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ36",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000037",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ37",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000038",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ38",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000039",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ39",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000040",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ40",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000041",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ41",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000042",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000043",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ43",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000044",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ44",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000045",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ45",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          }
+        ]
+      },
+      "lines": [
+        {
+          "class": "measured",
+          "key": "cost.mu",
+          "text": "µ 21200 mmu"
+        },
+        {
+          "class": "measured",
+          "key": "goal.mode",
+          "text": "sealed"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.2",
+          "text": "flagged"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.3",
+          "text": "flagged, agent nudged"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.4",
+          "text": "flagged"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.5",
+          "text": "stopped Write"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.6",
+          "text": "stopped"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.7",
+          "text": "stopped Bash"
+        }
+      ],
+      "signature": "lZ6JYsElvu-rpBK26E0mseAkpRwoSILAzBEIW7QcFXuB0n38a0brEZxL8CI0jh_D1q90W4RIrtyeZQDEL0ztAQ"
+    }
+  },
+  {
+    "name": "v2-tail-over-bound",
+    "reason": "0:summary_inconsistent",
+    "input": {
+      "typ": "AAP-ConductRecord/v2",
+      "signing_key_id": "aap-test-record-2026-10",
+      "unit_kind": "conversation",
+      "org_id": "org-test0001",
+      "lineage_key": "conv_dddddddddddddddddddddddddddddddd",
+      "built_at": "2026-11-14T11:00:00.000Z",
+      "lists_as_of": "2026-11-14T10:59:55.000Z",
+      "previous_digest": "0a3ab9d1a00d2da70669e39f15c367ed0d530ca0710dc540b0185b9a7369f1e6",
+      "goal": {
+        "mode": "sealed",
+        "contract_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "canon_node_id": "node_bbbbbbbbbbbbbbbb",
+        "seal_version": 1
+      },
+      "cost": {
+        "model_cost_millimu": 530000,
+        "mu_millimu": 21200,
+        "mu_rate_bps": 400,
+        "currency_fixed_at": "2026-11-14T11:00:00.000Z"
+      },
+      "protection": {
+        "acts_total": 9,
+        "acts_digest": "49c6871ed4c6f8ae608fed323c58fa48efffd81d4ccb33c7fe5aa52e1c287052",
+        "by": [
+          {
+            "mode": "off",
+            "verdict": "pass",
+            "tool_name": null,
+            "count": 1
+          },
+          {
+            "mode": "observe",
+            "verdict": "pass",
+            "tool_name": "Read",
+            "count": 1
+          },
+          {
+            "mode": "observe",
+            "verdict": "warn",
+            "tool_name": null,
+            "count": 1
+          },
+          {
+            "mode": "nudge",
+            "verdict": "nudge",
+            "tool_name": "Edit",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "warn",
+            "tool_name": "WebFetch",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "quarantine",
+            "tool_name": "Write",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": null,
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Bash",
+            "count": 2
+          }
+        ],
+        "tools_folded": 0,
+        "tool_names_withheld": 1
+      },
+      "checkpoints": {
+        "count": 45,
+        "bound_count": 39,
+        "card_hash_count": 37,
+        "digest": "ae367769f32ac5007097129516f98aecff89c91c5ded1c0aa56dd7f96c3972bf",
+        "tail_from_digest": "f8cdb227a7a401f622009e760d3fb816ef39ee62a3c93f0c5a3812072e7e04ed",
+        "tail": [
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000013",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ13",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000014",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000015",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ15",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000016",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ16",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000017",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ17",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000018",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ18",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000019",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ19",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000020",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ20",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000021",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000022",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ22",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000023",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ23",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000024",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ24",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000025",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ25",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000026",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ26",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000027",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ27",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000028",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000029",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ29",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000030",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ30",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000031",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ31",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000032",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ32",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000033",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ33",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000034",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ34",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000035",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000036",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ36",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000037",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ37",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000038",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ38",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000039",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ39",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000040",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ40",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000041",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ41",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000042",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000043",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ43",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000044",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ44",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000045",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ45",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          }
+        ]
+      },
+      "lines": [
+        {
+          "class": "measured",
+          "key": "cost.mu",
+          "text": "µ 21200 mmu"
+        },
+        {
+          "class": "measured",
+          "key": "goal.mode",
+          "text": "sealed"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.2",
+          "text": "flagged"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.3",
+          "text": "flagged, agent nudged"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.4",
+          "text": "flagged"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.5",
+          "text": "stopped Write"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.6",
+          "text": "stopped"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.7",
+          "text": "stopped Bash"
+        }
+      ],
+      "signature": "RdgBPRZgP085GmdlobZmSav-mgHcSDBy6TUkHexbYxzFYpo_OBfKoyk1qDamnI2pAB_HQI_YLpyP_NcKKEbzBA"
+    }
+  },
+  {
+    "name": "v2-content-in-citation",
+    "reason": "0:summary_inconsistent",
+    "input": {
+      "typ": "AAP-ConductRecord/v2",
+      "signing_key_id": "aap-test-record-2026-10",
+      "unit_kind": "conversation",
+      "org_id": "org-test0001",
+      "lineage_key": "conv_dddddddddddddddddddddddddddddddd",
+      "built_at": "2026-11-14T11:00:00.000Z",
+      "lists_as_of": "2026-11-14T10:59:55.000Z",
+      "previous_digest": "0a3ab9d1a00d2da70669e39f15c367ed0d530ca0710dc540b0185b9a7369f1e6",
+      "goal": {
+        "mode": "sealed",
+        "contract_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "canon_node_id": "node_bbbbbbbbbbbbbbbb",
+        "seal_version": 1
+      },
+      "cost": {
+        "model_cost_millimu": 530000,
+        "mu_millimu": 21200,
+        "mu_rate_bps": 400,
+        "currency_fixed_at": "2026-11-14T11:00:00.000Z"
+      },
+      "protection": {
+        "acts_total": 9,
+        "acts_digest": "49c6871ed4c6f8ae608fed323c58fa48efffd81d4ccb33c7fe5aa52e1c287052",
+        "by": [
+          {
+            "mode": "off",
+            "verdict": "pass",
+            "tool_name": null,
+            "count": 1
+          },
+          {
+            "mode": "observe",
+            "verdict": "pass",
+            "tool_name": "Read",
+            "count": 1
+          },
+          {
+            "mode": "observe",
+            "verdict": "warn",
+            "tool_name": null,
+            "count": 1
+          },
+          {
+            "mode": "nudge",
+            "verdict": "nudge",
+            "tool_name": "Edit",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "warn",
+            "tool_name": "WebFetch",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "quarantine",
+            "tool_name": "Write",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": null,
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Bash",
+            "count": 2
+          }
+        ],
+        "tools_folded": 0,
+        "tool_names_withheld": 1
+      },
+      "checkpoints": {
+        "count": 45,
+        "bound_count": 39,
+        "card_hash_count": 37,
+        "digest": "ae367769f32ac5007097129516f98aecff89c91c5ded1c0aa56dd7f96c3972bf",
+        "tail_from_digest": "db557409406e80cd2cf9a1e9e964676845a74b670ebaf5db3b131f501e9979bb",
+        "tail": [
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000014",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null,
+            "text": "the user asked to delete the prod database"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000015",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ15",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000016",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ16",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000017",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ17",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000018",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ18",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000019",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ19",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000020",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ20",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000021",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000022",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ22",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000023",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ23",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000024",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ24",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000025",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ25",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000026",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ26",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000027",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ27",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000028",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000029",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ29",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000030",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ30",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000031",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ31",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000032",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ32",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000033",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ33",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000034",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ34",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000035",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000036",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ36",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000037",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ37",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000038",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ38",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000039",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ39",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000040",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ40",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000041",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ41",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000042",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000043",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ43",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000044",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ44",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000045",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ45",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          }
+        ]
+      },
+      "lines": [
+        {
+          "class": "measured",
+          "key": "cost.mu",
+          "text": "µ 21200 mmu"
+        },
+        {
+          "class": "measured",
+          "key": "goal.mode",
+          "text": "sealed"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.2",
+          "text": "flagged"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.3",
+          "text": "flagged, agent nudged"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.4",
+          "text": "flagged"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.5",
+          "text": "stopped Write"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.6",
+          "text": "stopped"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.7",
+          "text": "stopped Bash"
+        }
+      ],
+      "signature": "L9pCXMRTh1dbrJ2pTBxW8WxhpFTaR0i5Un47g8FUaDmlAsj5SPj1AgWJrFrPsBimioOoocD7YCt0yTyNOtKKDA"
+    }
+  },
+  {
+    "name": "v2-content-as-tool-name",
+    "reason": "0:summary_inconsistent",
+    "input": {
+      "typ": "AAP-ConductRecord/v2",
+      "signing_key_id": "aap-test-record-2026-10",
+      "unit_kind": "conversation",
+      "org_id": "org-test0001",
+      "lineage_key": "conv_dddddddddddddddddddddddddddddddd",
+      "built_at": "2026-11-14T11:00:00.000Z",
+      "lists_as_of": "2026-11-14T10:59:55.000Z",
+      "previous_digest": "0a3ab9d1a00d2da70669e39f15c367ed0d530ca0710dc540b0185b9a7369f1e6",
+      "goal": {
+        "mode": "sealed",
+        "contract_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "canon_node_id": "node_bbbbbbbbbbbbbbbb",
+        "seal_version": 1
+      },
+      "cost": {
+        "model_cost_millimu": 530000,
+        "mu_millimu": 21200,
+        "mu_rate_bps": 400,
+        "currency_fixed_at": "2026-11-14T11:00:00.000Z"
+      },
+      "protection": {
+        "acts_total": 9,
+        "acts_digest": "49c6871ed4c6f8ae608fed323c58fa48efffd81d4ccb33c7fe5aa52e1c287052",
+        "by": [
+          {
+            "mode": "off",
+            "verdict": "pass",
+            "tool_name": "rm -rf / as the user asked",
+            "count": 1
+          },
+          {
+            "mode": "observe",
+            "verdict": "pass",
+            "tool_name": "Read",
+            "count": 1
+          },
+          {
+            "mode": "observe",
+            "verdict": "warn",
+            "tool_name": null,
+            "count": 1
+          },
+          {
+            "mode": "nudge",
+            "verdict": "nudge",
+            "tool_name": "Edit",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "warn",
+            "tool_name": "WebFetch",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "quarantine",
+            "tool_name": "Write",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": null,
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Bash",
+            "count": 2
+          }
+        ],
+        "tools_folded": 0,
+        "tool_names_withheld": 1
+      },
+      "checkpoints": {
+        "count": 45,
+        "bound_count": 39,
+        "card_hash_count": 37,
+        "digest": "ae367769f32ac5007097129516f98aecff89c91c5ded1c0aa56dd7f96c3972bf",
+        "tail_from_digest": "db557409406e80cd2cf9a1e9e964676845a74b670ebaf5db3b131f501e9979bb",
+        "tail": [
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000014",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000015",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ15",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000016",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ16",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000017",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ17",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000018",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ18",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000019",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ19",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000020",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ20",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000021",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000022",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ22",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000023",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ23",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000024",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ24",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000025",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ25",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000026",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ26",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000027",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ27",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000028",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000029",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ29",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000030",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ30",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000031",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ31",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000032",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ32",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000033",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ33",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000034",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ34",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000035",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000036",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ36",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000037",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ37",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000038",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ38",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000039",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ39",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000040",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ40",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000041",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ41",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000042",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000043",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ43",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000044",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ44",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000045",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ45",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          }
+        ]
+      },
+      "lines": [
+        {
+          "class": "measured",
+          "key": "cost.mu",
+          "text": "µ 21200 mmu"
+        },
+        {
+          "class": "measured",
+          "key": "goal.mode",
+          "text": "sealed"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.2",
+          "text": "flagged"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.3",
+          "text": "flagged, agent nudged"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.4",
+          "text": "flagged"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.5",
+          "text": "stopped Write"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.6",
+          "text": "stopped"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.7",
+          "text": "stopped Bash"
+        }
+      ],
+      "signature": "fWnf5gZtK4L48Bvx7gr3501A9Herq8IqoysmPRhJ4N5BTtqJa8Bn0g4lggBO8I8UUowXtv_4_pGNDqX2pZfmDQ"
+    }
+  },
+  {
+    "name": "v2-lists-as-of-after-built-at",
+    "reason": "0:summary_inconsistent",
+    "input": {
+      "typ": "AAP-ConductRecord/v2",
+      "signing_key_id": "aap-test-record-2026-10",
+      "unit_kind": "conversation",
+      "org_id": "org-test0001",
+      "lineage_key": "conv_dddddddddddddddddddddddddddddddd",
+      "built_at": "2026-11-14T11:00:00.000Z",
+      "lists_as_of": "2026-11-14T11:00:00.001Z",
+      "previous_digest": "0a3ab9d1a00d2da70669e39f15c367ed0d530ca0710dc540b0185b9a7369f1e6",
+      "goal": {
+        "mode": "sealed",
+        "contract_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "canon_node_id": "node_bbbbbbbbbbbbbbbb",
+        "seal_version": 1
+      },
+      "cost": {
+        "model_cost_millimu": 530000,
+        "mu_millimu": 21200,
+        "mu_rate_bps": 400,
+        "currency_fixed_at": "2026-11-14T11:00:00.000Z"
+      },
+      "protection": {
+        "acts_total": 9,
+        "acts_digest": "49c6871ed4c6f8ae608fed323c58fa48efffd81d4ccb33c7fe5aa52e1c287052",
+        "by": [
+          {
+            "mode": "off",
+            "verdict": "pass",
+            "tool_name": null,
+            "count": 1
+          },
+          {
+            "mode": "observe",
+            "verdict": "pass",
+            "tool_name": "Read",
+            "count": 1
+          },
+          {
+            "mode": "observe",
+            "verdict": "warn",
+            "tool_name": null,
+            "count": 1
+          },
+          {
+            "mode": "nudge",
+            "verdict": "nudge",
+            "tool_name": "Edit",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "warn",
+            "tool_name": "WebFetch",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "quarantine",
+            "tool_name": "Write",
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": null,
+            "count": 1
+          },
+          {
+            "mode": "enforce",
+            "verdict": "block",
+            "tool_name": "Bash",
+            "count": 2
+          }
+        ],
+        "tools_folded": 0,
+        "tool_names_withheld": 1
+      },
+      "checkpoints": {
+        "count": 45,
+        "bound_count": 39,
+        "card_hash_count": 37,
+        "digest": "ae367769f32ac5007097129516f98aecff89c91c5ded1c0aa56dd7f96c3972bf",
+        "tail_from_digest": "db557409406e80cd2cf9a1e9e964676845a74b670ebaf5db3b131f501e9979bb",
+        "tail": [
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000014",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000015",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ15",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000016",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ16",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000017",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ17",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000018",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ18",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000019",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ19",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000020",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ20",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000021",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000022",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ22",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000023",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ23",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000024",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ24",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000025",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ25",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000026",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ26",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000027",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ27",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000028",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000029",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ29",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000030",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ30",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000031",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ31",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000032",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ32",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000033",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ33",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000034",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ34",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000035",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000036",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ36",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000037",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ37",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000038",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ38",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000039",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ39",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000040",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ40",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000041",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ41",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000042",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": null,
+            "commitment_signature": null,
+            "commitment_key_id": null
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000043",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ43",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000044",
+            "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "combined_commitment": "Y29tbWl0LQ44",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          },
+          {
+            "checkpoint_id": "ic-00000000-0000-4000-8000-000000000045",
+            "card_hash": null,
+            "combined_commitment": "Y29tbWl0LQ45",
+            "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "commitment_key_id": "aap-prod-2026-05-23"
+          }
+        ]
+      },
+      "lines": [
+        {
+          "class": "measured",
+          "key": "cost.mu",
+          "text": "µ 21200 mmu"
+        },
+        {
+          "class": "measured",
+          "key": "goal.mode",
+          "text": "sealed"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.2",
+          "text": "flagged"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.3",
+          "text": "flagged, agent nudged"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.4",
+          "text": "flagged"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.5",
+          "text": "stopped Write"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.6",
+          "text": "stopped"
+        },
+        {
+          "class": "verdict",
+          "key": "protection.group.7",
+          "text": "stopped Bash"
+        }
+      ],
+      "signature": "gqMLx2_raLLU0bm-JbgYSbVYxmX6WH9Axy2KQL711wHHrHnr6-NJbhEeDLvoT-8ffYfLgnrwySoxvoyaam9GDA"
+    }
+  },
+  {
+    "name": "v2-chain-fork",
+    "reason": "2:chain_broken",
+    "input": {
+      "typ": "AAP-RecordBundle/v1",
+      "statements": [
+        {
+          "typ": "AAP-ConductRecord/v1",
+          "signing_key_id": "aap-test-record-2026-10",
+          "built_at": "2026-11-14T09:00:00.000Z",
+          "previous_digest": null,
+          "unit_kind": "conversation",
+          "lineage_key": "conv_dddddddddddddddddddddddddddddddd",
+          "goal": {
+            "mode": "sealed",
+            "contract_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "canon_node_id": "node_bbbbbbbbbbbbbbbb",
+            "seal_version": 1
+          },
+          "cost": {
+            "model_cost_millimu": 412000,
+            "mu_millimu": 16480,
+            "mu_rate_bps": 400,
+            "currency_fixed_at": "2026-10-23T18:00:00.000Z"
+          },
+          "checkpoints": [
+            {
+              "checkpoint_id": "ic-00000000-0000-4000-8000-000000000001",
+              "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "combined_commitment": "Y29tbWl0LQ1",
+              "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              "commitment_key_id": "aap-prod-2026-05-23"
+            },
+            {
+              "checkpoint_id": "ic-00000000-0000-4000-8000-000000000002",
+              "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "combined_commitment": "Y29tbWl0LQ2",
+              "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              "commitment_key_id": "aap-prod-2026-05-23"
+            },
+            {
+              "checkpoint_id": "ic-00000000-0000-4000-8000-000000000003",
+              "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "combined_commitment": "Y29tbWl0LQ3",
+              "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              "commitment_key_id": "aap-prod-2026-05-23"
+            },
+            {
+              "checkpoint_id": "ic-00000000-0000-4000-8000-000000000004",
+              "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "combined_commitment": "Y29tbWl0LQ4",
+              "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              "commitment_key_id": "aap-prod-2026-05-23"
+            },
+            {
+              "checkpoint_id": "ic-00000000-0000-4000-8000-000000000005",
+              "card_hash": null,
+              "combined_commitment": "Y29tbWl0LQ5",
+              "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              "commitment_key_id": "aap-prod-2026-05-23"
+            },
+            {
+              "checkpoint_id": "ic-00000000-0000-4000-8000-000000000006",
+              "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "combined_commitment": "Y29tbWl0LQ6",
+              "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              "commitment_key_id": "aap-prod-2026-05-23"
+            },
+            {
+              "checkpoint_id": "ic-00000000-0000-4000-8000-000000000007",
+              "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "combined_commitment": null,
+              "commitment_signature": null,
+              "commitment_key_id": null
+            },
+            {
+              "checkpoint_id": "ic-00000000-0000-4000-8000-000000000008",
+              "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "combined_commitment": "Y29tbWl0LQ8",
+              "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              "commitment_key_id": "aap-prod-2026-05-23"
+            },
+            {
+              "checkpoint_id": "ic-00000000-0000-4000-8000-000000000009",
+              "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+              "combined_commitment": "Y29tbWl0LQ9",
+              "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              "commitment_key_id": "aap-prod-2026-05-23"
+            },
+            {
+              "checkpoint_id": "ic-00000000-0000-4000-8000-000000000010",
+              "card_hash": null,
+              "combined_commitment": "Y29tbWl0LQ10",
+              "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              "commitment_key_id": "aap-prod-2026-05-23"
+            }
+          ],
+          "signature": "JHMx01b0-SC2libCesYbeo-dRz4gHBgdee7neLhihFfpGo3NEUBJ4PbVyGcvUdrK6jfwIQbkErzN7U-xwcdkDw"
+        },
+        {
+          "typ": "AAP-ConductRecord/v2",
+          "signing_key_id": "aap-test-record-2026-10",
+          "unit_kind": "conversation",
+          "org_id": "org-test0001",
+          "lineage_key": "conv_dddddddddddddddddddddddddddddddd",
+          "built_at": "2026-11-14T10:00:00.000Z",
+          "lists_as_of": "2026-11-14T09:59:55.000Z",
+          "previous_digest": "789ce2f7edd95949f4c757be3e0f2ba0237df53fff369d8c1328241cc28d428e",
+          "goal": {
+            "mode": "sealed",
+            "contract_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "canon_node_id": "node_bbbbbbbbbbbbbbbb",
+            "seal_version": 1
+          },
+          "cost": {
+            "model_cost_millimu": 530000,
+            "mu_millimu": 21200,
+            "mu_rate_bps": 400,
+            "currency_fixed_at": "2026-11-14T10:00:00.000Z"
+          },
+          "protection": {
+            "acts_total": 6,
+            "acts_digest": "948ffb7c3cebf6fcead713348601879400a73f78a2633cdb7a6aee851178bda0",
+            "by": [
+              {
+                "mode": "observe",
+                "verdict": "pass",
+                "tool_name": "Read",
+                "count": 1
+              },
+              {
+                "mode": "observe",
+                "verdict": "warn",
+                "tool_name": null,
+                "count": 1
+              },
+              {
+                "mode": "nudge",
+                "verdict": "nudge",
+                "tool_name": "Edit",
+                "count": 1
+              },
+              {
+                "mode": "enforce",
+                "verdict": "quarantine",
+                "tool_name": "Write",
+                "count": 1
+              },
+              {
+                "mode": "enforce",
+                "verdict": "block",
+                "tool_name": "Bash",
+                "count": 2
+              }
+            ],
+            "tools_folded": 0,
+            "tool_names_withheld": 0
+          },
+          "checkpoints": {
+            "count": 40,
+            "bound_count": 35,
+            "card_hash_count": 33,
+            "digest": "fec4d7fb71210046372a17b004981ba7c6c0cba0607e8266a3a93a9d1f8691b5",
+            "tail_from_digest": "acb4028862bc33faf200d75de581913c08797bd0d92ea53b4a5e2acda1e6065c",
+            "tail": [
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000009",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ9",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000010",
+                "card_hash": null,
+                "combined_commitment": "Y29tbWl0LQ10",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000011",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ11",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000012",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ12",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000013",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ13",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000014",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": null,
+                "commitment_signature": null,
+                "commitment_key_id": null
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000015",
+                "card_hash": null,
+                "combined_commitment": "Y29tbWl0LQ15",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000016",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ16",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000017",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ17",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000018",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ18",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000019",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ19",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000020",
+                "card_hash": null,
+                "combined_commitment": "Y29tbWl0LQ20",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000021",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": null,
+                "commitment_signature": null,
+                "commitment_key_id": null
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000022",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ22",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000023",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ23",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000024",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ24",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000025",
+                "card_hash": null,
+                "combined_commitment": "Y29tbWl0LQ25",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000026",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ26",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000027",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ27",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000028",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": null,
+                "commitment_signature": null,
+                "commitment_key_id": null
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000029",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ29",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000030",
+                "card_hash": null,
+                "combined_commitment": "Y29tbWl0LQ30",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000031",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ31",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000032",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ32",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000033",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ33",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000034",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ34",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000035",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": null,
+                "commitment_signature": null,
+                "commitment_key_id": null
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000036",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ36",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000037",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ37",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000038",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ38",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000039",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ39",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000040",
+                "card_hash": null,
+                "combined_commitment": "Y29tbWl0LQ40",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              }
+            ]
+          },
+          "lines": [
+            {
+              "class": "measured",
+              "key": "cost.mu",
+              "text": "µ 21200 mmu"
+            },
+            {
+              "class": "measured",
+              "key": "goal.mode",
+              "text": "sealed"
+            },
+            {
+              "class": "verdict",
+              "key": "protection.group.1",
+              "text": "flagged"
+            },
+            {
+              "class": "verdict",
+              "key": "protection.group.2",
+              "text": "flagged, agent nudged"
+            },
+            {
+              "class": "verdict",
+              "key": "protection.group.3",
+              "text": "stopped Write"
+            },
+            {
+              "class": "verdict",
+              "key": "protection.group.4",
+              "text": "stopped Bash"
+            }
+          ],
+          "signature": "yBax0Px6ORRNz18NNFcdSgL3eIy_w_t0-jXABRyq_8fBo1wN5SdpV3jDfnZuOX0Txxc_8SEeLyh95X3uYSanBw"
+        },
+        {
+          "typ": "AAP-ConductRecord/v2",
+          "signing_key_id": "aap-test-record-2026-10",
+          "unit_kind": "conversation",
+          "org_id": "org-test0001",
+          "lineage_key": "conv_dddddddddddddddddddddddddddddddd",
+          "built_at": "2026-11-14T10:01:00.000Z",
+          "lists_as_of": "2026-11-14T09:59:55.000Z",
+          "previous_digest": "789ce2f7edd95949f4c757be3e0f2ba0237df53fff369d8c1328241cc28d428e",
+          "goal": {
+            "mode": "sealed",
+            "contract_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+            "canon_node_id": "node_bbbbbbbbbbbbbbbb",
+            "seal_version": 1
+          },
+          "cost": {
+            "model_cost_millimu": 530000,
+            "mu_millimu": 21200,
+            "mu_rate_bps": 400,
+            "currency_fixed_at": "2026-11-14T10:00:00.000Z"
+          },
+          "protection": {
+            "acts_total": 6,
+            "acts_digest": "948ffb7c3cebf6fcead713348601879400a73f78a2633cdb7a6aee851178bda0",
+            "by": [
+              {
+                "mode": "observe",
+                "verdict": "pass",
+                "tool_name": "Read",
+                "count": 1
+              },
+              {
+                "mode": "observe",
+                "verdict": "warn",
+                "tool_name": null,
+                "count": 1
+              },
+              {
+                "mode": "nudge",
+                "verdict": "nudge",
+                "tool_name": "Edit",
+                "count": 1
+              },
+              {
+                "mode": "enforce",
+                "verdict": "quarantine",
+                "tool_name": "Write",
+                "count": 1
+              },
+              {
+                "mode": "enforce",
+                "verdict": "block",
+                "tool_name": "Bash",
+                "count": 2
+              }
+            ],
+            "tools_folded": 0,
+            "tool_names_withheld": 0
+          },
+          "checkpoints": {
+            "count": 40,
+            "bound_count": 35,
+            "card_hash_count": 33,
+            "digest": "fec4d7fb71210046372a17b004981ba7c6c0cba0607e8266a3a93a9d1f8691b5",
+            "tail_from_digest": "acb4028862bc33faf200d75de581913c08797bd0d92ea53b4a5e2acda1e6065c",
+            "tail": [
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000009",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ9",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000010",
+                "card_hash": null,
+                "combined_commitment": "Y29tbWl0LQ10",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000011",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ11",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000012",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ12",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000013",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ13",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000014",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": null,
+                "commitment_signature": null,
+                "commitment_key_id": null
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000015",
+                "card_hash": null,
+                "combined_commitment": "Y29tbWl0LQ15",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000016",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ16",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000017",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ17",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000018",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ18",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000019",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ19",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000020",
+                "card_hash": null,
+                "combined_commitment": "Y29tbWl0LQ20",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000021",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": null,
+                "commitment_signature": null,
+                "commitment_key_id": null
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000022",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ22",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000023",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ23",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000024",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ24",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000025",
+                "card_hash": null,
+                "combined_commitment": "Y29tbWl0LQ25",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000026",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ26",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000027",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ27",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000028",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": null,
+                "commitment_signature": null,
+                "commitment_key_id": null
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000029",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ29",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000030",
+                "card_hash": null,
+                "combined_commitment": "Y29tbWl0LQ30",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000031",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ31",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000032",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ32",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000033",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ33",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000034",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ34",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000035",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": null,
+                "commitment_signature": null,
+                "commitment_key_id": null
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000036",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ36",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000037",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ37",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000038",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ38",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000039",
+                "card_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+                "combined_commitment": "Y29tbWl0LQ39",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              },
+              {
+                "checkpoint_id": "ic-00000000-0000-4000-8000-000000000040",
+                "card_hash": null,
+                "combined_commitment": "Y29tbWl0LQ40",
+                "commitment_signature": "c2lneeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+                "commitment_key_id": "aap-prod-2026-05-23"
+              }
+            ]
+          },
+          "lines": [
+            {
+              "class": "measured",
+              "key": "cost.mu",
+              "text": "µ 21200 mmu"
+            },
+            {
+              "class": "measured",
+              "key": "goal.mode",
+              "text": "sealed"
+            },
+            {
+              "class": "verdict",
+              "key": "protection.group.1",
+              "text": "flagged"
+            },
+            {
+              "class": "verdict",
+              "key": "protection.group.2",
+              "text": "flagged, agent nudged"
+            },
+            {
+              "class": "verdict",
+              "key": "protection.group.3",
+              "text": "stopped Write"
+            },
+            {
+              "class": "verdict",
+              "key": "protection.group.4",
+              "text": "stopped Bash"
+            }
+          ],
+          "signature": "uJXLmWXvcAVONWIX6bOSFxivjbzoL-o7crsLIid1rJU_PhFrgVnHNm9f1OYDF9nPCKW3HBEkvSP2Zu4LLhjZDw"
+        }
+      ]
+    }
   }
 ]

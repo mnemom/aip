@@ -118,7 +118,9 @@ export function isClaimField(field: unknown): field is ClaimField {
 /**
  * Line keys the builder (mnemom-api `src/record/claims.ts`) writes on a
  * statement's `lines[]`, mapped to the claim-table field each one renders
- * (cross-lane pick M6). `protection.act.<n>` maps to `protection` for any n.
+ * (cross-lane pick M6). `protection.act.<n>` (v1, one act) and
+ * `protection.group.<n>` (`AAP-ConductRecord/v2`, one `protection.by` row)
+ * map to `protection` for any n.
  */
 export const LINE_KEY_FIELDS: Readonly<Record<string, ClaimField>> = {
   "cost.model": "model_cost",
@@ -130,7 +132,7 @@ export const LINE_KEY_FIELDS: Readonly<Record<string, ClaimField>> = {
   "context.compactions": "compactions",
 };
 
-const PROTECTION_ACT_KEY = /^protection\.act\.\d+$/;
+const PROTECTION_ACT_KEY = /^protection\.(act|group)\.\d+$/;
 
 /** The claim-table field a statement line key renders, or undefined for a key the table does not know. */
 export function fieldForLineKey(key: unknown): ClaimField | undefined {

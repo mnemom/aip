@@ -17,10 +17,46 @@
 
 export { verifyCertificate } from "./verify.js";
 
-// Record statements (AAP-ConductRecord/v1, AAP-PRRecord/v1, AAP-Outcome/v1,
-// AAP-ShareCard/v1) and their bundle, verified against the published JWKS.
-export { verify, verifyStatement, statementCommitment, statementDigest } from "./verify-record.js";
-export { STATEMENT_TYPES, BUNDLE_TYP, CARD_LINE_CLASSES, REASONS, FLAGS } from "./statements.js";
+// Record statements (AAP-ConductRecord/v1 and /v2, AAP-PRRecord/v1,
+// AAP-Outcome/v1, AAP-ShareCard/v1, AAP-TransparencyRoot/v1) and their
+// bundle, verified against the published JWKS.
+export { verify, verifyStatement, statementCommitment, statementDigest, chainFamily } from "./verify-record.js";
+export {
+  STATEMENT_TYPES,
+  BUNDLE_TYP,
+  CARD_LINE_CLASSES,
+  REASONS,
+  FLAGS,
+  CONDUCT_RECORD_TYPES,
+  LISTS_TYP,
+  LISTS_MISMATCHES,
+} from "./statements.js";
+
+// AAP-ConductRecord/v2 summaries: the fold, decision refs, grouping and the
+// lists check (specs/aap-conductrecord-v2.md). The api's producer uses the
+// same functions.
+export {
+  CONDUCT_RECORD_V1_TYP,
+  CONDUCT_RECORD_V2_TYP,
+  CKPT_SEED_STRING,
+  ACTS_SEED_STRING,
+  CKPT_SEED_HEX,
+  ACTS_SEED_HEX,
+  DECISION_REF_PREFIX,
+  SUMMARY_TAIL_MAX,
+  SUMMARY_GROUPS_MAX,
+  SUMMARY_GROUPS_NAMED_MAX,
+  TOOL_NAME_RE,
+  fold,
+  decisionRef,
+  groupActs,
+  isCheckpointTuple,
+  isActTuple,
+  conductSummaryReasons,
+  conductSummaryFlags,
+  extensionFlags,
+  checkConductLists,
+} from "./conduct-summary.js";
 
 // Claim table (T5), claim-lint (K1.17) and the render-estimate rule (T8).
 export {
@@ -96,6 +132,17 @@ export type {
   SignedStatementBase,
   SignedStatement,
   ConductRecordStatement,
+  ConductRecordV2Statement,
+  CheckpointTuple,
+  CheckpointSummary,
+  ProtectionGroup,
+  ProtectionSummary,
+  ActTuple,
+  RecordLists,
+  ListsPart,
+  ListsMismatch,
+  ListsCheckResult,
+  ListsCheck,
   PRRecordStatement,
   OutcomeStatement,
   ShareCardStatement,
@@ -123,6 +170,7 @@ export type {
   StatementLine,
   StatementGoalBlock,
   StatementProtectionAct,
+  StatementProtectionGroup,
 } from "./claim-lint.js";
 export type {
   EstimateDescription,

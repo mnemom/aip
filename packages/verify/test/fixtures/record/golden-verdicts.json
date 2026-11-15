@@ -18,5 +18,59 @@
     "pr": "870ecc1d33ff05f86405e32e4206e32ccb2d705cfa07b7e3220ec187327225d0",
     "outcome": "6528167211bb0ea32d5b51b223a9d74fe8c61469a4aae74b93f1f5d0053190ab",
     "card": "5ee7b6b1d5292a87a1093ce67fd9d5be714de8105d7116e4dfbf4728383b86ee"
+  },
+  "conduct_v2": {
+    "bundle": {
+      "valid": true,
+      "flags": [
+        {
+          "flag": "card hash not recorded",
+          "subject": "ic-00000000-0000-4000-8000-000000000005"
+        },
+        {
+          "flag": "card not bound",
+          "subject": "ic-00000000-0000-4000-8000-000000000007"
+        },
+        {
+          "flag": "card hash not recorded",
+          "subject": "ic-00000000-0000-4000-8000-000000000010"
+        },
+        {
+          "flag": "summarized",
+          "subject": "0a3ab9d1a00d2da70669e39f15c367ed0d530ca0710dc540b0185b9a7369f1e6",
+          "count": 8
+        },
+        {
+          "flag": "card hash not recorded",
+          "subject": "fec4d7fb71210046372a17b004981ba7c6c0cba0607e8266a3a93a9d1f8691b5",
+          "count": 7
+        },
+        {
+          "flag": "card not bound",
+          "subject": "fec4d7fb71210046372a17b004981ba7c6c0cba0607e8266a3a93a9d1f8691b5",
+          "count": 5
+        },
+        {
+          "flag": "summarized",
+          "subject": "c558c49c15cfca88bf63551a2aca78f320fb133921a37de7c2fce849e1408776",
+          "count": 13
+        },
+        {
+          "flag": "card hash not recorded",
+          "subject": "ae367769f32ac5007097129516f98aecff89c91c5ded1c0aa56dd7f96c3972bf",
+          "count": 8
+        },
+        {
+          "flag": "card not bound",
+          "subject": "ae367769f32ac5007097129516f98aecff89c91c5ded1c0aa56dd7f96c3972bf",
+          "count": 6
+        }
+      ]
+    },
+    "digests": {
+      "v1": "789ce2f7edd95949f4c757be3e0f2ba0237df53fff369d8c1328241cc28d428e",
+      "v2a": "0a3ab9d1a00d2da70669e39f15c367ed0d530ca0710dc540b0185b9a7369f1e6",
+      "v2b": "c558c49c15cfca88bf63551a2aca78f320fb133921a37de7c2fce849e1408776"
+    }
   }
 }

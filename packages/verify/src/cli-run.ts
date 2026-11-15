@@ -14,7 +14,12 @@
 
 import { readFile } from "node:fs/promises";
 
-import type { RecordJwks, RecordVerificationResult, StatementVerificationResult } from "./statements.js";
+import type {
+  RecordJwks,
+  RecordLists,
+  RecordVerificationResult,
+  StatementVerificationResult,
+} from "./statements.js";
 import { verify } from "./verify-record.js";
 
 /** The production cell's published key set (the URL the verify-page snapshot is taken from). */
@@ -42,6 +47,10 @@ Options:
                              ${DEFAULT_JWKS_URL}
   --expected-head-sha <sha>  Fail unless the latest PR record names this head
                              commit (40 or 64 lowercase hex characters).
+  --lists <file>             Check an AAP-RecordLists/v1 file (one object or an
+                             array) against the AAP-ConductRecord/v2 statements
+                             it names: every count, the tail and both digests
+                             are recomputed from the full lists. Offline.
   --json                     Print the result as JSON.
   -h, --help                 Show this help.
 
@@ -52,9 +61,17 @@ This check proves Mnemom signed these statements, that they are unchanged and
 that their chain and links hold. It does not prove the code is correct, that
 every commit came from a recorded session, that protection caught everything,
 or that the goal was met beyond the judged turns.
+
+An AAP-ConductRecord/v2 statement summarises a long session: its protection
+acts are counted in groups, and only its newest checkpoint citations are in the
+bundle. The bundle alone proves Mnemom signed those counts and digests and that
+the citations shown are the true end of the list. The earlier citations and
+the single acts are proven only with --lists. A lists mismatch, or a
+"checkpoints changed/removed since previous build" flag, is not proof of
+tampering: retention, a deletion, a backfill or a late row also change a list.
 `;
 
-const SHORT_USAGE = `Usage: mnemom-verify <bundle.json | -> [--jwks <file>] [--jwks-url <url>] [--expected-head-sha <sha>] [--json]
+const SHORT_USAGE = `Usage: mnemom-verify <bundle.json | -> [--jwks <file>] [--jwks-url <url>] [--expected-head-sha <sha>] [--lists <file>] [--json]
 Run mnemom-verify --help for more.
 `;
 
@@ -111,6 +128,7 @@ export interface CliArgs {
   jwks?: string;
   jwksUrl?: string;
   expectedHeadSha?: string;
+  lists?: string;
   json: boolean;
 }
 
@@ -120,10 +138,11 @@ export class UsageError extends Error {}
 export function parseCliArgs(argv: readonly string[]): CliArgs | "help" {
   const out: Partial<CliArgs> & { json: boolean } = { json: false };
   const positionals: string[] = [];
-  const valueFlags: Record<string, "jwks" | "jwksUrl" | "expectedHeadSha"> = {
+  const valueFlags: Record<string, "jwks" | "jwksUrl" | "expectedHeadSha" | "lists"> = {
     "--jwks": "jwks",
     "--jwks-url": "jwksUrl",
     "--expected-head-sha": "expectedHeadSha",
+    "--lists": "lists",
   };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]!;
@@ -217,6 +236,20 @@ async function readBundle(args: CliArgs, io: CliIo): Promise<unknown> {
   return parseJson(text, what);
 }
 
+/** Read the `--lists` file: one `AAP-RecordLists/v1` object or an array of them. */
+async function readLists(path: string, io: CliIo): Promise<RecordLists | RecordLists[]> {
+  let text: string;
+  try {
+    text = await io.readFile(path);
+  } catch (e) {
+    throw new InputError(`cannot read lists ${path}: ${(e as Error).message}`);
+  }
+  checkSize(text, path);
+  const value = parseJson(text, `lists ${path}`);
+  if (!value || typeof value !== "object") throw new InputError(`lists ${path} is not an object or an array`);
+  return value as RecordLists | RecordLists[];
+}
+
 async function loadJwks(args: CliArgs, io: CliIo): Promise<{ jwks: RecordJwks; source: string }> {
   if (args.jwks !== undefined) {
     let text: string;
@@ -277,16 +310,36 @@ export function commitsLine(raw: unknown, s: StatementVerificationResult): strin
   return `${bound} of ${total} commits from recorded sessions`;
 }
 
+/**
+ * "N checkpoints (T in bundle), A acts in G groups, lists: ..." for a verified
+ * `AAP-ConductRecord/v2`, else null. Every number is a signed field of the
+ * statement; `lists` says whether a lists file was checked against it.
+ */
+export function conductV2Line(raw: unknown, s: StatementVerificationResult, result: RecordVerificationResult): string | null {
+  if (!s.valid || s.typ !== "AAP-ConductRecord/v2" || !raw || typeof raw !== "object") return null;
+  const r = raw as { checkpoints?: { count?: number; tail?: unknown[] }; protection?: { acts_total?: number; by?: unknown[] } };
+  const count = r.checkpoints?.count ?? 0;
+  const inBundle = r.checkpoints?.tail?.length ?? 0;
+  const acts = r.protection?.acts_total ?? 0;
+  const groups = r.protection?.by?.length ?? 0;
+  const checked = (result.lists_checked ?? []).filter((c) => c.statement_digest === s.digest);
+  const lists = checked.length === 0 ? "not supplied" : checked.every((c) => c.ok) ? "checked" : "mismatch";
+  return `${count} checkpoints (${inBundle} in bundle), ${acts} acts in ${groups} groups, lists: ${lists}`;
+}
+
 function rawStatements(input: unknown): unknown[] {
   if (!input || typeof input !== "object") return [];
   const s = (input as { statements?: unknown }).statements;
   return Array.isArray(s) ? s : [input];
 }
 
-/** The flags, each named once, with a count when it repeats. */
+/**
+ * The flags, each named once, with a count when it repeats. A flag that
+ * carries its own `count` (the v2 summary flags) adds that many.
+ */
 export function flagSummary(result: RecordVerificationResult): string {
   const counts = new Map<string, number>();
-  for (const f of result.flags) counts.set(f.flag, (counts.get(f.flag) ?? 0) + 1);
+  for (const f of result.flags) counts.set(f.flag, (counts.get(f.flag) ?? 0) + (f.count ?? 1));
   return [...counts].map(([flag, n]) => (n > 1 ? `${flag} (x${n})` : flag)).join(", ");
 }
 
@@ -307,10 +360,10 @@ export function renderReport(input: unknown, result: RecordVerificationResult): 
   const lines = result.statements.map((s, i) => {
     const reasons = statementReasons(result, i);
     const status = reasons.length === 0 ? "ok" : reasons.join(", ");
-    const commits = commitsLine(raws[i], s);
+    const detail = commitsLine(raws[i], s) ?? conductV2Line(raws[i], s, result);
     const typ = s.typ === null ? "(no typ)" : terminalSafe(s.typ);
     const kid = s.signing_key_id === null ? "(no signing_key_id)" : terminalSafe(s.signing_key_id);
-    return `[${i}] ${typ}  ${kid}  ${terminalSafe(status)}${commits ? `  (${commits})` : ""}`;
+    return `[${i}] ${typ}  ${kid}  ${terminalSafe(status)}${detail ? `  (${detail})` : ""}`;
   });
   lines.push(verdictLine(result));
   return lines;
@@ -350,8 +403,10 @@ export async function runCli(argv: readonly string[], io: CliIo): Promise<number
   let input: unknown;
   let jwks: RecordJwks;
   let source: string;
+  let lists: RecordLists | RecordLists[] | undefined;
   try {
     input = await readBundle(args, io);
+    if (args.lists !== undefined) lists = await readLists(args.lists, io);
     ({ jwks, source } = await loadJwks(args, io));
   } catch (e) {
     // The message can name the bundle path and quote bundle bytes (JSON.parse does).
@@ -359,7 +414,10 @@ export async function runCli(argv: readonly string[], io: CliIo): Promise<number
     return EXIT_ERROR;
   }
 
-  const options = args.expectedHeadSha === undefined ? {} : { expected_head_sha: args.expectedHeadSha };
+  const options = {
+    ...(args.expectedHeadSha === undefined ? {} : { expected_head_sha: args.expectedHeadSha }),
+    ...(lists === undefined ? {} : { lists }),
+  };
   const result = requireStatements(await verify(input, jwks, options));
   const code = result.valid ? EXIT_VALID : EXIT_INVALID;
 

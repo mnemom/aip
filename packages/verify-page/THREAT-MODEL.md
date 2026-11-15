@@ -13,6 +13,13 @@ its customer-facing surface; K-L09 runs the pentest, criterion K5.8).
   or stdin and calls the library. It makes one network call, a GET of the
   JWKS from `https://api.mnemom.ai/v1/.well-known/jwks.json` (or
   `--jwks-url`), and none with `--jwks <file>`.
+- `packages/verify` `AAP-ConductRecord/v2` checks (`src/conduct-summary.ts`,
+  spec `specs/aap-conductrecord-v2.md`): a conduct record for a long session
+  carries counts, sha256 fold digests and the newest 32 checkpoint citations
+  instead of every act and citation. The library checks the summary holds
+  together, that each v2 build extends the build before it in the bundle, and,
+  with `options.lists` (`mnemom-verify --lists <file>`), that an unsigned
+  `AAP-RecordLists/v1` file folds to the signed digests. All offline.
 - `packages/verify-page` (paste mode): a static page. The user pastes a
   statement or bundle and a JWKS, and the page shows a verdict.
 - `packages/verify-page` (share mode, `VERIFIER_PAGE_MODE=true`): a static
@@ -25,7 +32,9 @@ Neither page has a server side. Both are served as static files.
 ## Assets
 
 1. The meaning of a verdict. A "Verified offline" result must be shown only
-   for bytes Mnemom signed.
+   for bytes Mnemom signed. For a summarised conduct record, also: a count is
+   shown only when the signed summary holds together, and a lists file is
+   called "checked" only when it folds to the signed digests.
 2. The card's contents. A shared card may name a repo, a PR or a cost.
 3. The visitor's browser.
 
@@ -38,6 +47,8 @@ Neither page has a server side. Both are served as static files.
   (default URL or `--jwks-url`), or as the user chooses to trust a saved file
   (`--jwks`).
 - The static host: trusted to serve the built files unmodified.
+- A lists file (`--lists`, `options.lists`): untrusted and unsigned. It is
+  believed only as far as it folds to the digests of a statement that verified.
 
 ## Threats and controls
 
@@ -55,6 +66,9 @@ Neither page has a server side. Both are served as static files.
 | 10 | Stale keys: the built-in key snapshot misses a rotated key | Snapshot dated in `src/keys.ts`; a card signed by an unknown `kid` fails closed, never "verified" | verifier tests |
 | 11 | Spoofing and information disclosure: the command's JWKS fetch. A network attacker serves their own key set so a forged bundle verifies, or learns that the user is verifying | One GET, of the JWKS only, never of the bundle: the default URL is `https://api.mnemom.ai/v1/.well-known/jwks.json`, a `--jwks-url` must be `https` (plain `http` only to localhost), and the command prints the URL it used. `--jwks <file>` makes no network call, for an air-gapped check against a key set saved beforehand. A fetch that fails, times out (15 s) or returns something other than a key set exits 2, never "valid" | `test/cli.test.ts`: `--jwks` with global `fetch` stubbed to throw, the default URL, `--jwks-url` scheme checks, fetch failures exit 2 |
 | 12 | Spoofing: a forged bundle redraws the command's report. `typ` and `signing_key_id` reach the report as the bundle gives them, even when the statement fails, so control characters there (ESC sequences, a newline, a C1 CSI, a bidi override) could print a fake `valid` line and conceal the real reason and verdict | Everything the command prints that it did not write itself goes through `terminalSafe` (`src/cli-run.ts`): C0 controls, DEL, C1 controls, U+2028/U+2029 and the bidi controls become visible `\uXXXX` text. That covers bundle fields, the bundle and JWKS paths, the JWKS URL, and IO and `JSON.parse` error text (which quotes bundle bytes). `--json` output also escapes the DEL, C1, separator and bidi characters `JSON.stringify` leaves raw. Each statement stays one line and the verdict line is the last line printed, after the statements and after the note a valid result adds, so `tail -1` reads it | `test/cli.test.ts` "bundle text cannot drive the terminal": a kid with ESC and `\n` still gives one line per statement ending in `invalid:`, in-process and through `dist/cli.js`; "mnemom-verify: valid bundles" checks the verdict comes after the note on a valid result |
+| 13 | Repudiation and tampering: a summarised conduct record (`AAP-ConductRecord/v2`) whose counts are trust-me numbers. A signed statement claims 45 checkpoints and 9 acts, but the bundle holds only the newest 32 citations, so a reader cannot see the rest | Counts are committed, not just stated: `checkpoints.digest` and `protection.acts_digest` are sha256 folds over every citation and act tuple, and `digest = fold(tail_from_digest, tail)` is recomputed for every v2 statement, so the citations shown are the true end of the signed list. `conductSummaryReasons` fails the statement (`summary_inconsistent`) when counts, bound and card-hash counts, the tail, the 32 and 64 entry caps, the seed rules or `lists_as_of <= built_at` disagree. Anything outside the tail is proven only by `--lists`/`options.lists`, which recomputes every count, the tail, the groups and both digests from the full lists (`summary_list_mismatch` on any difference). The flag `summarized` says, with a count, how much of the record is digest-only | `test/conduct-summary.test.ts`, `test/conduct-record-v2.test.ts`, v2 cases in `tampered.json` and `golden-lists-v2.json`, the v2 Playwright case in `test/verify-page.spec.ts` |
+| 14 | Information disclosure: content or identifiers ride in the new v2 fields. The no-content rule (no prompts, tool inputs or outputs, free text) and public decision certificates | `protection` and `checkpoints` are closed shapes: exact key sets, integers, lowercase hex digests, enums, tool names matching `^[A-Za-z0-9_.:-]{1,128}$`, citation fields matching their ID and base64 shapes. An extra key or a free-text value fails the statement (`summary_inconsistent`). Acts are cited by `decision_ref = sha256("AAP-DecisionRef/v1\n" + id)`, never the raw decision id, so a bundle committed to a repo cannot be joined to a public decision certificate without the org's lists file | `test/conduct-summary.test.ts` "tuple shapes" and the free-text cases; tampered `v2-content-in-citation`, `v2-content-as-tool-name` |
+| 15 | Spoofing: a lists file is read as an accusation. A recompute mismatch, or a `checkpoints changed/removed since previous build` flag, is presented as proof Mnemom lied | The reason and flags say "not the list that was signed" only; the CLI help, README and spec §14 name the innocent causes (retention, deletion, backfill, a row committed late). The extension check emits flags, never a reason, and a lists mismatch is a reason only because the caller asked for the check | `test/conduct-summary.test.ts` "extensionFlags", `test/cli.test.ts` "help explains what a summarised record does and does not prove" |
 
 ## Out of scope here
 

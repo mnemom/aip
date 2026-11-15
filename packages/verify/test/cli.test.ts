@@ -640,3 +640,50 @@ describe.skipIf(!existsSync(CLI))("dist/cli.js as a process (after npm run build
     expect((JSON.parse(r.stdout) as { valid: boolean }).valid).toBe(true);
   });
 });
+
+describe("AAP-ConductRecord/v2 and --lists", () => {
+  const V2_BUNDLE = fixturePath("golden-bundle-v1-v2");
+  const lists = () => JSON.parse(fixtureText("golden-lists-v2")) as { lists: unknown; tampered: { name: string; lists: unknown }[] };
+
+  it("prints the v2 summary line and sums the flag counts", async () => {
+    const r = await run([V2_BUNDLE, "--jwks", JWKS_PATH]);
+    expect(r.code).toBe(EXIT_VALID);
+    const lines = r.stdout.trimEnd().split("\n");
+    expect(lines[3]).toMatch(/^\[2\] AAP-ConductRecord\/v2  aap-test-record-2026-10  ok  \(45 checkpoints \(32 in bundle\), 9 acts in 8 groups, lists: not supplied\)$/);
+    expect(lines[2]).toContain("(40 checkpoints (32 in bundle), 6 acts in 5 groups, lists: not supplied)");
+    expect(lines.at(-1)).toBe("valid, with flags: card hash not recorded (x17), card not bound (x12), summarized (x21)");
+    expect(r.fetchCalls).toEqual([]);
+  });
+
+  it("--lists checks the lists offline and says so", async () => {
+    const r = await run([V2_BUNDLE, "--jwks", JWKS_PATH, "--lists", writeTmp("lists.json", lists().lists)]);
+    expect(r.code).toBe(EXIT_VALID);
+    expect(r.stdout).toContain("9 acts in 8 groups, lists: checked)");
+    expect(r.fetchCalls).toEqual([]);
+  });
+
+  it("--lists with a changed list exits 1 with summary_list_mismatch", async () => {
+    const bad = lists().tampered.find((t) => t.name === "lists-citation-changed")!;
+    const r = await run([V2_BUNDLE, "--jwks", JWKS_PATH, "--lists", writeTmp("bad-lists.json", [bad.lists])]);
+    expect(r.code).toBe(EXIT_INVALID);
+    expect(r.stdout).toContain("lists: mismatch)");
+    expect(r.stdout.trimEnd().split("\n").at(-1)).toBe("invalid: summary_list_mismatch");
+    const json = await run([V2_BUNDLE, "--jwks", JWKS_PATH, "--json", "--lists", writeTmp("bad-lists2.json", bad.lists)]);
+    const out = JSON.parse(json.stdout) as RecordVerificationResult;
+    expect(out.lists_checked?.some((c) => !c.ok && c.mismatch === "digest_mismatch")).toBe(true);
+  });
+
+  it("--lists errors: unreadable, not JSON, a scalar, or given twice", async () => {
+    expect((await run([V2_BUNDLE, "--jwks", JWKS_PATH, "--lists", join(tmp, "nope.json")])).code).toBe(EXIT_ERROR);
+    expect((await run([V2_BUNDLE, "--jwks", JWKS_PATH, "--lists", writeTmp("l.txt", "{")])).code).toBe(EXIT_ERROR);
+    expect((await run([V2_BUNDLE, "--jwks", JWKS_PATH, "--lists", writeTmp("l3.json", "7")])).code).toBe(EXIT_ERROR);
+    expect(() => parseCliArgs(["b.json", "--lists", "a", "--lists", "b"])).toThrow("--lists given twice");
+    expect(parseCliArgs(["b.json", "--lists=a.json"])).toMatchObject({ lists: "a.json" });
+  });
+
+  it("help explains what a summarised record does and does not prove", async () => {
+    const r = await run(["--help"]);
+    expect(r.stdout).toContain("--lists <file>");
+    expect(r.stdout).toContain("not proof of");
+  });
+});

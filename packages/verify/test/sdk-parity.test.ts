@@ -180,6 +180,36 @@ describe("K4.5 parity with @mnemom/sdk: golden digests", () => {
   });
 });
 
+describe("K4.5 parity with @mnemom/sdk: AAP-ConductRecord/v2", () => {
+  // @mnemom/sdk 1.1.0 has no statement verifier, so parity here is the key
+  // and digest half. The v2 rejection matrix (summary_inconsistent,
+  // digest_malformed) is pinned by conduct-summary.test.ts and the tampered
+  // fixtures; the SDK's verifyStatement parity release reads the same
+  // fixtures and schemas/aap-conductrecord-v2.vectors.json.
+  const v2 = fixture<{ conduct_v2: { digests: Record<string, string> } }>("golden-verdicts").conduct_v2.digests;
+
+  it("golden-conduct-v2: verifier digest == golden verdict, and the SDK verifies an attestation over it", async () => {
+    const statement = fixture<Record<string, unknown>>("golden-conduct-v2");
+    const res = await verify(statement, jwks);
+    expect(res.reasons).toEqual([]);
+    expect(res.statements[0]?.digest).toBe(v2.v2b);
+    expect(statementDigest(statement)).toBe(v2.v2b);
+    const { client } = sdkClient();
+    expect(await client.verify(await attest(statement))).toEqual({ ok: true, keyId: TEST_KID });
+  });
+
+  it("the v1 -> v2 bundle's digests are the golden ones and each attests in the SDK", async () => {
+    const bundle = fixture<{ statements: Record<string, unknown>[] }>("golden-bundle-v1-v2");
+    const res = await verify(bundle, jwks);
+    expect(res.valid).toBe(true);
+    expect(res.statements.map((s) => s.digest)).toEqual([v2.v1, v2.v2a, v2.v2b]);
+    const { client } = sdkClient();
+    for (const statement of bundle.statements) {
+      expect(await client.verify(await attest(statement))).toEqual({ ok: true, keyId: TEST_KID });
+    }
+  });
+});
+
 describe("K4.5 parity with @mnemom/sdk: signature-path rejections", () => {
   const byName = new Map(tampered.map((c) => [c.name, c]));
   const stmt = (c: TamperedCase) => c.input as Record<string, unknown>;

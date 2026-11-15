@@ -16,6 +16,7 @@ const jwks = fixture<RecordJwks>("jwks");
 // One validly signed statement per record typ (golden fixtures, signed with the test key).
 const signed: Record<StatementTyp, Record<string, unknown>> = {
   "AAP-ConductRecord/v1": fixture("golden-conduct"),
+  "AAP-ConductRecord/v2": fixture("golden-conduct-v2"),
   "AAP-PRRecord/v1": fixture("golden-pr-record"),
   "AAP-Outcome/v1": fixture("golden-outcome"),
   "AAP-ShareCard/v1": fixture("golden-share-card"),
@@ -35,7 +36,7 @@ const swaps = STATEMENT_TYPES.flatMap((from) =>
 );
 
 describe("cross-typ relabel: a signed statement never verifies under another record typ", () => {
-  it("covers all 20 ordered typ pairs", () => expect(swaps).toHaveLength(20));
+  it("covers all 30 ordered typ pairs", () => expect(swaps).toHaveLength(30));
 
   it.each(STATEMENT_TYPES.map((t) => [t] as const))("control: the untouched %s verifies", async (typ) => {
     const res = await verifyStatement(signed[typ], jwks);
@@ -55,6 +56,17 @@ describe("cross-typ relabel: a signed statement never verifies under another rec
     const res = await verifyStatement({ ...signed["AAP-ShareCard/v1"], typ: "AAP-PRRecord/v1" }, jwks);
     expect(res.valid).toBe(false);
     expect(res.reasons).toEqual([REASONS.signature_invalid]);
+  });
+
+  it("a conduct record does not verify under the other conduct version", async () => {
+    for (const [from, to] of [
+      ["AAP-ConductRecord/v1", "AAP-ConductRecord/v2"],
+      ["AAP-ConductRecord/v2", "AAP-ConductRecord/v1"],
+    ] as const) {
+      const res = await verifyStatement({ ...signed[from], typ: to }, jwks);
+      expect(res.valid).toBe(false);
+      expect(res.reasons).toEqual([REASONS.signature_invalid]);
+    }
   });
 
   it("a PRRecord-typed statement is not accepted as a ShareCard", async () => {
