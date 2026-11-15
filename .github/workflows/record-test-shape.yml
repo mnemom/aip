@@ -11,9 +11,13 @@
 # copies.
 #
 # SECURITY: `pull_request`, a read-only token and no secrets. The checker and flags.json are
-# read from the BASE commit, so a PR cannot weaken the check that grades it. The PR is read
-# only as a diff. Its code is never checked out and never run. Bootstrap only: when the base
-# commit has no checker (the PR that adds it), the copy at the PR head is used.
+# read from the tip of the BASE BRANCH, fetched at run time, never from the PR head and never
+# from `pull_request.base.sha`: GitHub keeps an old base sha on an open PR, and that commit
+# may predate the checker. The PR is read only as a diff. Its code is never checked out and
+# never run. Bootstrap only: when the base branch has no checker AND this PR adds both files
+# (the PR that introduces the check), the copy at the PR head is used. When the base branch
+# has neither file and the PR adds neither, the PR passes as out of scope. One file without
+# the other on either side is "could not check".
 #
 # The job fails closed: exit 1 is a failed rule, exit 2 is "could not check", and a failed
 # API read or fetch stops the job. None of them reads green.
@@ -43,15 +47,17 @@ jobs:
       GH_REPO: ${{ github.repository }}
       PR_NUMBER: ${{ github.event.pull_request.number }}
       BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      BASE_REF: ${{ github.event.pull_request.base.ref }}
       HEAD_SHA: ${{ github.event.pull_request.head.sha }}
       HEAD_REF: ${{ github.event.pull_request.head.ref }}
       PR_AUTHOR: ${{ github.event.pull_request.user.login }}
     steps:
-      - name: Checkout base (trusted)
+      - name: Checkout base branch tip (trusted)
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # Never the PR head: the checker that grades the PR comes from the base commit.
-          ref: ${{ github.event.pull_request.base.sha }}
+          # Never the PR head, and never the PR's recorded base sha (stale on an old open PR):
+          # the checker that grades the PR comes from the current tip of the base branch.
+          ref: ${{ github.event.pull_request.base.ref }}
           persist-credentials: false
 
       - name: Build the PR diff
@@ -66,7 +72,11 @@ jobs:
           git -c "http.https://github.com/.extraheader=AUTHORIZATION: basic ${auth}" \
             fetch --no-tags --depth=1 origin "$merge_base" "$HEAD_SHA"
           # Same content as `git diff --unified=0 <base>...<head>`: merge base against head.
-          git diff --unified=0 "$merge_base" "$HEAD_SHA" > "$RUNNER_TEMP/pr.diff"
+          git diff --unified=0 --no-color --no-ext-diff "$merge_base" "$HEAD_SHA" > "$RUNNER_TEMP/pr.diff"
+          # Checker files this PR adds (status A), read by the bootstrap rule in "Run the check".
+          git diff --name-only --diff-filter=A --no-color --no-ext-diff "$merge_base" "$HEAD_SHA" \
+            -- .github/record-test-shape/check.cjs .github/record-test-shape/flags.json \
+            > "$RUNNER_TEMP/pr-added-checker.txt"
           echo "merge base ${merge_base}, head ${HEAD_SHA}, $(wc -c < "$RUNNER_TEMP/pr.diff") diff bytes"
 
       - name: Read labels and the waiver
@@ -94,14 +104,28 @@ jobs:
           set -euo pipefail
           check=.github/record-test-shape/check.cjs
           flags=.github/record-test-shape/flags.json
-          if [ ! -f "$check" ] || [ ! -f "$flags" ]; then
-            # Bootstrap: the base commit has no checker, so this PR is the one adding it.
+          on_base=0
+          if [ -f "$check" ]; then on_base=$((on_base + 1)); fi
+          if [ -f "$flags" ]; then on_base=$((on_base + 1)); fi
+          added="$(grep -c . "$RUNNER_TEMP/pr-added-checker.txt" || true)"
+          if [ "$on_base" -eq 1 ]; then
+            echo "::error::${BASE_REF} has only one of ${check} and ${flags}" >&2
+            exit 2
+          elif [ "$on_base" -eq 0 ] && [ "$added" -eq 0 ]; then
+            echo "::notice::no checker on ${BASE_REF} and this PR does not add one: out of scope"
+            echo "record-test-shape: out of scope (no checker on ${BASE_REF})" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          elif [ "$on_base" -eq 0 ] && [ "$added" -ne 2 ]; then
+            echo "::error::this PR adds only one of ${check} and ${flags}" >&2
+            exit 2
+          elif [ "$on_base" -eq 0 ]; then
+            # Bootstrap: the base branch has no checker and this PR adds both files.
             mkdir -p "$RUNNER_TEMP/record-test-shape"
             git show "${HEAD_SHA}:${check}" > "$RUNNER_TEMP/record-test-shape/check.cjs"
             git show "${HEAD_SHA}:${flags}" > "$RUNNER_TEMP/record-test-shape/flags.json"
             check="$RUNNER_TEMP/record-test-shape/check.cjs"
             flags="$RUNNER_TEMP/record-test-shape/flags.json"
-            echo "::notice::no checker on the base commit, using the copy at the PR head (bootstrap)"
+            echo "::notice::no checker on ${BASE_REF}, this PR adds it: using the copy at the PR head (bootstrap)"
           fi
           code=0
           # The `=` form keeps an empty value (no labels, no waiver) from reading as a
