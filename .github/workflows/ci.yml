@@ -173,6 +173,21 @@ jobs:
       - name: Label and waiver tests (forged, honest, reapplied, removed, comma label)
         run: .github/scripts/record-test-shape-meta.test.sh
 
+  dispatch-publish-check:
+    name: publish.yml dispatch registry check tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # The pre-gate check publish.yml's dispatch-check runs: a version already on npm or
+      # PyPI skips its gated publish job, an unpublished or unknown one runs it. Uses a fake
+      # curl (no registry is called) and the runner image's yq for the publish.yml wiring.
+      - name: Registry decision and publish.yml wiring tests
+        run: .github/scripts/check-dispatch-unpublished.test.sh
+
   actionlint:
     name: Actionlint
     runs-on: ubuntu-latest

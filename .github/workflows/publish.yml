@@ -13,8 +13,9 @@ name: Publish
 #   - validate: tag vs. packages/typescript/package.json + packages/python/pyproject.toml versions
 #   - test: TypeScript build/typecheck/test + Python mypy/pytest
 #
-# The dispatch-publish path fires both publishes in parallel on every main
-# push; each path's skip-on-existing handles unchanged versions.
+# The dispatch-publish path runs on every main push. dispatch-check asks npm
+# and PyPI for the exact versions before the production gate, and each gated
+# publish job runs only when its version is not yet published.
 
 on:
   release:
@@ -291,9 +292,13 @@ jobs:
 
   # ── Orchestrator dispatch publishing ──
   #
-  # Both jobs fire in parallel on every main push. Each one's skip-on-existing
-  # logic makes a no-op publish idempotent — when version is unchanged from
-  # the registry, the call short-circuits without touching the registry.
+  # mnemom/deploy (prod-aip, dispatch-publish.yml) dispatches this workflow on
+  # every main push. dispatch-check runs with no environment and asks npm and
+  # PyPI for the exact versions in packages/typescript/package.json and
+  # packages/python/pyproject.toml. Each gated publish job runs only when its
+  # version is not yet published, so a push that changes no version never
+  # waits at the production gate. When a registry answer is not a clear 200 or
+  # 404, the gated job runs and its own skip-on-existing check decides.
 
   # The dispatch path publishes to npm `latest` for the SDK only. Refuse any
   # other directory: the verifier also takes npm `latest` (owner reversal of
@@ -314,9 +319,31 @@ jobs:
             exit 1
           fi
 
-  dispatch-publish-npm:
+  dispatch-check:
+    name: Check npm and PyPI for unpublished versions
     needs: [dispatch-guard]
     if: github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    outputs:
+      npm-publish: ${{ steps.check.outputs.npm-publish }}
+      pypi-publish: ${{ steps.check.outputs.pypi-publish }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
+        with:
+          persist-credentials: false
+      - name: Registry check self-test
+        run: .github/scripts/check-dispatch-unpublished.test.sh
+      - name: Check registries for the exact versions
+        id: check
+        env:
+          NPM_DIRECTORY: ${{ inputs.npm-directory || 'packages/typescript' }}
+        run: .github/scripts/check-dispatch-unpublished.sh "$NPM_DIRECTORY/package.json" packages/python/pyproject.toml
+
+  dispatch-publish-npm:
+    needs: [dispatch-guard, dispatch-check]
+    if: github.event_name == 'workflow_dispatch' && needs.dispatch-check.outputs.npm-publish == 'true'
     # contents: write is over-granted relative to what dispatch-publish does
     # (the `gh release upload` step in the reusable workflow is gated on
     # `event_name == 'release'` and never runs here). But GitHub validates
@@ -338,7 +365,8 @@ jobs:
 
   dispatch-publish-pypi:
     name: Publish packages/python (dispatch)
-    if: github.event_name == 'workflow_dispatch'
+    needs: [dispatch-check]
+    if: github.event_name == 'workflow_dispatch' && needs.dispatch-check.outputs.pypi-publish == 'true'
     runs-on: ubuntu-latest
     permissions:
       id-token: write   # OIDC → PyPI Trusted Publisher
