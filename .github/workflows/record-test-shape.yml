@@ -23,6 +23,11 @@
 # checked (exit 2). A base tip with neither, and a PR that does not add the checker, is not
 # graded (pass, with a notice).
 #
+# The labels and the waiver are worked out by .github/scripts/record-test-shape-meta.sh
+# (tested by record-test-shape-meta.test.sh in ci.yml), read from the base tip like the
+# checker. When the base tip has no such script, the copy at the PR head is used, without the
+# token; when neither has it the job cannot check (exit 2).
+#
 # The job fails closed: exit 1 is a failed rule, exit 2 is "could not check", and a failed
 # API read or fetch stops the job. None of them reads green.
 name: record-test-shape
@@ -32,6 +37,11 @@ on:
     # labeled/unlabeled: `record-lane` changes the PR's scope and
     # `record-test-shape-waive` changes the verdict.
     types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
+  # Merge-queue trigger (MNE-1213, as in ci.yml): a required check must report in the
+  # merge_group context or a queued PR waits on it forever. The job grades the PR diff and
+  # labels, which a merge_group event does not carry, so it is skipped there; a skipped job
+  # reports success. The PR was already graded on its own pull_request run.
+  merge_group:
 
 permissions:
   contents: read
@@ -40,12 +50,13 @@ permissions:
   issues: read
 
 concurrency:
-  group: record-test-shape-${{ github.event.pull_request.number }}
+  group: record-test-shape-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
   record-test-shape:
     name: record-test-shape
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -93,17 +104,23 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          labels="$(gh api "repos/${GH_REPO}/issues/${PR_NUMBER}/labels" --paginate --jq '.[].name' | paste -sd, -)"
-          # Read from the API on every run: a later push is a `synchronize` event and does
-          # not name who applied the label.
-          waiver="$(gh api "repos/${GH_REPO}/issues/${PR_NUMBER}/events" --paginate \
-            --jq '.[] | select(.event == "labeled" and .label.name == "record-test-shape-waive") | [.actor.login, .actor.type] | @tsv' \
-            | tail -n 1)"
-          {
-            echo "labels=${labels}"
-            echo "waived_by=$(printf '%s' "$waiver" | cut -f1)"
-            echo "waived_by_type=$(printf '%s' "$waiver" | cut -s -f2)"
-          } >> "$GITHUB_OUTPUT"
+          # Read on every run: a later push is a `synchronize` event and does not name who
+          # applied the waive label.
+          gh api "repos/${GH_REPO}/issues/${PR_NUMBER}/labels" --paginate > "$RUNNER_TEMP/labels.json"
+          gh api "repos/${GH_REPO}/issues/${PR_NUMBER}/events" --paginate > "$RUNNER_TEMP/events.json"
+          meta=.github/scripts/record-test-shape-meta.sh
+          if [ ! -f "$meta" ]; then
+            # Bootstrap, as for the checker below: the base tip has no script and this PR adds it.
+            if ! git cat-file -e "${HEAD_SHA}:${meta}" 2>/dev/null; then
+              echo "::error::${BASE_REF} has this workflow but not ${meta}, so this PR cannot be checked"
+              exit 2
+            fi
+            git show "${HEAD_SHA}:${meta}" > "$RUNNER_TEMP/record-test-shape-meta.sh"
+            meta="$RUNNER_TEMP/record-test-shape-meta.sh"
+            echo "::notice::no ${meta##*/} on ${BASE_REF}, using the copy at the PR head (bootstrap)"
+          fi
+          # The script reads only the two files above; the PR-head copy never sees the token.
+          env -u GH_TOKEN bash "$meta" "$RUNNER_TEMP/labels.json" "$RUNNER_TEMP/events.json" "$GITHUB_OUTPUT"
 
       # No GH_TOKEN here: on the bootstrap path this step runs the PR's own copy of the checker.
       - name: Run the check

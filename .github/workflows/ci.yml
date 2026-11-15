@@ -159,6 +159,20 @@ jobs:
               "environment": "${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}"
             }
 
+  record-test-shape-meta:
+    name: record-test-shape waiver tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # The labels and waiver record-test-shape.yml passes to its checker: a removed waiver is
+      # never reused, a comma label is dropped. Uses the runner's node, as that workflow does.
+      - name: Label and waiver tests (forged, honest, reapplied, removed, comma label)
+        run: .github/scripts/record-test-shape-meta.test.sh
+
   actionlint:
     name: Actionlint
     runs-on: ubuntu-latest
