@@ -301,6 +301,17 @@ describe("AAP-ConductRecord/v2: lists check (§11.4)", () => {
     });
     const { acts: _a, ...onlyCheckpoints } = lists;
     expect(await checkConductLists(s, onlyCheckpoints as RecordLists, jwks)).toEqual({ ok: false, part: "acts", not_supplied: true });
+    // Through verify(): a page that is not an object, names no statement, or is not a lists object.
+    const res = await verify(s, jwks, {
+      lists: [7, { acts: [] }, { ...lists, typ: "AAP-RecordLists/v2" }, { ...lists, lists_as_of: undefined }] as unknown as RecordLists[],
+    });
+    expect(res.reasons).toContain(REASONS.summary_list_mismatch);
+    expect(res.lists_checked).toEqual([
+      { statement_digest: "", part: "statement", ok: false, mismatch: LISTS_MISMATCHES.list_malformed },
+      { statement_digest: "", part: "statement", ok: false, mismatch: LISTS_MISMATCHES.list_malformed },
+      { statement_digest: statementDigest(s), part: "statement", ok: false, mismatch: LISTS_MISMATCHES.list_malformed },
+      { statement_digest: statementDigest(s), part: "statement", ok: false, mismatch: LISTS_MISMATCHES.list_malformed },
+    ]);
     // No lists at all: not supplied, not malformed.
     expect(await checkConductLists(s, undefined, jwks)).toEqual({ ok: false, part: "checkpoints", not_supplied: true });
     expect(await checkConductLists(s, [], jwks)).toEqual({ ok: false, part: "checkpoints", not_supplied: true });

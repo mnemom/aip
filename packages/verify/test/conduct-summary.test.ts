@@ -351,6 +351,10 @@ describe("conductSummaryReasons (§11.1)", () => {
     expect(reasons((s) => (s.checkpoints_full = citations(40)))).toEqual(INC);
     expect(reasons((s) => delete s.previous_digest)).toEqual(INC);
     expect(reasons((s) => delete s.lineage_key)).toEqual(INC);
+    expect(reasons((s) => (s.lineage_key = "conv with spaces"))).toEqual(INC);
+    expect(reasons((s) => (s.org_id = "org with spaces"))).toEqual(INC);
+    expect(reasons((s) => (s.org_id = 7))).toEqual(INC);
+    expect(reasons((s) => (s.unit_kind = "pull_request"))).toEqual(INC);
     expect(reasons((s) => (s.previous_digest = 7))).toEqual(INC);
     expect(reasons((s) => (s.goal.seal_reason = "user said: my password is hunter2"))).toEqual(INC);
     expect(reasons((s) => (s.goal.note = "free"))).toEqual(INC);
@@ -567,6 +571,13 @@ describe("ConductListsCheck (§11.4)", () => {
     expect(checkConductLists(asV1, { ...lists, statement_digest: statementDigest(asV1) })).toEqual(fail("statement", M.not_conduct_v2));
     expect(checkConductLists(statement, { ...lists, typ: "AAP-RecordLists/v2" })).toEqual(fail("statement", M.list_malformed));
     expect(checkConductLists(statement, { ...lists, checkpoints: [{ junk: 1 }] })).toEqual(fail("checkpoints", M.list_malformed));
+    expect(checkConductLists(statement, { ...lists, acts: [{ junk: 1 }] })).toEqual(fail("acts", M.list_malformed));
+    expect(checkConductLists(statement, { ...lists, acts: "not a list" })).toEqual(fail("acts", M.list_malformed));
+    // A bad act page spoils the part even when a good page follows.
+    const check = new ConductListsCheck(statement);
+    check.addActs(7);
+    check.addActs(lists.acts);
+    expect(check.result("acts")).toBe(M.list_malformed);
   });
 
   it("folds pages fed one at a time exactly as the whole list", () => {
