@@ -32,6 +32,11 @@ on:
     # labeled/unlabeled: `record-lane` changes the PR's scope and
     # `record-test-shape-waive` changes the verdict.
     types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
+  # Merge-queue trigger (MNE-1213, as in ci.yml): a required check must report in the
+  # merge_group context or a queued PR waits on it forever. The job grades the PR diff and
+  # labels, which a merge_group event does not carry, so it is skipped there; a skipped job
+  # reports success. The PR was already graded on its own pull_request run.
+  merge_group:
 
 permissions:
   contents: read
@@ -40,12 +45,13 @@ permissions:
   issues: read
 
 concurrency:
-  group: record-test-shape-${{ github.event.pull_request.number }}
+  group: record-test-shape-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
   record-test-shape:
     name: record-test-shape
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
