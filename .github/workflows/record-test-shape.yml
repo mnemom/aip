@@ -5,10 +5,11 @@
 # mnemom-adw, not here. Only Record-lane PRs are graded (head `record/<lane>/<slug>` or the
 # `record-lane` label). Any other PR passes with `in_scope: false`.
 #
-# The checker is a byte-identical copy of mnemom/deploy gates/record-test-shape/check.js at
-# .github/record-test-shape/check.cjs, with flags.json made by its --emit-flags (with
-# --names-only in a public repo). Edit the file in mnemom/deploy first, then copy it here.
-# The deploy-side drift check compares the copies.
+# The checker at .github/record-test-shape/check.cjs is mnemom/deploy
+# gates/record-test-shape/check.js plus one adw:vendored-from line, printed by drift.js
+# --emit-copy. flags.json is made by check.js --emit-flags (with --names-only in a public
+# repo). Edit the files in mnemom/deploy first, then copy them here. The deploy-side drift
+# check compares the copies.
 #
 # SECURITY: `pull_request`, a read-only token and no secrets. The checker and flags.json are
 # read from the tip of the base branch, so a PR cannot change the checker or flags.json that
@@ -35,6 +36,8 @@ on:
 permissions:
   contents: read
   pull-requests: read
+  # The label and label-event reads below use the issues/<n> endpoints.
+  issues: read
 
 concurrency:
   group: record-test-shape-${{ github.event.pull_request.number }}
