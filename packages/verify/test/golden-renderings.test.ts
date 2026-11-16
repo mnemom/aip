@@ -5,6 +5,11 @@
 // pinned here by source commit and sha256; any hand edit to the fixture fails the first test.
 // When claims.ts changes, mnemom-api's own test fails and the regenerated file comes back here
 // with a new pin in the same PR.
+//
+// This pinned copy is the LEGACY rendering ("µ N mmu", "≈ N mmu (pending)", protection "not checked").
+// It must keep linting clean: signed records built that way still verify and render. The
+// billing-figure rendering ("model $0.05", "µ 0.25", protection "off") is covered in
+// claim-lint.test.ts and conduct-summary.test.ts until mnemom-api regenerates this fixture.
 
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";

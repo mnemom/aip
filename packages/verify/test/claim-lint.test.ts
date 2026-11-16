@@ -67,7 +67,7 @@ describe("claim table", () => {
   it("derives the goal and protection verb from the mode", () => {
     expect(CLAIM_TABLE.goal.verb_by_mode).toBe(true);
     expect(CLAIM_TABLE.protection.verb_by_mode).toBe(true);
-    expect(MODE_VERBS).toEqual({ off: "not checked", observe: "flagged", nudge: "flagged, agent nudged", enforce: "stopped" });
+    expect(MODE_VERBS).toEqual({ off: "off", observe: "flagged", nudge: "flagged, agent nudged", enforce: "stopped" });
   });
   it("derives a protection act's verb from its mode and verdict, as mnemom-api protectionVerb does", () => {
     const table = Object.fromEntries(MODES.map((m) => [m, Object.fromEntries(PROTECTION_VERDICTS.map((v) => [v, protectionVerb(m, v)]))]));
@@ -474,6 +474,30 @@ describe("builder line shape (M6, M7)", () => {
     { class: "measured", key: "context.compactions", text: "0 compactions" },
   ];
 
+  it("protection off reads \"off\", and the earlier \"not checked\" still lints (old bundles)", () => {
+    const act = [{ mode: "off" as const, verdict: "pass" as const, tool_name: null }];
+    for (const text of ["off", "not checked"]) {
+      const lines = offLines.map((l) => (l.key === "protection.mode" ? { ...l, text } : l));
+      expect(lintRendering({ surface: "record_page", lines: attachLineContext(lines, { mode: "off" }, { acts: act }) }).violations).toEqual([]);
+    }
+    const bad = offLines.map((l) => (l.key === "protection.mode" ? { ...l, text: "flagged" } : l));
+    expect(rules({ surface: "record_page", lines: attachLineContext(bad, { mode: "off" }, { acts: act }) })).toContain(LINT_RULES.verb_mismatch);
+  });
+  it("billing-figure cost lines lint clean on the record page and a card", () => {
+    for (const mu of ["µ 0.25", "µ 0.25 so far", "µ pending", "µ not charged"]) {
+      const lines: StatementLine[] = [
+        { class: "measured", key: "cost.model", text: "model $0.05" },
+        { class: "measured", key: "cost.mu", text: mu },
+      ];
+      for (const surface of ["record_page", "share_card"] as const) {
+        expect(rules({ surface, lines: attachLineContext(lines, null, null) }), `${surface}: ${mu}`).toEqual([]);
+      }
+    }
+  });
+  it("a record-computed estimate is still rejected (the record shows billing's figure only)", () => {
+    const lines: StatementLine[] = [{ class: "measured", key: "cost.mu", text: "≈ 0.25 µ (pending)" }];
+    expect(rules({ surface: "share_card", lines: attachLineContext(lines, null, null) })).toContain(LINT_RULES.provisional_mu_on_card);
+  });
   it("maps every builder key to a claim-table field", () => {
     expect(fieldForLineKey("cost.model")).toBe("model_cost");
     expect(fieldForLineKey("cost.mu")).toBe("mu_cost");

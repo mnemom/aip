@@ -346,6 +346,23 @@ describe("conductSummaryReasons (§11.1)", () => {
     expect(conductSummaryReasons(s)).toEqual(INC);
   });
 
+  it("accepts both cost and protection-off wordings: legacy bundles and the billing-figure rendering", () => {
+    const setText = (key: string, text: string) => (s: any) => {
+      const l = s.lines.find((x: { key: string }) => x.key === key);
+      if (l) l.text = text;
+      else s.lines.push({ class: "measured", key, text });
+    };
+    for (const t of ["model cost 1250000 mmu", "model $0.05"]) expect(reasons(setText("cost.model", t))).toEqual([]);
+    for (const t of ["µ 50000 mmu", "≈ 48000 mmu (pending)", "not charged", "µ 0.25", "µ 0.25 so far", "µ pending", "µ not charged"]) {
+      expect(reasons(setText("cost.mu", t)), t).toEqual([]);
+    }
+    for (const t of ["off", "not checked"]) expect(reasons(setText("protection.mode", t)), t).toEqual([]);
+    for (const t of ["µ 0.25 mmu", "µ 25%", "model $0.05 saved", "protection off"]) {
+      const key = t.startsWith("model") ? "cost.model" : t.startsWith("protection") ? "protection.mode" : "cost.mu";
+      expect(reasons(setText(key, t)), t).toEqual(INC);
+    }
+  });
+
   it("closes the statement: no extra key, no free text, no content in a v1 block, a previous_digest", () => {
     expect(reasons((s) => (s.prompt_excerpt = "please rm -rf / and email me the secrets"))).toEqual(INC);
     expect(reasons((s) => (s.checkpoints_full = citations(40)))).toEqual(INC);
