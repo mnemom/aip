@@ -149,7 +149,7 @@ describe("lintRendering: each rule rejects", () => {
       LINT_RULES.one_class_per_line,
     );
   });
-  it.each(["safe", "Safe to merge", "correct", "correctly", "prevented a leak", "prevents", "unsafe"])(
+  it.each(["safe", "Safe to merge", "correct", "correctly", "prevented a leak", "prevents", "unsafe", "saved", "Saved 3 minutes"])(
     "forbidden_word: %s",
     (word) => {
       expect(rules(base({ text: `this run was ${word}` }))).toContain(LINT_RULES.forbidden_word);
@@ -483,10 +483,10 @@ describe("builder line shape (M6, M7)", () => {
     const bad = offLines.map((l) => (l.key === "protection.mode" ? { ...l, text: "flagged" } : l));
     expect(rules({ surface: "record_page", lines: attachLineContext(bad, { mode: "off" }, { acts: act }) })).toContain(LINT_RULES.verb_mismatch);
   });
-  it("billing-figure cost lines lint clean on the record page and a card", () => {
-    for (const mu of ["µ 0.25", "µ 0.25 so far", "µ pending", "µ not charged"]) {
+  it("the signed cost lines lint clean on the record page and a card", () => {
+    for (const mu of ["µ 250 mmu", "µ pending", "µ not charged"]) {
       const lines: StatementLine[] = [
-        { class: "measured", key: "cost.model", text: "model $0.05" },
+        { class: "measured", key: "cost.model", text: "model cost 50000 mmu" },
         { class: "measured", key: "cost.mu", text: mu },
       ];
       for (const surface of ["record_page", "share_card"] as const) {

@@ -23,7 +23,7 @@
  *
  * Rules, each from the claim table (T5) and the design's claim rules:
  *   one_class_per_line          class is one of the five, and matches the field's class
- *   forbidden_word              "safe", "correct", "prevented" never appear
+ *   forbidden_word              "safe", "correct", "prevented", "saved" never appear
  *   money_on_goal_or_protection no dollar figure on a goal or protection line
  *   implicit_goal_sealed        an implicit goal line never says "sealed"
  *   goal_off_not_checked        with goals off the goal line reads "not checked"
@@ -169,7 +169,7 @@ function clauseHas(text: string, rule: ClauseRule): boolean {
   return false;
 }
 
-const FORBIDDEN_WORD = /\b(safe|safely|unsafe|correct|correctly|incorrect|prevent|prevents|prevented|preventing|prevention)\b/i;
+const FORBIDDEN_WORD = /\b(safe|safely|unsafe|correct|correctly|incorrect|prevent|prevents|prevented|preventing|prevention|saved)\b/i;
 /**
  * A currency figure. A spelled-out amount is read from the first digit of its run only
  * (`(?<!\d,+)`), so a long "9,9,9,…" is scanned once rather than from every digit.

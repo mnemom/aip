@@ -6,7 +6,7 @@
  *
  * Rules the table encodes (design "Claim classes and verbs", "Cost",
  * "Share cards"):
- * - A line is exactly one class. "Safe", "correct" and "prevented" never appear.
+ * - A line is exactly one class. "Safe", "correct", "prevented" and "saved" never appear.
  * - No protection or goal line carries a dollar figure.
  * - An implicit goal line never says "sealed"; goals off read "not checked".
  * - The verb comes from the area's mode at the time of the act and, for a

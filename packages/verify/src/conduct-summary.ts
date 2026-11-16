@@ -84,13 +84,9 @@ export const TOOL_NAME_RE = /^[A-Za-z0-9_.:-]{1,128}$/;
 const COMMITMENT_RE = /^[A-Za-z0-9_=-]{1,512}$/;
 const COMMITMENT_SIGNATURE_RE = /^[A-Za-z0-9+/_=-]{1,512}$/;
 /** mnemom-api `builder.ts` `LINE_TEXT_RE`: the characters and length a line's text may have. */
-const LINE_TEXT_RE = /^[A-Za-z0-9µ≈$·() ,:_./-]{1,200}$/;
+const LINE_TEXT_RE = /^[A-Za-z0-9µ≈() ,:_./-]{1,200}$/;
 const COUNT_TXT = "(?:0|[1-9][0-9]{0,15})";
 const MMU_TXT = "(?:0|[1-9][0-9]{0,18})";
-/** A µ figure in µ (1 µ = 1000 mmu): whole or with up to 3 decimals, "0.25". */
-const MU_TXT = "(?:0|[1-9][0-9]{0,15})(?:\\.[0-9]{1,3})?";
-/** A dollar figure, "$0.05". */
-const USD_TXT = "\\$(?:0|[1-9][0-9]{0,12})(?:\\.[0-9]{1,6})?";
 
 /**
  * The fixed lines of a v2 statement (§8): each key at most once, with its
@@ -99,17 +95,14 @@ const USD_TXT = "\\$(?:0|[1-9][0-9]{0,12})(?:\\.[0-9]{1,6})?";
  * So a line cannot carry free text.
  */
 const FIXED_LINES: Readonly<Record<string, { class: string; text: RegExp }>> = {
-  // Two renderings of the cost lines are accepted so every signed record keeps verifying.
-  // Legacy (records built before the billing-figure rendering): "model cost N mmu", "µ N mmu",
-  // "≈ N mmu (pending)" (the record's own estimate) and "not charged".
-  // Billing-figure rendering: "model $0.05"; µ is billing's `mu_charged_mmu` shown in µ
-  // ("µ 0.25", "µ 0.25 so far"), "µ pending" (no billing row yet) or "µ not charged".
-  "cost.model": { class: "measured", text: new RegExp(`^(?:model cost ${MMU_TXT} mmu|model ${USD_TXT})$`) },
+  // The cost lines mnemom-api signs: "model cost N mmu"; "µ N mmu" (billing's `mu_charged_mmu`),
+  // "µ pending" (no billing row yet) or "µ not charged". The legacy "≈ N mmu (pending)" (the
+  // record's own estimate, older bundles) and "not charged" still verify. The dollar and µ
+  // display ("model $0.05", "µ 0.25") is applied at render time only and is never signed.
+  "cost.model": { class: "measured", text: new RegExp(`^model cost ${MMU_TXT} mmu$`) },
   "cost.mu": {
     class: "measured",
-    text: new RegExp(
-      `^(?:µ ${MMU_TXT} mmu|≈ ${MMU_TXT} mmu \\(pending\\)|not charged|µ ${MU_TXT}|µ ${MU_TXT} so far|µ pending|µ not charged)$`,
-    ),
+    text: new RegExp(`^(?:µ ${MMU_TXT} mmu|≈ ${MMU_TXT} mmu \\(pending\\)|not charged|µ pending|µ not charged)$`),
   },
   "goal.mode": { class: "measured", text: /^(?:not checked|implicit goal|sealed contract)$/ },
   "goal.node": { class: "measured", text: /^Canon node (?:pending|mn-[a-z0-9]{6})$/ },
