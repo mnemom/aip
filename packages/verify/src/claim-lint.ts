@@ -23,7 +23,7 @@
  *
  * Rules, each from the claim table (T5) and the design's claim rules:
  *   one_class_per_line          class is one of the five, and matches the field's class
- *   forbidden_word              "safe", "correct", "prevented" never appear
+ *   forbidden_word              "safe", "correct", "prevented", "saved" never appear
  *   money_on_goal_or_protection no dollar figure on a goal or protection line
  *   implicit_goal_sealed        an implicit goal line never says "sealed"
  *   goal_off_not_checked        with goals off the goal line reads "not checked"
@@ -43,6 +43,9 @@
  *   card_class_not_allowed      a card carries measured, outcome and verdict lines only
  *   period_card_without_revert  a period card renders its reverts
  *   field_not_on_surface        the field is not shown on this surface
+ *   (provisional_mu_*: LEGACY guard. The record no longer computes a provisional estimate; it
+ *   shows billing's figure. The rules stay so no renderer brings an estimate back, and so
+ *   old bundles' renderings stay lintable.)
  *   provisional_mu_on_card      a provisional μ amount ("≈ N μ (pending)", A-S-001) never appears on a card:
  *                               cards keep K1.17 and read "μ pending" at most
  *   provisional_mu_off_cost_line a provisional μ amount appears on the μ cost line and nowhere else
@@ -166,7 +169,7 @@ function clauseHas(text: string, rule: ClauseRule): boolean {
   return false;
 }
 
-const FORBIDDEN_WORD = /\b(safe|safely|unsafe|correct|correctly|incorrect|prevent|prevents|prevented|preventing|prevention)\b/i;
+const FORBIDDEN_WORD = /\b(safe|safely|unsafe|correct|correctly|incorrect|prevent|prevents|prevented|preventing|prevention|saved)\b/i;
 /**
  * A currency figure. A spelled-out amount is read from the first digit of its run only
  * (`(?<!\d,+)`), so a long "9,9,9,…" is scanned once rather than from every digit.
@@ -208,8 +211,9 @@ const NOT_CHECKED = /^not checked$/i;
 const COVERAGE_IN_TEXT = /\b(\d+)\s+of\s+(\d+)\s+turns\s+judged\b/i;
 
 /** Each verb's words, keyed by the mode whose `MODE_VERBS` entry it is. */
+const PROTECTION_OFF = /^(?:off|not checked)$/i;
 const MODE_VERB_REGEX: Record<Mode, RegExp> = {
-  off: NOT_CHECKED,
+  off: PROTECTION_OFF,
   observe: /\bflagged\b/i,
   nudge: /\bflagged, agent nudged\b/i,
   enforce: /\bstopped\b/i,

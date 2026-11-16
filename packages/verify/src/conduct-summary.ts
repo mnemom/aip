@@ -95,10 +95,14 @@ const MMU_TXT = "(?:0|[1-9][0-9]{0,18})";
  * So a line cannot carry free text.
  */
 const FIXED_LINES: Readonly<Record<string, { class: string; text: RegExp }>> = {
+  // The cost lines mnemom-api signs: "model cost N mmu"; "µ N mmu" (billing's `mu_charged_mmu`),
+  // "µ pending" (no billing row yet) or "µ not charged". The legacy "≈ N mmu (pending)" (the
+  // record's own estimate, older bundles) and "not charged" still verify. The dollar and µ
+  // display ("model $0.05", "µ 0.25") is applied at render time only and is never signed.
   "cost.model": { class: "measured", text: new RegExp(`^model cost ${MMU_TXT} mmu$`) },
   "cost.mu": {
     class: "measured",
-    text: new RegExp(`^(?:µ ${MMU_TXT} mmu|≈ ${MMU_TXT} mmu \\(pending\\)|not charged)$`),
+    text: new RegExp(`^(?:µ ${MMU_TXT} mmu|≈ ${MMU_TXT} mmu \\(pending\\)|not charged|µ pending|µ not charged)$`),
   },
   "goal.mode": { class: "measured", text: /^(?:not checked|implicit goal|sealed contract)$/ },
   "goal.node": { class: "measured", text: /^Canon node (?:pending|mn-[a-z0-9]{6})$/ },
@@ -106,7 +110,8 @@ const FIXED_LINES: Readonly<Record<string, { class: string; text: RegExp }>> = {
     class: "verdict",
     text: new RegExp(`^${COUNT_TXT} of ${COUNT_TXT} judged turns on goal, ${COUNT_TXT} of ${COUNT_TXT} turns judged$`),
   },
-  "protection.mode": { class: "measured", text: /^not checked$/ },
+  // Protection off reads "off" (stored mode); records built earlier read "not checked".
+  "protection.mode": { class: "measured", text: /^(?:off|not checked)$/ },
   "people.messages": {
     class: "measured",
     text: new RegExp(`^(?:messages from a person: unclassified|${COUNT_TXT} messages from a person)$`),

@@ -6,7 +6,7 @@
  *
  * Rules the table encodes (design "Claim classes and verbs", "Cost",
  * "Share cards"):
- * - A line is exactly one class. "Safe", "correct" and "prevented" never appear.
+ * - A line is exactly one class. "Safe", "correct", "prevented" and "saved" never appear.
  * - No protection or goal line carries a dollar figure.
  * - An implicit goal line never says "sealed"; goals off read "not checked".
  * - The verb comes from the area's mode at the time of the act and, for a
@@ -41,11 +41,12 @@ export type Mode = (typeof MODES)[number];
 
 /**
  * The verb each mode produces at its strongest verdict. `off` produces no line, or
- * "not checked". A protection act's verb also depends on its verdict: see
+ * "off" (records built before the billing-figure rendering read "not checked", which
+ * still verifies and lints). A protection act's verb also depends on its verdict: see
  * `protectionVerb`.
  */
 export const MODE_VERBS: Record<Mode, string> = {
-  off: "not checked",
+  off: "off",
   observe: "flagged",
   nudge: "flagged, agent nudged",
   enforce: "stopped",
@@ -95,7 +96,7 @@ export const CLAIM_TABLE = {
   /** How the goal was set: "sealed contract", "implicit goal" or "not checked" (M7: its own measured line). */
   goal_mode: { class: "measured", verb_by_mode: false, money_allowed: false },
   goal: { class: "verdict", verb_by_mode: true, money_allowed: false },
-  /** The protection area's mode when no act is shown: "not checked" under off. */
+  /** The protection area's mode when no act is shown: "off" ("not checked" on records built before this wording). */
   protection_mode: { class: "measured", verb_by_mode: false, money_allowed: false },
   protection: { class: "verdict", verb_by_mode: true, money_allowed: false },
   autonomy: { class: "measured", verb_by_mode: false, money_allowed: false },
