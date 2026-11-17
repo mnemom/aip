@@ -68,12 +68,18 @@ permissions:
   contents: read
 
 concurrency:
-  # Key by head SHA so a new push supersedes an in-flight review of an older commit
-  # (workflow_dispatch keys by pr_number; a lone dispatch falls back to run_id).
-  # `issue_comment` carries no `pull_request` object at all, so it keys on the issue number
-  # instead — two sign-off comments typed in quick succession collapse to one evaluation
-  # rather than racing, and the survivor still publishes on that PR's head.
-  group: review-gate-${{ github.event.pull_request.head.sha || github.event.issue.number || github.event.inputs.pr_number || github.run_id }}
+  # One group per PR, so a new push cancels the in-flight review of the older head (keying
+  # by head SHA left both runs going). Every run in a PR's group evaluates that PR's current
+  # head: pull_request_target and pull_request_review read it from the event, workflow_dispatch
+  # with a pr_number reads it live from the API. So the run that survives always publishes
+  # `review-gate` on the current head. A cancelled run publishes nothing (the fallback status
+  # fires only on exit 4), and the sweep re-dispatches any head left pending or absent.
+  # `issue_comment` keys to its own `comment-<n>` group, never the PR group. The `evaluate`
+  # filter skips most PR comments, and a skipped run publishes no status, so a stray comment
+  # must not cancel a review of the head. Two sign-off comments typed in quick succession
+  # still collapse to one evaluation.
+  # A lone dispatch falls back to run_id and joins no PR group.
+  group: review-gate-${{ github.event.pull_request.number || github.event.inputs.pr_number || (github.event.issue.number && format('comment-{0}', github.event.issue.number)) || github.run_id }}
   cancel-in-progress: true
 
 jobs:
