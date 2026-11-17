@@ -32,6 +32,10 @@
 # the `repositories:` list to include this repo "for convenience"; that would hand a
 # pull_request_target workflow a broad write credential it has no use for.
 name: review-gate
+# A dispatch run records the default branch SHA, not the PR head, so its title is the one place
+# that names the PR it evaluates. The sweep job reads that title to see a dispatch in flight.
+# Other events keep their default title, since an empty run-name falls back to it.
+run-name: "${{ github.event.inputs.pr_number && format('review-gate #{0}', github.event.inputs.pr_number) || '' }}"
 
 on:
   # The gate computes its verdict from the PR diff in ONE synchronous run, so it only needs
@@ -480,13 +484,16 @@ jobs:
             # runs visible, i.e. only ever skip more — monotonic in the fail-safe direction.
             RC=0
             RUNS_JSON=$(gh run list --repo "$GH_REPO" --workflow=review-gate.yml --limit 200 \
-              --json status,headSha 2>/dev/null) || RC=$?
+              --json status,headSha,event,displayTitle 2>/dev/null) || RC=$?
             if [ "$RC" -ne 0 ] || [ -z "$RUNS_JSON" ]; then
               echo "PR #$NUM ($SHA): could not read gate runs (gh error/empty) — skipping (fail-safe)"
               continue
             fi
-            IN_FLIGHT=$(printf '%s' "$RUNS_JSON" | jq --arg sha "$SHA" \
-              '[.[] | select(.headSha==$sha and (.status=="in_progress" or .status=="queued"))] | length' \
+            # A dispatch run records the default branch SHA, so it never matches headSha. It is
+            # matched by the title run-name gives it instead. It shares this PR's concurrency
+            # group, so dispatching again would cancel it and the next tick would do the same.
+            IN_FLIGHT=$(printf '%s' "$RUNS_JSON" | jq --arg sha "$SHA" --arg title "review-gate #$NUM" \
+              '[.[] | select((.headSha==$sha or (.event=="workflow_dispatch" and .displayTitle==$title)) and (.status=="in_progress" or .status=="queued"))] | length' \
               2>/dev/null || echo 1)
             if [ "${IN_FLIGHT:-1}" -ge 1 ]; then
               echo "PR #$NUM ($SHA): gate run already in flight (or unverifiable); skipping"
