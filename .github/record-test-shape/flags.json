@@ -48,6 +48,10 @@
       "off",
       "on"
     ],
+    "RECORD_APP_SLUG": [
+      "off",
+      "on"
+    ],
     "RECORD_RETENTION_MODE": [
       "off",
       "on"
@@ -160,6 +164,46 @@
       "off",
       "on"
     ],
+    "ORG_SCAN_GITHUB_GRAPHQL_ALL_ORGS": [
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_ADMIN_KEY_USAGE": [
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_REPORT_BLOB": [
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_REPORT_MEASURED_MODELS": [
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_RUN_DATA": [
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_REPORT_FIGURE_INPUTS": [
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_REPORT_BOT_APPROVAL": [
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_RUN_REUSE": [
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_REPORT_STOPPED_EARLY": [
+      "off",
+      "on"
+    ],
+    "ORG_SCAN_USAGE_FILE": [
+      "off",
+      "on"
+    ],
     "ORG_SCAN_REPORT_BASE_URL": [
       "off",
       "on"
@@ -244,6 +288,10 @@
       "off",
       "on"
     ],
+    "ORG_SCAN_WIF_ISSUER": [
+      "off",
+      "on"
+    ],
     "ORG_SCAN_VERDICT_JSON": [
       "off",
       "on"
@@ -281,6 +329,10 @@
       "on"
     ],
     "RECORD_TOTALS_READ_V2": [
+      "off",
+      "on"
+    ],
+    "RECORD_GOAL_NUDGE_MODE": [
       "off",
       "on"
     ],
