@@ -397,6 +397,15 @@ describe("conductSummaryReasons (§11.1)", () => {
     expect(reasons((s) => (s.door2 = shallow))).toEqual([]);
   });
 
+  it("accepts goal.nudges as a count and nothing else (mnemom-api migration 679)", () => {
+    expect(reasons((s) => (s.goal.nudges = 0))).toEqual([]);
+    expect(reasons((s) => (s.goal.nudges = 3))).toEqual([]);
+    expect(reasons((s) => (s.goal.nudges = "3"))).toEqual(INC);
+    expect(reasons((s) => (s.goal.nudges = -1))).toEqual(INC);
+    expect(reasons((s) => (s.goal.nudges = 1.5))).toEqual(INC);
+    expect(reasons((s) => (s.goal.nudges = "nudged: stop editing the billing code"))).toEqual(INC);
+  });
+
   it("closes the lines: fixed wording, one line per line-bearing group, at most 72", () => {
     expect(reasons((s) => s.lines.push({ class: "measured", key: "x", text: "user said: my password is hunter2" }))).toEqual(INC);
     expect(reasons((s) => s.lines.push({ class: "measured", key: "people.note", text: "my password is hunter2" }))).toEqual(INC);
