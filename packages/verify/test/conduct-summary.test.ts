@@ -406,6 +406,79 @@ describe("conductSummaryReasons (§11.1)", () => {
     expect(reasons((s) => (s.goal.nudges = "nudged: stop editing the billing code"))).toEqual(INC);
   });
 
+  describe("door2.context_receipt (mnemom-api ContextReceipt)", () => {
+    const H = (c: string) => c.repeat(64);
+    const receipt = () => ({
+      context_status: "pinned",
+      digest: H("e"),
+      pinned_at: "2026-11-20T11:00:00.000Z",
+      omitted: 2,
+      nodes: [
+        { node_id: "mn-aaaaaa", node_role: "canon", version: 3, sha256: H("1") },
+        { node_id: "mn-cccccc", node_role: "contract", version: 1, sha256: H("b") },
+      ],
+    });
+    const door2 = (r: unknown) => ({ session_id: "11111111-1111-4111-8111-111111111111", batch_id: null, reseals: [], siblings: [], context_receipt: r });
+
+    it("accepts a well-formed receipt at every status the producer writes", () => {
+      expect(reasons((s) => (s.door2 = door2(receipt())))).toEqual([]);
+      for (const context_status of ["pinned", "none", "unavailable", "drifted"]) {
+        expect(reasons((s) => (s.door2 = door2({ ...receipt(), context_status })))).toEqual([]);
+      }
+      expect(reasons((s) => (s.door2 = door2({ ...receipt(), context_status: "none", omitted: 0, nodes: [] })))).toEqual([]);
+      expect(reasons((s) => (s.door2 = door2({ ...receipt(), pinned_at: "2026-11-20T11:00:00Z" })))).toEqual([]);
+    });
+
+    it("refuses a malformed receipt", () => {
+      const bad = (edit: (r: any) => void) => {
+        const r: any = receipt();
+        edit(r);
+        return reasons((s) => (s.door2 = door2(r)));
+      };
+      expect(bad((r) => (r.digest = "E".repeat(64)))).toEqual(INC);
+      expect(bad((r) => (r.digest = H("e").slice(1)))).toEqual(INC);
+      expect(bad((r) => (r.nodes[0].sha256 = "z".repeat(64)))).toEqual(INC);
+      expect(bad((r) => (r.nodes[0].sha256 = `sha256:${H("1")}`))).toEqual(INC);
+      expect(bad((r) => (r.context_status = "too_large"))).toEqual(INC);
+      expect(bad((r) => (r.context_status = "user said: my password is hunter2"))).toEqual(INC);
+      expect(bad((r) => (r.nodes[0].node_role = "rule"))).toEqual(INC);
+      expect(bad((r) => (r.nodes[0].node_id = "mn-AAAAAA"))).toEqual(INC);
+      expect(bad((r) => (r.nodes[0].node_id = "some free text"))).toEqual(INC);
+      expect(bad((r) => (r.nodes[0].version = -1))).toEqual(INC);
+      expect(bad((r) => (r.nodes[0].version = "3"))).toEqual(INC);
+      expect(bad((r) => (r.omitted = 1.5))).toEqual(INC);
+      expect(bad((r) => (r.pinned_at = "yesterday"))).toEqual(INC);
+      // Extra keys carrying content, at either level, and missing or null fields.
+      expect(bad((r) => (r.text = "the pinned node's text"))).toEqual(INC);
+      expect(bad((r) => (r.nodes[0].text = "the pinned node's text"))).toEqual(INC);
+      expect(bad((r) => (r.nodes[0].slug = "billing-rules"))).toEqual(INC);
+      expect(bad((r) => delete r.digest)).toEqual(INC);
+      expect(bad((r) => delete r.nodes[1].version)).toEqual(INC);
+      expect(bad((r) => (r.digest = null))).toEqual(INC);
+      expect(bad((r) => (r.nodes = { node_id: "mn-aaaaaa" }))).toEqual(INC);
+      expect(bad((r) => (r.nodes = [7]))).toEqual(INC);
+      expect(reasons((s) => (s.door2 = door2(null)))).toEqual(INC);
+      expect(reasons((s) => (s.door2 = door2([receipt()])))).toEqual(INC);
+    });
+
+    it("keeps the receipt's keys out of every other block and the rest of door2", () => {
+      expect(reasons((s) => (s.goal.context_receipt = receipt()))).toEqual(INC);
+      expect(reasons((s) => (s.goal.digest = H("e")))).toEqual(INC);
+      expect(reasons((s) => (s.runner = { kind: "hosted", sha256: H("1") }))).toEqual(INC);
+      expect(reasons((s) => (s.door2 = { digest: H("e") }))).toEqual(INC);
+      expect(reasons((s) => (s.door2 = { nodes: receipt().nodes }))).toEqual(INC);
+      expect(reasons((s) => (s.door2 = { usage: { wakes: 1, context_receipt: receipt() } }))).toEqual(INC);
+      // The rest of door2 is still held to the allowlist when a receipt is present.
+      expect(reasons((s) => (s.door2 = { ...door2(receipt()), note: "free" }))).toEqual(INC);
+      expect(reasons((s) => (s.door2 = { ...door2(receipt()), siblings: [{ job_id: "has spaces" }] }))).toEqual(INC);
+    });
+
+    it("leaves a v2 statement without a receipt unchanged", () => {
+      expect(reasons((s) => (s.door2 = { siblings: [{ job_id: "job-1", repo: "o/r", pr_number: 3 }] }))).toEqual([]);
+      expect(reasons(() => {})).toEqual([]);
+    });
+  });
+
   it("closes the lines: fixed wording, one line per line-bearing group, at most 72", () => {
     expect(reasons((s) => s.lines.push({ class: "measured", key: "x", text: "user said: my password is hunter2" }))).toEqual(INC);
     expect(reasons((s) => s.lines.push({ class: "measured", key: "people.note", text: "my password is hunter2" }))).toEqual(INC);

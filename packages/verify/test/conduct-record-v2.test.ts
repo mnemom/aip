@@ -207,6 +207,35 @@ describe("AAP-ConductRecord/v2: per-statement checks", () => {
     expect(res.flags).toEqual([{ flag: FLAGS.summarized, subject: res.digest, count: 0 }]);
   });
 
+  it("a signed v2 statement with door2.context_receipt verifies; a malformed receipt is summary_inconsistent", async () => {
+    const receipt = {
+      context_status: "pinned",
+      digest: "e".repeat(64),
+      pinned_at: "2026-11-20T11:00:00.000Z",
+      omitted: 2,
+      nodes: [
+        { node_id: "mn-aaaaaa", node_role: "canon", version: 3, sha256: "1".repeat(64) },
+        { node_id: "mn-cccccc", node_role: "contract", version: 1, sha256: "b".repeat(64) },
+      ],
+    };
+    const withDoor2 = (context_receipt: unknown) => ({
+      ...buildConductV2({ lineage_key: "l", built_at: "2026-11-20T12:00:00.000Z", previous_digest: null, checkpoints: [], acts: [] }),
+      door2: { session_id: "11111111-1111-4111-8111-111111111111", seal_id: "22222222-2222-4222-8222-222222222222", batch_id: null, reseals: [], siblings: [], context_receipt },
+    });
+    const ok = await verifyStatement(await signStatement(withDoor2(receipt)), jwks);
+    expect(ok.reasons).toEqual([]);
+    expect(ok.valid).toBe(true);
+    for (const bad of [
+      { ...receipt, nodes: [{ ...receipt.nodes[0], sha256: "not-a-sha" }] },
+      { ...receipt, context_status: "unknown" },
+      { ...receipt, nodes: [{ ...receipt.nodes[0], text: "the pinned node's text" }] },
+    ]) {
+      const res = await verifyStatement(await signStatement(withDoor2(bad)), jwks);
+      expect(res.reasons).toEqual([REASONS.summary_inconsistent]);
+      expect(res.valid).toBe(false);
+    }
+  });
+
   it("the signature still covers everything: an unsigned edit is signature_invalid, not a summary reason", async () => {
     const s = fixture("golden-conduct-v2");
     const res = await verifyStatement({ ...s, checkpoints: { ...s.checkpoints, count: 46 } }, jwks);
