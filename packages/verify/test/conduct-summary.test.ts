@@ -473,6 +473,19 @@ describe("conductSummaryReasons (§11.1)", () => {
       expect(reasons((s) => (s.door2 = { ...door2(receipt()), siblings: [{ job_id: "has spaces" }] }))).toEqual(INC);
     });
 
+    it("refuses a summary block that is not an object, or a required one that is missing", () => {
+      for (const k of ["goal", "cost", "people", "runner", "door2"]) {
+        for (const bad of ["x", 1, null, [], [{}]]) {
+          expect(reasons((s) => (s[k] = bad))).toEqual(INC);
+        }
+      }
+      for (const k of ["goal", "cost", "people"]) {
+        expect(reasons((s) => delete s[k])).toEqual(INC);
+      }
+      // runner and door2 are optional: absent is fine.
+      expect(reasons((s) => (delete s.runner, delete s.door2))).toEqual([]);
+    });
+
     it("leaves a v2 statement without a receipt unchanged", () => {
       expect(reasons((s) => (s.door2 = { siblings: [{ job_id: "job-1", repo: "o/r", pr_number: 3 }] }))).toEqual([]);
       expect(reasons(() => {})).toEqual([]);
