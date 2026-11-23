@@ -213,6 +213,49 @@ function noContent(v: unknown, depth = 0): boolean {
   return true;
 }
 
+/**
+ * `door2.context_receipt` (mnemom-api `src/door2/context-receipt.ts`
+ * `ContextReceipt`, Canon brief step 2): which Canon nodes were pinned into
+ * the run's prompt, as ids, roles, versions and sha256 hashes, never text.
+ * Held to its exact shape here rather than through `NO_CONTENT_BLOCKS`, so
+ * its keys (`digest`, `sha256`, `nodes`, ...) are accepted only inside
+ * `door2.context_receipt` and no other block gains them. Every key required,
+ * no null, nothing else.
+ */
+const CONTEXT_RECEIPT_KEYS = ["context_status", "digest", "nodes", "omitted", "pinned_at"];
+const CONTEXT_RECEIPT_NODE_KEYS = ["node_id", "node_role", "sha256", "version"];
+/** mnemom-api `ContextStatus`. */
+const CONTEXT_STATUSES: readonly string[] = ["pinned", "none", "unavailable", "drifted"];
+/** mnemom-api `ContextNodeRole`. */
+const CONTEXT_NODE_ROLES: readonly string[] = ["contract", "canon"];
+/** mnemom-api `canon/context-read.ts` `CANON_NODE_ID_RE`. */
+const CANON_NODE_ID_RE = /^mn-[a-z0-9]{6}$/;
+const RECEIPT_ISO_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/;
+
+function isContextReceiptNode(v: unknown): boolean {
+  if (!isObject(v) || !hasExactKeys(v, CONTEXT_RECEIPT_NODE_KEYS)) return false;
+  if (typeof v.node_id !== "string" || !CANON_NODE_ID_RE.test(v.node_id)) return false;
+  if (!CONTEXT_NODE_ROLES.includes(v.node_role as string)) return false;
+  return isCount(v.version) && isHex64(v.sha256);
+}
+
+/** True when `v` is a `door2.context_receipt` of exactly the producer's shape. */
+function isContextReceipt(v: unknown): boolean {
+  if (!isObject(v) || !hasExactKeys(v, CONTEXT_RECEIPT_KEYS)) return false;
+  if (!CONTEXT_STATUSES.includes(v.context_status as string)) return false;
+  if (!isHex64(v.digest)) return false;
+  if (typeof v.pinned_at !== "string" || !RECEIPT_ISO_RE.test(v.pinned_at)) return false;
+  if (!isCount(v.omitted)) return false;
+  return Array.isArray(v.nodes) && v.nodes.every(isContextReceiptNode);
+}
+
+/** True when `door2` holds only `NO_CONTENT_BLOCKS` shapes, plus a well-formed `context_receipt` when present. */
+function door2NoContent(door2: Record<string, unknown>): boolean {
+  if (!Object.prototype.hasOwnProperty.call(door2, "context_receipt")) return noContent(door2);
+  const { context_receipt: receipt, ...rest } = door2;
+  return isContextReceipt(receipt) && noContent(rest);
+}
+
 /** Every key a v2 statement must carry (§3). */
 const V2_REQUIRED_KEYS = [
   "typ",
@@ -616,7 +659,8 @@ function statementShapeInconsistent(s: Record<string, unknown>): boolean {
   if (s.previous_digest !== null && typeof s.previous_digest !== "string") return true;
   for (const k of ["goal", "cost", "people", "runner", "door2"]) {
     if (s[k] === undefined && (k === "runner" || k === "door2")) continue;
-    if (!isObject(s[k]) || !noContent(s[k])) return true;
+    if (!isObject(s[k])) return true;
+    if (!(k === "door2" ? door2NoContent(s[k] as Record<string, unknown>) : noContent(s[k]))) return true;
   }
   if (linesInconsistent(s.lines, isObject(s.protection) ? s.protection.by : undefined)) return true;
   return utf8ToBytes(canonicalJson(s)).length > V2_CEILING_BYTES;
