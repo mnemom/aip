@@ -151,6 +151,9 @@ const NO_CONTENT_BLOCKS: Readonly<Record<string, RegExp | "number" | "object" | 
     on_goal: "number",
     judged: "number",
     turns: "number",
+    // goal.nudges: how many times the gateway nudged the session back to its goal
+    // (mnemom-api migration 679, #5020). A count, never text.
+    nudges: "number",
     messages_from_person: "number",
     compactions: "number",
     kind: /^hosted$/,
